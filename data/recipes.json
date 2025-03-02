@@ -1,0 +1,162 @@
+{
+    "Sword Recipe": {
+        "baseItem": "Sword",
+        "requiredAmount": 5
+    },
+    "Dagger Recipe": {
+        "baseItem": "Dagger",
+        "requiredAmount": 4
+    },
+    "Bow Recipe": {
+        "baseItem": "Bow",
+        "requiredAmount": 5
+    },
+    "Wand Recipe": {
+        "baseItem": "Wand",
+        "requiredAmount": 3
+    },
+    "Staff Recipe": {
+        "baseItem": "Staff",
+        "requiredAmount": 4
+    },
+    "Shield Recipe": {
+        "baseItem": "Shield",
+        "requiredAmount": 4
+    },
+    "Chest Recipe": {
+        "baseItem": "Chest",
+        "requiredAmount": 6
+    },
+    "Helm Recipe": {
+        "baseItem": "Helm",
+        "requiredAmount": 3
+    },
+    "Gloves Recipe": {
+        "baseItem": "Gloves",
+        "requiredAmount": 2
+    },
+    "Ring Recipe": {
+        "baseItem": "Ring",
+        "requiredAmount": 1
+    },
+
+    "Enhanced Sword Recipe": {
+        "baseItem": "Sword",
+        "enhanced": true,
+        "requiredEnhancedAmount": 3
+    },
+    "Enhanced Dagger Recipe": {
+        "baseItem": "Dagger",
+        "enhanced": true,
+        "requiredEnhancedAmount": 2
+    },
+    "Enhanced Bow Recipe": {
+        "baseItem": "Bow",
+        "enhanced": true,
+        "requiredEnhancedAmount": 3
+    },
+    "Enhanced Shield Recipe": {
+        "baseItem": "Shield",
+        "enhanced": true,
+        "requiredEnhancedAmount": 2
+    },
+    "Enhanced Chest Recipe": {
+        "baseItem": "Chest",
+        "enhanced": true,
+        "requiredEnhancedAmount": 4
+    },
+
+    "Health Potion Recipe": {
+        "potionType": "health",
+        "tiers": ["Small", "Medium", "Large"],
+        "baseMaterials": ["Water", "Milkweed"],
+        "upgradeMaterials": ["Sunflower", "Berry"]
+    },
+    "Mana Potion Recipe": {
+        "potionType": "mana",
+        "tiers": ["Small", "Medium", "Large"],
+        "baseMaterials": ["Water", "Sunflower"],
+        "upgradeMaterials": ["Milkweed", "Holy Water"]
+    },
+    "Invisibility Potion Recipe": {
+        "potionType": "invisibility",
+        "required": {
+            "Water": 2,
+            "Milkweed": 3,
+            "Eternium Ingot": 1
+        },
+        "result": "Invisibility Potion"
+    },
+    "Defense Potion Recipe": {
+        "potionType": "defense",
+        "required": {
+            "Iron Ingot": 2,
+            "Polished Diamond": 1
+        },
+        "result": "Defense Potion"
+    },
+    "Strength Potion Recipe": {
+        "potionType": "strength",
+        "required": {
+            "Steel Ingot": 2,
+            "Dragon Scale": 1
+        },
+        "result": "Strength Potion"
+    },
+
+    "Starter Sword Recipe": {
+        "required": {
+            "Wood": 3
+        },
+        "result": "Starter Sword"
+    },
+    "Starter Sword Upgrade Recipe": {
+        "required": {
+            "Starter Sword": 1,
+            "Wood": 3
+        },
+        "result": "Enhanced Starter Sword"
+    },
+    "Small Health Potion Recipe": {
+        "required": {
+            "Water": 1,
+            "Milkweed": 1
+        },
+        "result": "Small Health Potion"
+    },
+    "Dragon Plate Armor Recipe": {
+        "required": {
+            "Dragon Scale": 5,
+            "Eternium Ingot": 2
+        },
+        "result": "Dragon Plate Armor"
+    },
+    "Iron Ingot Recipe": {
+        "required": {
+            "Iron Ore": 2,
+            "Stone": 1
+        },
+        "result": "Iron Ingot"
+    },
+    "Steel Ingot Recipe": {
+        "required": {
+            "Iron Ingot": 1,
+            "Carbon": 2
+        },
+        "result": "Steel Ingot"
+    },
+    "Polished Diamond Recipe": {
+        "required": {
+            "Diamond": 2,
+            "Steel Ingot": 1
+        },
+        "result": "Polished Diamond"
+    },
+    "Eternium Ingot Recipe": {
+        "required": {
+            "Eternium Ore": 4,
+            "Polished Diamond": 1
+        },
+        "result": "Eternium Ingot"
+    }
+}

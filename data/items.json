@@ -1,0 +1,302 @@
+[
+    {
+        "name": "Sword",
+        "type": "weapon",
+        "baseDamage": 10,
+        "upgradeable": true,
+        "stackSize": 1
+    },
+    {
+        "name": "Dagger",
+        "type": "weapon",
+        "baseDamage": 6,
+        "upgradeable": true,
+        "stackSize": 1
+    },
+    {
+        "name": "Bow",
+        "type": "weapon",
+        "baseDamage": 8,
+        "upgradeable": true,
+        "stackSize": 1
+    },
+    {
+        "name": "Wand",
+        "type": "weapon",
+        "baseDamage": 5,
+        "damageType": "magic",
+        "upgradeable": true,
+        "stackSize": 1
+    },
+    {
+        "name": "Staff",
+        "type": "weapon",
+        "baseDamage": 7,
+        "damageType": "magic",
+        "upgradeable": true,
+        "stackSize": 1
+    },
+    {
+        "name": "Shield",
+        "type": "armor",
+        "baseDefense": 5,
+        "slot": "offhand",
+        "upgradeable": true,
+        "stackSize": 1
+    },
+    {
+        "name": "Chest",
+        "type": "armor",
+        "baseDefense": 10,
+        "slot": "chest",
+        "upgradeable": true,
+        "stackSize": 1
+    },
+    {
+        "name": "Helm",
+        "type": "armor",
+        "baseDefense": 5,
+        "slot": "head",
+        "upgradeable": true,
+        "stackSize": 1
+    },
+    {
+        "name": "Gloves",
+        "type": "armor",
+        "baseDefense": 3,
+        "slot": "hands",
+        "upgradeable": true,
+        "stackSize": 1
+    },
+    {
+        "name": "Ring",
+        "type": "accessory",
+        "baseDefense": 1,
+        "slot": "finger",
+        "upgradeable": false,
+        "stackSize": 1
+    },
+
+    {
+        "name": "Wood",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Stone",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Iron Ore",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Coal",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Diamond",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Eternium Ore",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Iron Ingot",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Steel Ingot",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Polished Diamond",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Eternium Ingot",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Milkweed",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Sunflower",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Berry",
+        "type": "consumable",
+        "health": 5,
+        "stackSize": 99
+    },
+    {
+        "name": "Water",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Holy Water",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Iron Ingot",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Steel Ingot",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Eternium Ingot",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Dragon Scale",
+        "type": "material",
+        "stackSize": 10
+    },
+
+    {
+        "name": "Dragon Plate Armor",
+        "type": "armor",
+        "defense": 20,
+        "slot": "chest",
+        "stackSize": 1
+    },
+    {
+        "name": "Frost Bow",
+        "type": "weapon",
+        "damage": 18,
+        "damageType": "frost",
+        "stackSize": 1,
+        "rarity": "rare"
+    },
+    {
+        "name": "Phoenix Potion",
+        "type": "consumable",
+        "effect": "revive",
+        "stackSize": 3
+    },
+    {
+        "name": "Enchanted Staff",
+        "type": "weapon",
+        "damage": 12,
+        "manaCost": 15,
+        "element": "arcane",
+        "stackSize": 1
+    },
+    {
+        "name": "Bandit Chestplate",
+        "type": "armor",
+        "defense": 15,
+        "slot": "chest",
+        "setBonus": "thorns_10%",
+        "stackSize": 1
+    },
+    {
+        "name": "Starter Sword",
+        "type": "weapon",
+        "damage": 8,
+        "stackSize": 1,
+        "upgradeable": true
+    },
+    {
+        "name": "Starter Shield",
+        "type": "armor",
+        "defense": 5,
+        "slot": "offhand",
+        "stackSize": 1,
+        "upgradeable": true
+    },
+    {
+        "name": "Starter Chest",
+        "type": "armor",
+        "defense": 5,
+        "slot": "chest",
+        "stackSize": 1,
+        "upgradeable": true
+    },
+    {
+        "name": "Starter Helm",
+        "type": "armor",
+        "defense": 5,
+        "slot": "head",
+        "stackSize": 1,
+        "upgradeable": true
+    },
+    {
+        "name": "Small Health Potion",
+        "type": "consumable",
+        "health": 20,
+        "stackSize": 5
+    },
+    {
+        "name": "Medium Health Potion",
+        "type": "consumable",
+        "health": 50,
+        "stackSize": 5
+    },
+    {
+        "name": "Large Health Potion",
+        "type": "consumable",
+        "health": 100,
+        "stackSize": 5
+    },
+    {
+        "name": "Small Mana Potion",
+        "type": "consumable",
+        "mana": 20,
+        "stackSize": 5
+    },
+    {
+        "name": "Medium Mana Potion",
+        "type": "consumable",
+        "mana": 50,
+        "stackSize": 5
+    },
+    {
+        "name": "Large Mana Potion",
+        "type": "consumable",
+        "mana": 100,
+        "stackSize": 5
+    },
+    {
+        "name": "Strength Potion",
+        "type": "consumable",
+        "effect": "strength_boost_5",
+        "duration": 60,
+        "stackSize": 3
+    },
+    {
+        "name": "Speed Potion",
+        "type": "consumable",
+        "effect": "speed_boost_20%",
+        "duration": 60,
+        "stackSize": 3
+    },
+    {
+        "name": "Invisibility Potion",
+        "type": "consumable",
+        "effect": "invisibility",
+        "duration": 30,
+        "stackSize": 1
+    }
+]

@@ -1,0 +1,44 @@
+{
+    "biome": "winter",
+    "seed": "winter_seed_12345",
+    "groundColor": "0xFFFFFF",
+    "heightScale": 0.2,
+    "waterLevel": -0.7,
+    "terrainRoughness": 0.05,
+    "lighting": {
+        "directional": { "color": "0xccccff", "intensity": 0.8, "position": [5, 10, 5] },
+        "ambient": { "color": "0x202020", "intensity": 0.5 }
+    },
+    "suns": [
+        { "color": "0xffff00", "pathType": "standardSun", "maxElevation": 1.6, "dayShift": 0.15 }
+    ],
+    "moons": [
+        { "color": "0xaaaaaa", "pathType": "highMoon", "maxElevation": 1.7854, "dayShift": 0.15, "phaseCycle": 28 }
+    ],
+    "meteors": {
+        "frequency": 0.05, 
+        "sizeMin": 0.1,
+        "sizeMax": 1.0,
+        "colors": ["0xd6e6f2", "0xbccce0", "0xa2b9bc", "0xe3e3e3", "0xf1e3e4"],
+        "cometChance": 0.1
+    },
+    "meteorShower": {
+        "frequency": 0.0015,
+        "quantity": 70,
+        "sizeMin": 0.3,
+        "sizeMax": 1.5,
+        "colors": ["0xd6e6f2", "0xbccce0", "0xa2b9bc", "0xe3e3e3", "0xf1e3e4"]
+    },
+    "doodads": [
+        { "type": "SnowPile", "position": { "x": 15, "z": 15 } },
+        { "type": "Rock", "position": { "x": -5, "z": 5 } },
+        { "type": "Portal", "position": { "x": -35, "z": -35 }, "destinationMap": "summer", "requiredQuest": "dragon_slayer_winter" }
+    ],
+    "enemies": [
+        { "position": { "x": 5, "z": 5 } },
+        { "position": { "x": -5, "z": -5 } }
+    ],
+    "questGivers": [
+        { "position": { "x": 20, "z": -30 }, "questId": "frost_hunt_winter" }
+    ]
+}

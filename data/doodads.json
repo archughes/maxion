@@ -1,0 +1,12 @@
+[
+    { "type": "Tree", "position": { "x": 10, "z": 10 } },
+    { "type": "Chest", "position": { "x": 5, "z": -5 }, "contents": { "name": "Sword", "type": "weapon", "damage": 10 } },
+    { "type": "Rock", "position": { "x": -5, "z": 5 } },
+    { "type": "Bush", "position": { "x": -10, "z": -10 } },
+    { "type": "SnowPile", "position": { "x": 15, "z": 15 } },
+    { "type": "Cactus", "position": { "x": 20, "z": -20 } },
+    { "type": "WaterPuddle", "position": { "x": -15, "z": -15 } },
+    { "type": "Flower", "position": { "x": 0, "z": 10 } },
+    { "type": "Campfire", "position": { "x": 0, "z": -10 } },
+    { "type": "Portal", "position": { "x": 5, "z": 5 }, "destinationMap": "winter" }
+]

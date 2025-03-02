@@ -1,0 +1,44 @@
+{
+    "biome": "autumn",
+    "seed": "autumn_seed_12345",
+    "groundColor": "0xFF8C00",
+    "heightScale": 2,
+    "waterLevel": -0.3,
+    "terrainRoughness": 0.07,
+    "lighting": {
+        "directional": { "color": "0xffb366", "intensity": 0.9, "position": [5, 10, 5] },
+        "ambient": { "color": "0x303030", "intensity": 0.7 }
+    },
+    "suns": [
+        { "color": "0xffff00", "pathType": "standardSun", "maxElevation": 3.0472, "dayShift": 0.1 }
+    ],
+    "moons": [
+        { "color": "0xaaaaaa", "pathType": "highMoon", "maxElevation": 0.7854, "dayShift": 0.00, "phaseCycle": 6 }
+    ],
+    "meteors": {
+        "frequency": 0.02, 
+        "sizeMin": 0.2,
+        "sizeMax": 0.8,
+        "colors": ["0xffc3a0", "0xffd699", "0xe8a87c", "0xc38d9e", "0x8d8741"],
+        "cometChance": 0.1
+    },
+    "meteorShower": {
+        "frequency": 0.0005,
+        "quantity": 30,
+        "sizeMin": 0.3,
+        "sizeMax": 1.2,
+        "colors": ["0xffc3a0", "0xffd699", "0xe8a87c", "0xc38d9e", "0x8d8741"]
+    },
+    "doodads": [
+        { "type": "Tree", "position": { "x": 10, "z": 10 } },
+        { "type": "Flower", "position": { "x": 0, "z": 10 } },
+        { "type": "Portal", "position": { "x": 35, "z": 35 }, "destinationMap": "spring", "requiredQuest": "upgrade_gear_autumn" }
+    ],
+    "enemies": [
+        { "position": { "x": 10, "z": 10 } },
+        { "position": { "x": -10, "z": -10 } }
+    ],
+    "questGivers": [
+        { "position": { "x": 0, "z": 0 }, "questId": "blacksmith_intro_autumn" }
+    ]
+}
