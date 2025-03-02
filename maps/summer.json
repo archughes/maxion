@@ -1,0 +1,35 @@
+{
+    "biome": "summer",
+    "seed": "summer_seed_12345",
+    "groundColor": "0xffcc00",
+    "heightScale": 1,
+    "waterLevel": -0.5,
+    "terrainRoughness": 0.04,
+    "lighting": {
+        "directional": { "color": "0xffff99", "intensity": 1.2, "position": [5, 10, 5] },
+        "ambient": { "color": "0x606060", "intensity": 0.8 }
+    },
+    "suns": [
+        { "color": "0xffff00", "pathType": "standardSun", "maxElevation": 1.0472, "dayShift": 0.1 }
+    ],
+    "moons": [
+        { "color": "0xaaaaaa", "pathType": "highMoon", "maxElevation": 0.7854, "dayShift": 0.05, "phaseCycle": 12 }
+    ],
+    "doodads": [
+        { "type": "Cactus", "position": { "x": 20, "z": -20 } },
+        { "type": "Tree", "position": { "x": -10, "z": -20 } },
+        { "type": "Bush", "position": { "x": 10, "z": 20 } },
+        { "type": "Rock", "position": { "x": -5, "z": 5 } },
+        { "type": "Portal", "position": { "x": -35, "z": 35 }, "destinationMap": "autumn", "requiredQuest": "defeat_wolf_summer" }
+    ],
+    "enemies": [
+        { "position": { "x": 22, "z": 22 } },
+        { "position": { "x": -22, "z": -22 } }
+    ],
+    "questGivers": [
+        {
+            "position": { "x": 10, "z": 10 },
+            "questId": "first_steps_summer"
+        }
+    ]
+}

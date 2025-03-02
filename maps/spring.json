@@ -1,0 +1,45 @@
+{
+    "biome": "spring",
+    "seed": "spring_seed_12345",
+    "groundColor": "0x00ff00",
+    "heightScale": 1,
+    "waterLevel": 0.0,
+    "terrainRoughness": 0.06,
+    "lighting": {
+        "directional": { "color": "0xffffff", "intensity": 1, "position": [5, 10, 5] },
+        "ambient": { "color": "0x404040", "intensity": 1 }
+    },
+    "suns": [
+        { "color": "0xffff00", "pathType": "standardSun", "maxElevation": 0.2, "dayShift": 0.15 }
+    ],
+    "moons": [
+        { "color": "0xaaaaaa", "pathType": "highMoon", "maxElevation": 0.3854, "dayShift": 0.25, "phaseCycle": 54 },
+        { "color": "0x87ceeb", "pathType": "highMoon", "maxElevation": 2.0472, "dayShift": 0.27, "phaseCycle": 143 }
+    ],
+    "meteors": {
+        "frequency": 0.03, 
+        "sizeMin": 0.1,
+        "sizeMax": 1.0,
+        "colors": ["0xffaaaa", "0xaaffaa", "0xaaaaff", "0xffd1dc", "0xb5e7a0"],
+        "cometChance": 0.1
+    },
+    "meteorShower": {
+        "frequency": 0.001,
+        "quantity": 50,
+        "sizeMin": 0.3,
+        "sizeMax": 1.2,
+        "colors": ["0xffaaaa", "0xaaffaa", "0xaaaaff", "0xffd1dc", "0xb5e7a0"]
+    },
+    "doodads": [
+        { "type": "Tree", "position": { "x": 10, "z": 10 } },
+        { "type": "Bush", "position": { "x": -10, "z": -10 } },
+        { "type": "Portal", "position": { "x": 35, "z": -35 }, "destinationMap": "winter", "requiredQuest": "craft_armor_spring" }
+    ],
+    "enemies": [
+        { "position": { "x": 44, "z": 44 } },
+        { "position": { "x": -44, "z": -44 } }
+    ],
+    "questGivers": [
+        { "position": { "x": 20, "z": 20 }, "questId": "mine_diamonds_spring" }
+    ]
+}

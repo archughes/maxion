@@ -1,0 +1,154 @@
+{
+  "quests": [
+      {
+          "id": "first_steps_summer",
+          "name": "First Steps",
+          "type": "talk",
+          "prerequisites": [],
+          "reward": "Starter Sword Recipe",
+          "xpReward": 50,
+          "nextQuest": "collecting_berries"
+      },
+      {
+        "id": "collecting_berries",
+        "name": "Collecting Berries",
+        "type": "collect",
+        "requiredItem": "Berry",
+        "required": 5,
+        "prerequisites": ["defeat_goblin_summer"],
+        "xpReward": 50,
+        "nextQuest": "defeat_goblin_summer"
+      },
+      {
+          "id": "defeat_goblin_summer",
+          "name": "Defeat the Goblin",
+          "type": "defeat",
+          "required": 1,
+          "prerequisites": ["collecting_berries"],
+          "reward": "Wooden Shield Recipe",
+          "xpReward": 100,
+          "nextQuest": "improve_gear_summer"
+      },
+      {
+          "id": "improve_gear_summer",
+          "name": "Improve Your Gear",
+          "type": "talk",
+          "prerequisites": ["defeat_goblin_summer"],
+          "reward": "Starter Sword Upgrade Recipe",
+          "xpReward": 75,
+          "nextQuest": "explore_forest_summer"
+      },
+      {
+          "id": "explore_forest_summer",
+          "name": "Explore the Forest",
+          "type": "talk",
+          "prerequisites": ["improve_gear_summer"],
+          "reward": "Wooden Sword Recipe",
+          "xpReward": 100,
+          "nextQuest": "defeat_wolf_summer"
+      },
+      {
+          "id": "defeat_wolf_summer",
+          "name": "Defeat the Wolf",
+          "type": "defeat",
+          "required": 2,
+          "prerequisites": ["explore_forest_summer"],
+          "reward": "Wooden Chest Recipe",
+          "xpReward": 150
+      },
+
+      {
+          "id": "blacksmith_intro_autumn",
+          "name": "Meet the Blacksmith",
+          "type": "talk",
+          "prerequisites": [],
+          "reward": "Iron Sword Recipe",
+          "xpReward": 150,
+          "nextQuest": "defeat_bandit_autumn"
+      },
+      {
+          "id": "defeat_bandit_autumn",
+          "name": "Defeat the Bandit",
+          "type": "defeat",
+          "required": 3,
+          "prerequisites": ["blacksmith_intro_autumn"],
+          "reward": "Iron Shield Recipe",
+          "xpReward": 200,
+          "nextQuest": "smelt_iron_autumn"
+      },
+      {
+          "id": "smelt_iron_autumn",
+          "name": "Smelt Some Iron",
+          "type": "talk",
+          "prerequisites": ["defeat_bandit_autumn"],
+          "reward": "Iron Chest Recipe",
+          "xpReward": 175,
+          "nextQuest": "upgrade_gear_autumn"
+      },
+      {
+          "id": "upgrade_gear_autumn",
+          "name": "Upgrade Your Gear",
+          "type": "talk",
+          "prerequisites": ["smelt_iron_autumn"],
+          "reward": "Enhanced Iron Sword Recipe",
+          "xpReward": 200
+      },
+
+      {
+          "id": "mine_diamonds_spring",
+          "name": "Seek the Mines",
+          "type": "talk",
+          "prerequisites": [],
+          "reward": "Diamond Sword Recipe",
+          "xpReward": 300,
+          "nextQuest": "defeat_ogre_spring"
+      },
+      {
+          "id": "defeat_ogre_spring",
+          "name": "Defeat the Ogre",
+          "type": "defeat",
+          "required": 5,
+          "prerequisites": ["mine_diamonds_spring"],
+          "reward": "Diamond Shield Recipe",
+          "xpReward": 400,
+          "nextQuest": "craft_armor_spring"
+      },
+      {
+          "id": "craft_armor_spring",
+          "name": "Craft Diamond Armor",
+          "type": "talk",
+          "prerequisites": ["defeat_ogre_spring"],
+          "reward": "Diamond Chest Recipe",
+          "xpReward": 350
+      },
+
+      {
+          "id": "frost_hunt_winter",
+          "name": "Hunt in the Frost",
+          "type": "talk",
+          "prerequisites": [],
+          "reward": "Eternium Sword Recipe",
+          "xpReward": 500,
+          "nextQuest": "defeat_yeti_winter"
+      },
+      {
+          "id": "defeat_yeti_winter",
+          "name": "Defeat the Yeti",
+          "type": "defeat",
+          "required": 7,
+          "prerequisites": ["frost_hunt_winter"],
+          "reward": "Small Health Potion Recipe",
+          "xpReward": 600,
+          "nextQuest": "dragon_slayer_winter"
+      },
+      {
+          "id": "dragon_slayer_winter",
+          "name": "Slay the Frost Dragon",
+          "type": "boss",
+          "required": 1,
+          "prerequisites": ["defeat_yeti_winter"],
+          "reward": "Dragon Plate Armor Recipe",
+          "xpReward": 1000
+      }
+  ]
+}
