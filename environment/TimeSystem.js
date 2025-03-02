@@ -2,7 +2,7 @@ export class TimeSystem {
     constructor() {
         this.day = 0;           // Current day
         this.time = 0;          // Time of day (0 to 24 hours)
-        this.timeScale = 60;    // 1 real second = 1 game minute
+        this.timeScale = 600;    // 1 real second = 1 game minute
     }
 
     update(deltaTime) {

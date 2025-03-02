@@ -3,11 +3,13 @@ import { scene } from './scene.js';
 import { Cloud } from './Cloud.js';
 
 class CelestialBody {
-    constructor(config) {
+    constructor(config, skySystem) {
+        this.skySystem = skySystem;
         this.color = config.color;
         this.pathParams = config.pathParams;
         this.phaseCycle = config.phaseCycle || 28;
         this.isMoon = config.isMoon || false;
+        this.size = config.size || 2;
 
         if (this.isMoon) {
             this.mesh = new THREE.Mesh(
@@ -15,7 +17,8 @@ class CelestialBody {
                 new THREE.ShaderMaterial({
                     uniforms: {
                         phase: { value: 0 },
-                        lightDirection: { value: new THREE.Vector3(1, 0, 0) }
+                        lightDirection: { value: new THREE.Vector3(1, 0, 0) },
+                        skyColor: { value: new THREE.Color(0x000000) }
                     },
                     vertexShader: `
                         varying vec2 vUv;
@@ -29,15 +32,15 @@ class CelestialBody {
                     fragmentShader: `
                         uniform float phase;
                         uniform vec3 lightDirection;
+                        uniform vec3 skyColor;
                         varying vec2 vUv;
                         varying vec3 vNormal;
                         void main() {
                             vec3 light = normalize(lightDirection);
                             float illumination = dot(vNormal, light);
                             float crescent = smoothstep(-0.1, 0.1, illumination - phase);
-                            float brightness = phase > 0.0 ? max(crescent, 0.2) : crescent;
-                            if (abs(phase) < 0.05) brightness = 0.0;
-                            gl_FragColor = vec4(vec3(brightness), 1.0);
+                            vec3 moonColor = mix(skyColor, vec3(1.0), max(crescent, 0.1));
+                            gl_FragColor = vec4(moonColor, 1.0);
                         }
                     `,
                     side: THREE.DoubleSide
@@ -49,6 +52,7 @@ class CelestialBody {
                 new THREE.MeshBasicMaterial({ color: this.color })
             );
         }
+        this.mesh.scale.set(this.size, this.size, this.size);
         scene.add(this.mesh);
     }
 
@@ -65,6 +69,8 @@ class CelestialBody {
         this.mesh.visible = this.isMoon ? !isDay : isDay;
 
         if (this.isMoon) {
+            const skyColor = this.skySystem.getSkyColor(time);
+            this.mesh.material.uniforms.skyColor.value.copy(skyColor);
             const phaseProgress = (day % this.phaseCycle) / this.phaseCycle;
             const phase = Math.sin(2 * Math.PI * phaseProgress);
             this.mesh.material.uniforms.phase.value = phase;
@@ -207,7 +213,7 @@ export class SkySystem {
                 color: parseInt(sunConfig.color),
                 pathParams: { pathFunc, maxElevation: sunConfig.maxElevation || Math.PI / 3, dayShift: sunConfig.dayShift || 0.1 },
                 isMoon: false
-            }));
+            }, this));
         });
 
         // Moons from map data
@@ -218,7 +224,7 @@ export class SkySystem {
                 pathParams: { pathFunc, maxElevation: moonConfig.maxElevation || Math.PI / 4, dayShift: moonConfig.dayShift || 0.05 },
                 phaseCycle: moonConfig.phaseCycle || 28,
                 isMoon: true
-            }));
+            }, this));
         });
 
         this.createStars();
@@ -314,13 +320,23 @@ export class SkySystem {
     }
 
     getSkyColor(time) {
-        if (time < 6 || time > 18) return new THREE.Color(0x000033);
-        if (time < 8) return new THREE.Color(0x87ceeb).lerp(new THREE.Color(0xffa500), (time - 6) / 2);
-        if (time < 16) return new THREE.Color(0x87ceeb);
-        return new THREE.Color(0x87ceeb).lerp(new THREE.Color(0xffa500), (time - 16) / 2);
+        const nightColor = new THREE.Color(0x00001a); // Darker night
+        const dayColor = new THREE.Color(0x87ceeb);
+        const sunriseColor = new THREE.Color(0xff6a00);
+        
+        // Smooth transition using sinusoidal interpolation
+        const t = 0.5 - Math.cos(Math.PI * (time % 24) / 12) / 2;
+        
+        if (time < 5) return nightColor;
+        if (time < 7) return nightColor.lerp(sunriseColor, (time-5)/2);
+        if (time < 17) return dayColor.lerp(sunriseColor, Math.abs(12-time)/5);
+        if (time < 19) return dayColor.lerp(sunriseColor, (19-time)/2);
+        return nightColor;
     }
 
     updateLighting(time) {
+        const ambientLight = scene.children.find(obj => obj instanceof THREE.AmbientLight);
+        ambientLight.intensity = Math.min(0.4, 0.4 * (1 - Math.abs(12 - time)/6));
         const sunLight = scene.getObjectByName('sunLight') || new THREE.DirectionalLight(0xffffff, 1);
         sunLight.name = 'sunLight';
         if (this.suns.length > 0) {

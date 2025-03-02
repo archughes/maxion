@@ -3,14 +3,32 @@ import { scene } from './scene.js';
 
 export class Cloud {
     constructor() {
-        const size = 5 + Math.random() * 5;
-        const cloudGeometry = new THREE.SphereGeometry(size, 16, 16);
+        const cloudGroup = new THREE.Group(); // Use Group as container
+        const baseSize = 2 + Math.random() * 3;
+
         const cloudMaterial = new THREE.MeshBasicMaterial({
             color: 0xffffff,
             transparent: true,
             opacity: 0.5 + Math.random() * 0.3
         });
-        this.mesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
+        
+        // Create multiple overlapping spheres
+        for(let i = 0; i < 5; i++) {
+            const partGeo = new THREE.SphereGeometry(
+                baseSize * (0.6 + Math.random()*0.4),
+                8, 
+                8
+            );
+            const part = new THREE.Mesh(partGeo, cloudMaterial);
+            part.position.set(
+                (Math.random()-0.5)*baseSize,
+                (Math.random()-0.5)*baseSize,
+                (Math.random()-0.5)*baseSize
+            );
+            cloudGroup.add(part);
+        }
+        
+        this.mesh = cloudGroup; // Use group directly
         this.mesh.position.set(
             (Math.random() - 0.5) * 200,
             50 + Math.random() * 20,
