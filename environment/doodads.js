@@ -1,11 +1,11 @@
 // doodads.js
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-import { scene } from './environment/scene.js';
-import { player } from './player.js';
-import { completedQuests } from './quests.js';
-import { loadMap } from './environment/environment.js';
-import { EnvironmentObject } from './environment/environment-object.js';
-import { showMessage } from './game.js';
+import { scene } from './scene.js';
+import { player } from '../entity/player.js';
+import { completedQuests } from '../quests.js';
+import { loadMap } from './environment.js';
+import { EnvironmentObject } from './environment-object.js';
+import { showMessage } from '../game.js';
 
 // Tree class with multiple variants
 class Tree extends EnvironmentObject {

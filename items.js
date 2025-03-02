@@ -1,5 +1,5 @@
 // items.js
-import { player } from './player.js';
+import { player } from './entity/player.js';
 
 class Item {
     constructor({ name, type, stackSize = 1 }) {

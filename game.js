@@ -1,13 +1,13 @@
 // game.js
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
 import { setupInput } from './input.js';
-import { scene, camera, renderer } from './scene.js';
-import { player, updatePlayer } from './player.js';
-import { enemies, questGivers, updateNPC } from './npc.js';
+import { scene, camera, renderer } from './environment/scene.js';
+import { player, updatePlayer } from './entity/player.js';
+import { enemies, questGivers, updateNPC } from './entity/npc.js';
 import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateManaUI, updateQuestUI, updateXPUI } from './ui.js';
 import { loadQuests } from './quests.js';
 import { craftItem, loadItems, loadRecipes } from './items.js';
-import { loadMap, terrain, timeSystem, doodads, skySystem } from './environment.js';
+import { loadMap, terrain, timeSystem, doodads, skySystem } from './environment/environment.js';
 
 // Add Mana Bar to UI
 const manaBar = document.createElement("div");

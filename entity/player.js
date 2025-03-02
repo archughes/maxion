@@ -1,11 +1,11 @@
 // player.js
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-import { scene } from './scene.js';
-import { updateHealthUI, updateManaUI, updateInventoryUI, updateXPUI, updateCharacterUI } from './ui.js';
+import { scene } from '../environment/scene.js';
+import { updateHealthUI, updateManaUI, updateInventoryUI, updateXPUI, updateCharacterUI } from '../ui.js';
 import { Character } from './character.js';
-import { terrain } from './environment.js';
-import { checkCollectionQuests } from './quests.js';
-import { items } from './items.js';
+import { terrain } from '../environment/environment.js';
+import { checkCollectionQuests } from '../quests.js';
+import { items } from '../items.js';
 
 const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
 const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x00fff0 });

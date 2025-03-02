@@ -1,8 +1,8 @@
 // input.js
-import { player } from './player.js';
-import { interactWithEnvironment } from './environment.js';
+import { player } from './entity/player.js';
+import { interactWithEnvironment } from './environment/environment.js';
 import { activeQuests, completeQuest } from './quests.js';
-import { camera } from './scene.js';
+import { camera } from './environment/scene.js';
 import { useItem } from './items.js';
 import { cameraState } from './game.js';
 

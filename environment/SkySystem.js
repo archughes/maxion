@@ -1,6 +1,6 @@
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-import { scene } from './environment/scene.js';
-import { Cloud } from './environment/Cloud.js';
+import { scene } from './scene.js';
+import { Cloud } from './Cloud.js';
 
 class CelestialBody {
     constructor(config) {

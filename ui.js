@@ -1,5 +1,5 @@
 // ui.js
-import { player } from './player.js';
+import { player } from './entity/player.js';
 import { activeQuests, factions, canStartQuest, completedQuests } from './quests.js';
 import { useItem, craftItem } from './items.js';
 import { useAction } from './input.js';

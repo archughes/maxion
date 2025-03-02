@@ -1,12 +1,12 @@
 // npc.js
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-import { scene } from './scene.js';
+import { scene } from '../environment/scene.js';
 import { player } from './player.js';
-import { settings } from './settings.js';
-import { quests, activeQuests, addQuest, completeQuest, completedQuests, canStartQuest, updateQuestProgress  } from './quests.js';
+import { settings } from '../settings.js';
+import { quests, activeQuests, addQuest, completeQuest, completedQuests, canStartQuest, updateQuestProgress  } from '../quests.js';
 import { Character } from './character.js'; // Assuming this exists
-import { terrain } from './environment.js';
-import { updateQuestUI } from './ui.js'
+import { terrain } from '../environment/environment.js';
+import { updateQuestUI } from '../ui.js'
 
 const npcGeometry = new THREE.BoxGeometry(1, 1, 1);
 const damageMultiplier = { easy: 0.5, normal: 1, hard: 2 }[settings.difficulty];
