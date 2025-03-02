@@ -10,11 +10,20 @@
         "ambient": { "color": "0x606060", "intensity": 0.8 }
     },
     "suns": [
-        { "color": "0xffff00", "pathType": "standardSun", "maxElevation": 1.0472, "dayShift": 0.1 }
+        { "color": "0xffff00", "pathType": "standardSun", "maxElevation": 2.0472, "dayShift": 0.1 }
     ],
     "moons": [
-        { "color": "0xaaaaaa", "pathType": "highMoon", "maxElevation": 0.7854, "dayShift": 0.05, "phaseCycle": 12 }
+        { "color": "0xaaaaaa", "pathType": "highMoon", "maxElevation": 1.7854, "dayShift": 0.05, "phaseCycle": 12 }
     ],
+    "clouds": {
+        "types": [
+            { "type": "cumulus", "frequency": 0.5 },
+            { "type": "cirrus", "frequency": 0.3 },
+            { "type": "stratus", "frequency": 0.15 },
+            { "type": "nimbus", "frequency": 0.05 }
+        ],
+        "count": 12
+    },
     "doodads": [
         { "type": "Cactus", "position": { "x": 20, "z": -20 } },
         { "type": "Tree", "position": { "x": -10, "z": -20 } },

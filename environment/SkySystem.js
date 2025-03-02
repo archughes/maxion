@@ -39,7 +39,7 @@ class CelestialBody {
                             vec3 light = normalize(lightDirection);
                             float illumination = dot(vNormal, light);
                             float crescent = smoothstep(-0.1, 0.1, illumination - phase);
-                            vec3 moonColor = mix(skyColor, vec3(1.0), max(crescent, 0.1));
+                            vec3 moonColor = mix(skyColor, vec3(1.0), crescent);
                             gl_FragColor = vec4(moonColor, 1.0);
                         }
                     `,
@@ -230,9 +230,22 @@ export class SkySystem {
         this.createStars();
         this.createSky();
 
-        // Clouds
-        for (let i = 0; i < 10; i++) {
-            this.clouds.push(new Cloud());
+        // Clouds from mapData
+        const cloudConfig = mapData.clouds || { types: [{ type: 'cumulus', frequency: 1 }], count: 10 }; // Fallback
+        const totalWeight = cloudConfig.types.reduce((sum, cloud) => sum + (cloud.frequency || 1), 0);
+        const cloudCount = cloudConfig.count || 10;
+
+        for (let i = 0; i < cloudCount; i++) {
+            let random = Math.random() * totalWeight;
+            let selectedType = cloudConfig.types[0].type; // Default to first type
+            for (const cloud of cloudConfig.types) {
+                random -= cloud.frequency || 1;
+                if (random <= 0) {
+                    selectedType = cloud.type;
+                    break;
+                }
+            }
+            this.clouds.push(new Cloud(selectedType));
         }
     }
 
