@@ -12,7 +12,7 @@ class Entity {
     }
 
     adjustToTerrain(terrain) {
-        this.mesh.position.y = terrain.getHeightAt(this.mesh.position.x, this.mesh.position.z) + 0.5;
+        this.mesh.position.y = terrain.getHeightAt(this.mesh.position.x, this.mesh.position.z);
 
         const waterHeight = terrain?.water?.position.y || -Infinity;
         this.isInWater = this.position.y < waterHeight;
@@ -39,6 +39,11 @@ class CombatEntity extends Entity {
             amount * (1 - this.resistances[type] || 0);
         this.health = Math.max(0, this.health - finalDamage);
         console.log(`CombatEntity took ${amount} damage! Current health: ${this.health}`);
+    }
+
+    adjustToTerrain(terrain) {
+        super.adjustToTerrain(terrain); 
+        this.mesh.position.y += 0.5; // Magic number for character height (all types same height!).
     }
 }
 
