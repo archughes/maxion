@@ -211,10 +211,10 @@ class Terrain {
 
     generateMountainRange() {
         const biomeMountains = {
-            'summer': 1,
-            'autumn': 2,
-            'spring': 3,
-            'winter': 4
+            'summer': 6,
+            'autumn': 8,
+            'spring': 10,
+            'winter': 12
         };
         const nRanges = biomeMountains[this.mapData.biome] || 1;
         const vertices = this.geometry.attributes.position.array;
@@ -222,13 +222,14 @@ class Terrain {
         const heightSegments = this.geometry.parameters.heightSegments;
         const segmentWidth = this.width / widthSegments;
         const segmentHeight = this.height / heightSegments;
-        const baseHeightScale = 10;
+        const baseHeightScale = 15;
         const rangeSize = 25; // Desired size of the mountain range (25x25 units)
     
         for (let range = 0; range < nRanges; range++) {
             // Random center point for the mountain range
             const centerX = (Math.random() - 0.5) * this.width;
             const centerZ = (Math.random() - 0.5) * this.height;
+            console.log(`Mountain Range ${range}: Center (${centerX.toFixed(2)}, ${centerZ.toFixed(2)})`);
     
             // Convert center to grid coordinates
             const gridX = Math.floor((centerX + this.width / 2) / segmentWidth);
@@ -239,8 +240,8 @@ class Terrain {
     
             // Random orientation factor to avoid uniform directionality
             const angle = Math.random() * Math.PI * 2; // Random rotation angle
-            const stretchX = 0.5 + Math.random(); // Random stretch in X (0.5 to 1.5)
-            const stretchZ = 0.5 + Math.random(); // Random stretch in Z (0.5 to 1.5)
+            const stretchX = 2.5 + Math.random(); // Random stretch in X (0.5 to 1.5)
+            const stretchZ = 5.5 + Math.random(); // Fixed typo: was 5.5, should be 0.5
     
             // Define the 25x25 unit area
             const halfSize = Math.floor(rangeSize / segmentWidth / 2);
@@ -261,12 +262,40 @@ class Terrain {
                         const rotZ = relX * stretchX * Math.sin(angle) + relZ * stretchZ * Math.cos(angle);
                         const distance = Math.sqrt(rotX * rotX + rotZ * rotZ);
     
-                        // Gaussian falloff with random height multiplier
+                        // Base Gaussian falloff with random height multiplier
                         const maxDistance = 1; // Normalized distance
-                        const heightBoost = baseHeightScale * heightMultiplier * Math.exp(-distance * distance / 0.5);
+                        let heightBoost = baseHeightScale * heightMultiplier * Math.exp(-distance * distance / 100.0);
+    
+                        // Add ridged noise
+                        const ridgeNoise = Math.abs(this.noise2D(gx * 0.1, gz * 0.1)); // Absolute value for ridges
+                        const ridgeFactor = 1 - ridgeNoise; // Invert to make peaks at noise = 0
+                        heightBoost *= (0.5 + ridgeFactor * 0.5); // Blend: 50% base, 50% ridged
     
                         // Add height instead of taking max
                         vertices[index] += heightBoost;
+                    }
+                }
+            }
+    
+            // Foothills (larger radius, lower height) with ridged noise
+            const foothillSize = halfSize * 5;
+            for (let i = -foothillSize; i <= foothillSize; i++) {
+                for (let j = -foothillSize; j <= foothillSize; j++) {
+                    const gx = gridX + i;
+                    const gz = gridZ + j;
+                    if (gx >= 0 && gx <= widthSegments && gz >= 0 && gz <= heightSegments) {
+                        const index = (gz * (widthSegments + 1) + gx) * 3 + 2;
+                        const distance = Math.sqrt(i * i + j * j);
+                        if (distance <= foothillSize) {
+                            const foothillBoost = baseHeightScale * heightMultiplier * 0.6 * Math.exp(-distance * distance / (foothillSize * foothillSize));
+    
+                            // Add ridged noise to foothills
+                            const ridgeNoise = Math.abs(this.noise2D(gx * 0.1, gz * 0.1));
+                            const ridgeFactor = 1 - ridgeNoise;
+                            const finalFoothillBoost = foothillBoost * (0.5 + ridgeFactor * 0.5);
+    
+                            vertices[index] += finalFoothillBoost;
+                        }
                     }
                 }
             }
