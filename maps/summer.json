@@ -3,7 +3,7 @@
     "seed": "summer_seed_12345",
     "groundColor": "0xffcc00",
     "heightScale": 1,
-    "waterLevel": -0.5,
+    "waterLevel": -1.0,
     "terrainRoughness": 0.04,
     "lighting": {
         "directional": { "color": "0xffff99", "intensity": 1.2, "position": [5, 10, 5] },

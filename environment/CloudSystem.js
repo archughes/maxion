@@ -221,20 +221,29 @@ class Cloud {
 
       switch (terrainType) {
         case 'high mountain':
-          influence = 0.4; // Strong attraction to mountains
-          break;
+            influence = 0.4; // Strong attraction to high mountains
+            break;
         case 'mountain':
-          influence = 0.65; // Strong attraction to mountains
-          break;
+            influence = 0.65; // Stronger attraction to mountains
+            break;
+        case 'path':
+            influence = 0.3; // Moderate attraction to paths (good for travel)
+            break;
+        case 'river':
+            influence = 0.25; // Moderate attraction to rivers (water source)
+            break;
+        case 'lake':
+            influence = 0.35; // Slightly stronger attraction to lakes
+            break;
         case 'water':
-          influence = 0.2; // Mild attraction to water
-          break;
+            influence = 0.2; // Mild attraction to general water
+            break;
         case 'cliff':
-          influence = -0.1; // Slight repulsion from cliffs
-          break;
+            influence = -0.1; // Slight repulsion from cliffs (danger)
+            break;
         case 'grass':
-          influence = -0.05; // Very slight repulsion from grass
-          break;
+            influence = -0.05; // Very slight repulsion from grass (neutral)
+            break;
       }
 
       // Steer toward (positive) or away from (negative) the sampled point
