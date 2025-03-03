@@ -26,23 +26,19 @@ class Terrain {
         
         scene.add(this.mesh);
         this.water = this.createWater(mapData) || { position: { y: -Infinity } };
+
+        this.terrainFunc = this.terrainFunc.bind(this);
     }
 
     setupMaterial() {
-        // Enable vertex colors
         this.geometry.setAttribute('color', new THREE.BufferAttribute(
             new Float32Array(this.geometry.attributes.position.count * 3),
             3
         ));
     
-        // Base color from map data
-        const groundColorHex = parseInt(this.mapData.groundColor) || 0x228B22;
-        const baseColor = new THREE.Color(groundColorHex);
         const positions = this.geometry.attributes.position.array;
         const colors = this.geometry.attributes.color.array;
-        const waterLevel = this.water ? this.water.position.y : -Infinity;
     
-        // Reuse noise for color variation
         const seed = this.mapData.seed || 'default';
         const prng = createSeededRNG(seed);
         const noise2D = createNoise2D(prng);
@@ -50,22 +46,26 @@ class Terrain {
         for (let i = 0; i < positions.length; i += 3) {
             const x = positions[i];
             const z = positions[i + 1];
-            const y = positions[i + 2];
-            const slope = this.calculateSlopeAtVertex(i);
+            const y = positions[i + 2]; // Use direct y-value
+            const terrainType = this.terrainFunc(x, z, y, i); // Pass y and index
     
             let finalColor;
-            if (y < waterLevel + 0.1) {
-                finalColor = new THREE.Color(0xF4EBC3); // Sand near water
-            } else if (slope > 0.6) {
-                finalColor = new THREE.Color(0x5A4D41); // Dark brown cliffs
-            } else if (y > 5) {
-                finalColor = new THREE.Color(0x8B4513); // Dirt at higher elevations
-            } else {
-                // Grass with variation
-                const grassColor1 = new THREE.Color(0x228B22); // Forest green
-                const grassColor2 = new THREE.Color(0x32CD32); // Lime green
-                const blend = (noise2D(x * 0.1, z * 0.1) + 1) / 2;
-                finalColor = grassColor1.clone().lerp(grassColor2, blend);
+            switch (terrainType) {
+                case 'water':
+                    finalColor = new THREE.Color(0xF4EBC3); // Sand near water
+                    break;
+                case 'cliff':
+                    finalColor = new THREE.Color(0x5A4D41); // Dark brown cliffs
+                    break;
+                case 'mountain':
+                    finalColor = new THREE.Color(0x8B4513); // Mountain tops
+                    break;
+                default:
+                    // Grass with variation
+                    const grassColor1 = new THREE.Color(0x228B22); // Forest green
+                    const grassColor2 = new THREE.Color(0x32CD32); // Lime green
+                    const blend = (noise2D(x * 0.1, z * 0.1) + 1) / 2;
+                    finalColor = grassColor1.clone().lerp(grassColor2, blend);
             }
     
             colors[i] = finalColor.r;
@@ -77,6 +77,16 @@ class Terrain {
             vertexColors: true,
             flatShading: this.mapData.flatShading || false
         });
+    }
+    
+    terrainFunc(x, z, y, vertexIndex) {
+        const waterLevel = this.water ? this.water.position.y : -Infinity;
+        const slope = this.calculateSlopeAtVertex(vertexIndex); // Use correct index
+    
+        if (y < waterLevel + 0.1) return 'water';
+        if (y > 5) return 'mountain'; // Prioritize mountains
+        if (slope > 0.6) return 'cliff';
+        return 'grass';
     }
 
     calculateSlopeAtVertex(vertexIndex) {
@@ -178,11 +188,11 @@ class Terrain {
     }
     
     createWater(mapData) {
-        const biome = mapData.biome || 'plains';
+        const biome = mapData.biome || 'summer';
         const waterLevel = mapData.waterLevel !== undefined ? mapData.waterLevel : this.calculateAutoWaterLevel();
     
         // Only create water in certain biomes
-        const allowedBiomes = ['beach', 'plains', 'valley', 'summer'];
+        const allowedBiomes = ['autumn', 'spring', 'summer'];
         if (!allowedBiomes.includes(biome)) {
             return null;
         }

@@ -1,6 +1,6 @@
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
 import { scene } from './scene.js';
-import { Cloud } from './Cloud.js';
+import { CloudSystem } from './CloudSystem.js';
 
 class CelestialBody {
     constructor(config, skySystem) {
@@ -177,7 +177,6 @@ export class SkySystem {
         this.moons = [];
         this.stars = null;
         this.sky = null;
-        this.clouds = [];
         this.meteors = [];
 
         // Meteor configs from map data
@@ -231,22 +230,8 @@ export class SkySystem {
         this.createSky();
 
         // Clouds from mapData
-        const cloudConfig = mapData.clouds || { types: [{ type: 'cumulus', frequency: 1 }], count: 10 }; // Fallback
-        const totalWeight = cloudConfig.types.reduce((sum, cloud) => sum + (cloud.frequency || 1), 0);
-        const cloudCount = cloudConfig.count || 10;
-
-        for (let i = 0; i < cloudCount; i++) {
-            let random = Math.random() * totalWeight;
-            let selectedType = cloudConfig.types[0].type; // Default to first type
-            for (const cloud of cloudConfig.types) {
-                random -= cloud.frequency || 1;
-                if (random <= 0) {
-                    selectedType = cloud.type;
-                    break;
-                }
-            }
-            this.clouds.push(new Cloud(selectedType));
-        }
+        const cloudConfig = mapData.clouds || { types: [{ type: 'cumulus', frequency: 1 }], count: 10 };
+        this.cloudSystem = new CloudSystem(cloudConfig);
     }
 
     createStars() {
@@ -374,7 +359,7 @@ export class SkySystem {
         }));
     }
 
-    update(deltaTime, timeSystem) {
+    update(deltaTime, timeSystem, terrainFunc) {
         const time = timeSystem.getTimeOfDay();
         const day = timeSystem.getDay();
         const isDay = time >= 6 && time < 18;
@@ -394,7 +379,7 @@ export class SkySystem {
 
         this.sky.material.color.set(this.getSkyColor(time));
         this.updateLighting(time);
-        this.clouds.forEach(cloud => cloud.update(deltaTime));
+        this.cloudSystem.update(deltaTime, terrainFunc);
 
         // Spawn meteors only during night
         if (isNight) {

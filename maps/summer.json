@@ -17,12 +17,13 @@
     ],
     "clouds": {
         "types": [
-            { "type": "cumulus", "frequency": 0.5 },
-            { "type": "cirrus", "frequency": 0.3 },
-            { "type": "stratus", "frequency": 0.15 },
-            { "type": "nimbus", "frequency": 0.05 }
+            { "type": "cumulus", "frequency": 0.75 },
+            { "type": "cirrus", "frequency": 0.55 },
+            { "type": "stratus", "frequency": 0.45 },
+            { "type": "nimbus", "frequency": 0.35 }
         ],
-        "count": 12
+        "count": 120,
+        "speedMultiplier": 5.0
     },
     "doodads": [
         { "type": "Cactus", "position": { "x": 20, "z": -20 } },

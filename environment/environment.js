@@ -48,7 +48,7 @@ async function loadMap(mapName) {
         skySystem.moons.forEach(moon => scene.remove(moon.mesh));
         scene.remove(skySystem.stars);
         scene.remove(skySystem.sky);
-        skySystem.clouds.forEach(cloud => scene.remove(cloud.mesh));
+        skySystem.cloudSystem.resetClouds();
     }
     
     doodads.forEach(d => scene.remove(d.mesh));
@@ -125,7 +125,7 @@ async function loadMap(mapName) {
 
     // Initialize time and sky systems
     timeSystem = new TimeSystem();
-    skySystem = new SkySystem(mapData);
+    skySystem = new SkySystem(mapData, Terrain.terrainFunc);
 }
 
 export { loadMap, interactWithEnvironment, doodads, portals, terrain, skySystem, timeSystem };
