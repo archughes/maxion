@@ -16,6 +16,7 @@ class Cloud {
     this.precipType = null;
     this.sizeValue = 1;
     this.speedMultiplier = 2.0;
+    this.peakZoneMultiplier = 3.0;
     
     switch(type) {
       case 'cirrus': this.createCirrus(); break;
@@ -202,10 +203,7 @@ class Cloud {
 
   steerTowardTerrain(terrainFunc, deltaTime) {
     const pos = this.mesh.position;
-    const currentTerrain = terrainFunc(pos.x, pos.z);
     const steerForce = new THREE.Vector3(0, 0, 0);
-
-    // Sample nearby terrain in a small radius
     const sampleRadius = 10;
     const directions = [
       new THREE.Vector3(sampleRadius, 0, 0),
@@ -216,48 +214,84 @@ class Cloud {
 
     directions.forEach(dir => {
       const samplePos = pos.clone().add(dir);
-      const terrainType = terrainFunc(samplePos.x, samplePos.z);
+      const terrainType = terrainFunc(samplePos.x, samplePos.z, 0, 0); // y and vertexIndex not needed here
       let influence = 0;
-
       switch (terrainType) {
         case 'high mountain':
-            influence = 0.4; // Strong attraction to high mountains
-            break;
         case 'mountain':
-            influence = 0.65; // Stronger attraction to mountains
-            break;
-        case 'path':
-            influence = 0.3; // Moderate attraction to paths (good for travel)
-            break;
-        case 'river':
-            influence = 0.25; // Moderate attraction to rivers (water source)
-            break;
-        case 'lake':
-            influence = 0.35; // Slightly stronger attraction to lakes
-            break;
+          influence = 0.5;
+          break;
         case 'water':
-            influence = 0.2; // Mild attraction to general water
-            break;
+        case 'lake':
+        case 'river':
+          influence = 0.2;
+          break;
         case 'cliff':
-            influence = -0.1; // Slight repulsion from cliffs (danger)
-            break;
-        case 'grass':
-            influence = -0.05; // Very slight repulsion from grass (neutral)
-            break;
+          influence = -0.1;
+          break;
+        default: // grass, path
+          influence = -0.05;
       }
-
-      // Steer toward (positive) or away from (negative) the sampled point
       steerForce.add(dir.clone().normalize().multiplyScalar(influence));
     });
 
-    // Apply steering to velocity
     this.velocity.add(steerForce.multiplyScalar(deltaTime * this.speedMultiplier));
-    this.velocity.clampLength(0, 1.0 * this.speedMultiplier); // Cap max speed
+    this.velocity.clampLength(0, 1.0 * this.speedMultiplier);
+  }
+
+  swirlAroundTerrain(terrainFunc, deltaTime) {
+    const pos = this.mesh.position;
+    let inPeakZone = false;
+    let peakPosition = null;
+    let swirlForce = new THREE.Vector3(0, 0, 0);
+
+    // Find nearest high mountain peak (y > 10)
+    const swirlRadius = 20;
+    const samplePoints = 8;
+    let closestDist = Infinity;
+    for (let i = 0; i < samplePoints; i++) {
+      const angle = (i / samplePoints) * Math.PI * 2;
+      const sampleX = pos.x + Math.cos(angle) * swirlRadius;
+      const sampleZ = pos.z + Math.sin(angle) * swirlRadius;
+      const terrainType = terrainFunc(sampleX, sampleZ, 0, 0); // Approximate y, vertexIndex not needed
+      if (terrainType === 'high mountain') {
+        const dist = pos.distanceTo(new THREE.Vector3(sampleX, 0, sampleZ));
+        if (dist < closestDist) {
+          closestDist = dist;
+          peakPosition = new THREE.Vector3(sampleX, this.elevation, sampleZ); // Use cloud elevation as proxy
+          inPeakZone = true;
+        }
+      }
+    }
+
+    if (inPeakZone && peakPosition) {
+      const toPeak = peakPosition.clone().sub(pos);
+      toPeak.y = 0;
+      const distance = toPeak.length();
+
+      if (distance > 0) {
+        const radial = toPeak.clone().normalize();
+        const tangential = new THREE.Vector3(-radial.z, 0, radial.x);
+
+        // Enhanced vorticity with height influence (assuming y > 10)
+        const swirlSpeed = 1.5 * (1 - Math.min(distance / swirlRadius, 1.0)) * 1.5; // 1.5x for high mountains
+        const coriolis = tangential.clone().multiplyScalar(pos.z / 100 * 0.2); // Pseudo-Coriolis
+        const noise = new THREE.Vector3((Math.random() - 0.5) * 0.1, 0, (Math.random() - 0.5) * 0.1);
+
+        swirlForce.add(tangential.multiplyScalar(swirlSpeed)).add(coriolis).add(noise);
+        swirlForce.add(radial.multiplyScalar(-0.4)); // Stronger pull for high peaks
+
+        this.velocity.lerp(swirlForce, deltaTime * 2.5);
+        this.velocity.clampLength(0, 1.5 * this.speedMultiplier * this.peakZoneMultiplier);
+      }
+    }
+
+    return inPeakZone;
   }
 
   // Encourage aggregation with nearby clouds
   aggregateWithClouds(clouds, deltaTime) {
-    const aggregationRadius = 20; // Distance within which clouds influence each other
+    const aggregationRadius = 20;
     const pos = this.mesh.position;
     const alignmentForce = new THREE.Vector3(0, 0, 0);
     let nearbyCount = 0;
@@ -266,37 +300,33 @@ class Cloud {
       if (other === this) return;
       const distance = pos.distanceTo(other.mesh.position);
       if (distance < aggregationRadius) {
-        // Align velocity with nearby clouds
         alignmentForce.add(other.velocity);
         nearbyCount++;
       }
     });
 
     if (nearbyCount > 0) {
-      alignmentForce.divideScalar(nearbyCount); // Average velocity of neighbors
-      this.velocity.lerp(alignmentForce, deltaTime * 0.5); // Gradually align
+      alignmentForce.divideScalar(nearbyCount);
+      this.velocity.lerp(alignmentForce, deltaTime * 0.5);
     }
   }
 
-  update(deltaTime, terrainFunc, clouds) { // Added clouds parameter
-    // Steer based on terrain
-    if (terrainFunc) {
-      this.steerTowardTerrain(terrainFunc, deltaTime);
+  update(deltaTime, terrainFunc, clouds) {
+    let effectiveSpeedMultiplier = this.speedMultiplier * (1 + this.waterWeight * 0.5);
 
-      // Existing terrain-based water weight logic
-      const terrainType = terrainFunc(this.mesh.position.x, this.mesh.position.z);
-      if (terrainType === 'water') {
-        this.waterWeight += deltaTime * 0.1;
-      } else if (terrainType === 'mountain') {
-        this.waterWeight += deltaTime * 0.05;
-      }
+    // Swirl around high mountain peaks
+    const inPeakZone = this.swirlAroundTerrain(terrainFunc, deltaTime);
+    if (inPeakZone) {
+      effectiveSpeedMultiplier *= this.peakZoneMultiplier;
+    } else if (terrainFunc) {
+      this.steerTowardTerrain(terrainFunc, deltaTime);
     }
 
-    // Encourage aggregation with other clouds
+    // Aggregation
     this.aggregateWithClouds(clouds, deltaTime);
 
-    // Update position with adjusted velocity
-    const adjustedVelocity = this.velocity.clone().multiplyScalar(this.speedMultiplier);
+    // Update position
+    const adjustedVelocity = this.velocity.clone().multiplyScalar(effectiveSpeedMultiplier);
     this.mesh.position.add(adjustedVelocity.multiplyScalar(deltaTime));
 
     // Boundary wrapping
@@ -305,15 +335,35 @@ class Cloud {
     if (this.mesh.position.z > 100) this.mesh.position.z = -100;
     if (this.mesh.position.z < -100) this.mesh.position.z = 100;
 
-    // Precipitation logic
+    // Water weight and precipitation
+    if (terrainFunc) {
+      const terrainType = terrainFunc(this.mesh.position.x, this.mesh.position.z, this.mesh.position.y, 0);
+      switch (terrainType) {
+        case 'water':
+        case 'lake':
+        case 'river':
+          this.waterWeight += deltaTime * 0.15;
+          break;
+        case 'high mountain':
+          this.waterWeight += deltaTime * 0.10; // Increased for high peaks
+          break;
+        case 'mountain':
+          this.waterWeight += deltaTime * 0.08;
+          break;
+      }
+    }
+
     if (this.waterWeight > 1.8 && !this.isPrecipitating) {
-      const terrainType = terrainFunc ? terrainFunc(this.mesh.position.x, this.mesh.position.z) : 'land';
-      this.startPrecipitation(terrainType === 'mountain' ? 'snow' : 'rain');
+      const terrainType = terrainFunc(this.mesh.position.x, this.mesh.position.z, this.mesh.position.y, 0);
+      this.startPrecipitation(terrainType === 'high mountain' || terrainType === 'mountain' ? 'snow' : 'rain');
     }
 
     if (this.isPrecipitating) {
-      this.waterWeight -= deltaTime * 0.2;
+      this.waterWeight -= deltaTime * 0.25;
       this.mesh.scale.multiplyScalar(1 - deltaTime * 0.1);
+      if (this.waterWeight > 2.0) {
+        this.velocity.multiplyScalar(0.95); // Downdraft effect
+      }
       if (this.waterWeight <= 0.5) {
         this.isPrecipitating = false;
         this.precipType = null;
@@ -380,13 +430,11 @@ export class CloudSystem {
     }
   
     update(deltaTime, terrainFunc) {
-      // Update each cloud with terrain and cloud array
       for (let cloud of this.clouds) {
         cloud.update(deltaTime, terrainFunc, this.clouds);
-        this.totalWaterWeight += cloud.waterWeight - cloud.waterWeight; // No change here, placeholder
       }
   
-      // Merge logic (unchanged except context)
+      // Merge logic
       for (let i = 0; i < this.clouds.length; i++) {
         for (let j = i + 1; j < this.clouds.length; j++) {
           const a = this.clouds[i], b = this.clouds[j];
@@ -409,7 +457,7 @@ export class CloudSystem {
         }
       }
   
-      // Water weight balancing and mountain/thunder logic unchanged
+      // Water weight balancing
       const targetWaterWeight = this.targetCount * 1.0;
       if (this.totalWaterWeight > targetWaterWeight * 1.2) {
         const excess = this.totalWaterWeight - targetWaterWeight;
@@ -427,16 +475,19 @@ export class CloudSystem {
         this.totalWaterWeight = this.clouds.reduce((sum, c) => sum + c.waterWeight, 0);
       }
   
-      if (typeof getMountainHeight === 'function') {
-        for (let cloud of this.clouds) {
-          const mountainHeight = getMountainHeight(cloud.mesh.position.x, cloud.mesh.position.z);
-          if (mountainHeight && mountainHeight > 5 && cloud.mesh.position.y < mountainHeight + 20) {
-            const target = new THREE.Vector3(cloud.mesh.position.x, mountainHeight + 20, cloud.mesh.position.z);
-            cloud.mesh.position.lerp(target, deltaTime * 0.01 * (mountainHeight / 10));
+      // Mountain attractor (optional, kept for consistency)
+      for (let cloud of this.clouds) {
+        const terrainType = terrainFunc(cloud.mesh.position.x, cloud.mesh.position.z, cloud.mesh.position.y, 0);
+        if (terrainType === 'high mountain' || terrainType === 'mountain') {
+          const height = terrainFunc(cloud.mesh.position.x, cloud.mesh.position.z, 0, 0) === 'high mountain' ? 15 : 7; // Proxy height
+          if (cloud.mesh.position.y < height + 20) {
+            const target = new THREE.Vector3(cloud.mesh.position.x, height + 20, cloud.mesh.position.z);
+            cloud.mesh.position.lerp(target, deltaTime * 0.01 * (height / 10));
           }
         }
       }
   
+      // Thunder/lightning
       for (let cloud of this.clouds) {
         if (cloud.isPrecipitating && cloud.precipType === 'rain' && cloud.waterWeight > 2) {
           if (typeof triggerThunder === 'function') {

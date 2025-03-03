@@ -73,7 +73,7 @@ async function loadMap(mapName) {
     questGivers.forEach(qg => qg.adjustToTerrain(terrain));
 
     timeSystem = new TimeSystem();
-    skySystem = new SkySystem(mapData, Terrain.terrainFunc);
+    skySystem = new SkySystem(mapData);
 }
 
 function generateDoodads(mapData, terrain) {

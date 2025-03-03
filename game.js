@@ -9,6 +9,7 @@ import { loadQuests } from './quests.js';
 import { craftItem, loadItems, loadRecipes } from './items.js';
 import { loadMap, terrain, timeSystem, doodads, skySystem } from './environment/environment.js';
 import { SoundManager } from './environment/sound-manager.js';
+import { Terrain } from './environment/terrain.js';
 
 // Add Mana Bar to UI
 const manaBar = document.createElement("div");
@@ -59,7 +60,7 @@ function animate() {
 
     const deltaTime = clock.getDelta();
     timeSystem.update(deltaTime);
-    skySystem.update(deltaTime, timeSystem);
+    skySystem.update(deltaTime, timeSystem, terrain.terrainFunc);
     
     player.updateCooldowns(deltaTime);
     updatePlayer();

@@ -22,7 +22,7 @@
             { "type": "stratus", "frequency": 0.45 },
             { "type": "nimbus", "frequency": 0.35 }
         ],
-        "count": 120,
+        "count": 15,
         "speedMultiplier": 5.0
     },
     "doodads": {

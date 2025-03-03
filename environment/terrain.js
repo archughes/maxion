@@ -247,7 +247,7 @@ class Terrain {
             const halfSize = Math.floor(rangeSize / segmentWidth / 2);
     
             for (let i = -halfSize; i <= halfSize; i++) {
-                for (let j = -halfSize; j <= halfSize; j++) {
+                for (let j = -halfSize*2; j <= halfSize*2; j++) {
                     const gx = gridX + i;
                     const gz = gridZ + j;
                     if (gx >= 0 && gx <= widthSegments && gz >= 0 && gz <= heightSegments) {
@@ -264,7 +264,7 @@ class Terrain {
     
                         // Base Gaussian falloff with random height multiplier
                         const maxDistance = 1; // Normalized distance
-                        let heightBoost = baseHeightScale * heightMultiplier * Math.exp(-distance * distance / 100.0);
+                        let heightBoost = baseHeightScale * heightMultiplier * Math.exp(-distance * distance / 50.0);
     
                         // Add ridged noise
                         const ridgeNoise = Math.abs(this.noise2D(gx * 0.1, gz * 0.1)); // Absolute value for ridges
@@ -280,7 +280,7 @@ class Terrain {
             // Foothills (larger radius, lower height) with ridged noise
             const foothillSize = halfSize * 5;
             for (let i = -foothillSize; i <= foothillSize; i++) {
-                for (let j = -foothillSize; j <= foothillSize; j++) {
+                for (let j = -foothillSize*2; j <= foothillSize*2; j++) {
                     const gx = gridX + i;
                     const gz = gridZ + j;
                     if (gx >= 0 && gx <= widthSegments && gz >= 0 && gz <= heightSegments) {
