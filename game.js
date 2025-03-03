@@ -8,6 +8,7 @@ import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateM
 import { loadQuests } from './quests.js';
 import { craftItem, loadItems, loadRecipes } from './items.js';
 import { loadMap, terrain, timeSystem, doodads, skySystem } from './environment/environment.js';
+import { SoundManager } from './environment/sound-manager.js';
 
 // Add Mana Bar to UI
 const manaBar = document.createElement("div");
@@ -20,6 +21,7 @@ let clock = new THREE.Clock(), attack = false, fireball = false, invisibility = 
 export const cameraState = {
     pitch: 0
 };
+export const soundManager = new SoundManager();
 
 // Game Loop
 async function init() {

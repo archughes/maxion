@@ -9,24 +9,18 @@ class Terrain {
         this.width = width;
         this.height = height;
         this.mapData = mapData;
-        
-        // Create geometry with more detail for smoother terrain
-        const resolution = mapData.terrainResolution || 1;
         this.geometry = new THREE.PlaneGeometry(
             width, 
             height, 
-            Math.floor(width * resolution), 
-            Math.floor(height * resolution)
+            Math.floor(width), 
+            Math.floor(height)
         );
-        
-        this.generateHeightmap(); // Generate heights first
-        this.setupMaterial();     // Then set colors based on heights
+        this.generateHeightmap();
+        this.setupMaterial();
         this.mesh = new THREE.Mesh(this.geometry, this.material);
         this.mesh.rotation.x = -Math.PI / 2;
-        
         scene.add(this.mesh);
         this.water = this.createWater(mapData) || { position: { y: -Infinity } };
-
         this.terrainFunc = this.terrainFunc.bind(this);
     }
 
@@ -60,6 +54,9 @@ class Terrain {
                 case 'mountain':
                     finalColor = new THREE.Color(0x8B4513); // Mountain tops
                     break;
+                case 'high mountain':
+                    finalColor = new THREE.Color(0x6E3A10); // Mountain tops
+                    break;
                 default:
                     // Grass with variation
                     const grassColor1 = new THREE.Color(0x228B22); // Forest green
@@ -84,7 +81,8 @@ class Terrain {
         const slope = this.calculateSlopeAtVertex(vertexIndex); // Use correct index
     
         if (y < waterLevel + 0.1) return 'water';
-        if (y > 5) return 'mountain'; // Prioritize mountains
+        if (y > 5) return 'mountain';
+        if (y > 10) return 'high mountain';
         if (slope > 0.6) return 'cliff';
         return 'grass';
     }
@@ -128,54 +126,46 @@ class Terrain {
     }
 
     generateHeightmap() {
-        // Use a seeded random number generator
         const seed = this.mapData.seed || 'default';
         const prng = createSeededRNG(seed);
         const noise2D = createNoise2D(prng);
         
-        // Configuration for broader, fewer mountains
-        const heightScale = this.mapData.heightScale || 5;
-        const roughness = this.mapData.terrainRoughness || 0.005; // Lowered for broader features
+        const biomeDifficulty = {
+            'summer': 1,
+            'autumn': 1.5,
+            'spring': 2,
+            'winter': 2.5
+        };
+        const difficultyFactor = biomeDifficulty[this.mapData.biome] || 1;
+        const heightScale = (this.mapData.heightScale || 5) * difficultyFactor;
+        const roughness = this.mapData.terrainRoughness || 0.005;
         const persistence = this.mapData.terrainPersistence || 0.75;
         const lacunarity = this.mapData.terrainLacunarity || 1.5;
         const octaves = this.mapData.terrainOctaves || 3;
-        
+
         const vertices = this.geometry.attributes.position.array;
         for (let i = 0, j = 2; i < vertices.length; i += 3, j += 3) {
             const x = vertices[i];
             const z = vertices[i + 1];
-            
-            // Large-scale noise for broad hills (fewer mountains)
-            const largeScaleNoise = noise2D(x * 0.005, z * 0.005) * 10;
-            
-            // Small-scale noise for details
-            let smallScaleNoise = 0;
+            let totalHeight = 0;
             let amplitude = 1;
             let frequency = 1;
             for (let o = 0; o < octaves; o++) {
                 const sampleX = x * roughness * frequency;
                 const sampleZ = z * roughness * frequency;
-                smallScaleNoise += noise2D(sampleX, sampleZ) * amplitude;
+                totalHeight += noise2D(sampleX, sampleZ) * amplitude;
                 amplitude *= persistence;
                 frequency *= lacunarity;
             }
-            
-            // Combine noises for natural terrain
-            let totalHeight = largeScaleNoise + smallScaleNoise;
-            
-            // Apply biome-specific adjustments
-            if (this.mapData.biome === "mountains") {
-                // Enhance mountains but limit frequency
-                totalHeight = totalHeight > 5 ? Math.pow(totalHeight, 1.2) * 1.2 : totalHeight;
-            } else if (this.mapData.biome === "plains") {
-                totalHeight *= 0.5; // Flatten plains
-            } else if (this.mapData.biome === "hills") {
-                totalHeight *= 0.7; // Gentle hills
+            if (this.mapData.biome === "winter") {
+                totalHeight = Math.pow(totalHeight, 1.2) * 1.2; // Steeper peaks
+            } else if (this.mapData.biome === "summer") {
+                totalHeight *= 0.5; // Flatter terrain
+            } else if (this.mapData.biome === "spring") {
+                totalHeight *= 0.7; // Moderate hills
             }
-            
             vertices[j] = totalHeight * heightScale;
         }
-        
         this.geometry.attributes.position.needsUpdate = true;
         this.geometry.computeVertexNormals();
     }

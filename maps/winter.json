@@ -29,11 +29,14 @@
         "sizeMax": 1.5,
         "colors": ["0xd6e6f2", "0xbccce0", "0xa2b9bc", "0xe3e3e3", "0xf1e3e4"]
     },
-    "doodads": [
-        { "type": "SnowPile", "position": { "x": 15, "z": 15 } },
-        { "type": "Rock", "position": { "x": -5, "z": 5 } },
-        { "type": "Portal", "position": { "x": -35, "z": -35 }, "destinationMap": "summer", "requiredQuest": "dragon_slayer_winter" }
-    ],
+    "doodads": {
+        "Tree": { "variants": { "pine": { "elevation": [0, 20], "density": 0.003 } } },
+        "Chest": { "variants": { "iron": { "elevation": [0, 20], "density": 0.0001 } } },
+        "Campfire": { "variants": { "small": { "elevation": [0, 10], "density": 0.00001 } } },
+        "Rock": { "variants": { "normal": { "elevation": [0, 20], "density": 0.002 }, "crystal": { "elevation": [10, 20], "density": 0.001 } } },
+        "SnowPile": { "variants": { "small": { "elevation": [0, 20], "density": 0.004 } } },
+        "Portal": { "variants": { "purple": { "elevation": [0, 20], "position": { "x": -50, "z": -50 }, "count": 1, "destinationMap": "summer", "requiredQuest": "dragon_slayer_winter" } } }
+    },
     "enemies": [
         { "position": { "x": 5, "z": 5 } },
         { "position": { "x": -5, "z": -5 } }

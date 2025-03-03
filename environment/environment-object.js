@@ -1,14 +1,19 @@
 // environment-object.js
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
 import { scene } from './scene.js';
+import { soundManager } from '../game.js';
 
 // Base class for all environment objects
 class EnvironmentObject {
-    constructor(mesh, soundUrl = null) {
+    constructor(mesh, soundUrl = null, interactionsToHarvest = 1, respawnTime = 60) {
         this.mesh = mesh;
-        this.createSound(soundUrl);
+        this.soundUrl = soundUrl;
         scene.add(this.mesh);
         this.baseHeight = 0;
+        this.interactionsToHarvest = interactionsToHarvest;
+        this.currentInteractions = 0;
+        this.respawnTime = respawnTime;
+        this.isHarvested = false;
     }
     
     createSound(soundUrl) {
@@ -25,11 +30,24 @@ class EnvironmentObject {
     }
     
     interact() {
-        if (this.sound) {
-            // Reset sound to beginning if it's playing
-            this.sound.currentTime = 0;
-            this.sound.play().catch(e => console.warn("Sound play failed:", e));
+        if (this.isHarvested) return;
+        if (this.soundUrl) {
+            soundManager.playSound(this.soundUrl);
         }
+        this.currentInteractions++;
+        if (this.currentInteractions >= this.interactionsToHarvest && Math.random() > 0.3) {
+            this.harvest();
+        }
+    }
+
+    harvest() {
+        this.isHarvested = true;
+        scene.remove(this.mesh);
+        setTimeout(() => {
+            this.isHarvested = false;
+            this.currentInteractions = 0;
+            scene.add(this.mesh);
+        }, this.respawnTime * 1000);
     }
     
     adjustToTerrain(terrain) {

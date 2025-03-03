@@ -220,8 +220,11 @@ class Cloud {
       let influence = 0;
 
       switch (terrainType) {
+        case 'high mountain':
+          influence = 0.4; // Strong attraction to mountains
+          break;
         case 'mountain':
-          influence = 0.5; // Strong attraction to mountains
+          influence = 0.65; // Strong attraction to mountains
           break;
         case 'water':
           influence = 0.2; // Mild attraction to water

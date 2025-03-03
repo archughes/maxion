@@ -30,11 +30,18 @@
         "sizeMax": 1.2,
         "colors": ["0xffaaaa", "0xaaffaa", "0xaaaaff", "0xffd1dc", "0xb5e7a0"]
     },
-    "doodads": [
-        { "type": "Tree", "position": { "x": 10, "z": 10 } },
-        { "type": "Bush", "position": { "x": -10, "z": -10 } },
-        { "type": "Portal", "position": { "x": 35, "z": -35 }, "destinationMap": "winter", "requiredQuest": "craft_armor_spring" }
-    ],
+    "doodads": {
+        "Tree": { "variants": { "oak": { "elevation": [0, 10], "density": 0.003 }, "birch": { "elevation": [0, 10], "density": 0.002 } } },
+        "Chest": { "variants": { "iron": { "elevation": [0, 20], "density": 0.0001 } } },
+        "Rock": { "variants": { "normal": { "elevation": [0, 20], "density": 0.002 } } },
+        "Bush": { "variants": { "berry": { "elevation": [0, 10], "density": 0.003 } } },
+        "Flower": { "variants": { "rose": { "elevation": [0, 10], "density": 0.005 } } },
+        "WaterPuddle": { "variants": { "small": { "elevation": [-1, 0], "density": 0.002 } } },
+        "Campfire": { "variants": { "small": { "elevation": [0, 10], "density": 0.00001 } } },
+        "Coral": { "variants": { "red": { "elevation": [-5, 0], "density": 0.002 }, "blue": { "elevation": [-5, 0], "density": 0.002 } } },
+        "Seaweed": { "variants": { "green": { "elevation": [-5, 0], "density": 0.003 } } },
+        "Portal": { "variants": { "purple": { "elevation": [0, 20], "position": { "x": -50, "z": 50 }, "count": 1, "destinationMap": "winter", "requiredQuest": "craft_armor_spring" } } }
+    },
     "enemies": [
         { "position": { "x": 44, "z": 44 } },
         { "position": { "x": -44, "z": -44 } }

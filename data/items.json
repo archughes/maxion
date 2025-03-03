@@ -144,6 +144,51 @@
         "stackSize": 99
     },
     {
+        "name": "Pumpkin",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Flower",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Snowball",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Cactus Spine",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Charcoal",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Red Coral",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Blue Coral",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Seaweed",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
+        "name": "Ice Crystal",
+        "type": "material",
+        "stackSize": 99
+    },
+    {
         "name": "Water",
         "type": "material",
         "stackSize": 99

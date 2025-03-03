@@ -64,7 +64,17 @@
           "prerequisites": [],
           "reward": "Iron Sword Recipe",
           "xpReward": 150,
-          "nextQuest": "defeat_bandit_autumn"
+          "nextQuest": "collect_pumpkins_autumn"
+      },
+      {
+        "id": "collect_pumpkins_autumn",
+        "name": "Pumpkin Harvest",
+        "type": "collect",
+        "requiredItem": "Pumpkin",
+        "required": 5,
+        "prerequisites": ["blacksmith_intro_autumn"],
+        "xpReward": 150,
+        "nextQuest": "defeat_bandit_autumn"
       },
       {
           "id": "defeat_bandit_autumn",
@@ -101,7 +111,17 @@
           "prerequisites": [],
           "reward": "Diamond Sword Recipe",
           "xpReward": 300,
-          "nextQuest": "defeat_ogre_spring"
+          "nextQuest": "collect_flowers_spring"
+      },
+      {
+        "id": "collect_flowers_spring",
+        "name": "Flower Power",
+        "type": "collect",
+        "requiredItem": "Flower",
+        "required": 15,
+        "prerequisites": ["mine_diamonds_spring"],
+        "xpReward": 200,
+        "nextQuest": "defeat_ogre_spring"
       },
       {
           "id": "defeat_ogre_spring",
@@ -129,7 +149,17 @@
           "prerequisites": [],
           "reward": "Eternium Sword Recipe",
           "xpReward": 500,
-          "nextQuest": "defeat_yeti_winter"
+          "nextQuest": "collect_ice_crystals_winter"
+      },
+      {
+        "id": "collect_ice_crystals_winter",
+        "name": "Ice Crystal Hunt",
+        "type": "collect",
+        "requiredItem": "Ice Crystal",
+        "required": 3,
+        "prerequisites": ["frost_hunt_winter"],
+        "xpReward": 250,
+        "nextQuest": "defeat_yeti_winter"
       },
       {
           "id": "defeat_yeti_winter",
