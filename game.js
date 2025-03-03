@@ -128,9 +128,6 @@ function update() {
         if (doodad.mesh && doodad.mesh.position) {
             const distance = cameraPosition.distanceTo(doodad.mesh.position);
             doodad.visible = distance < maxDoodadDistance;
-            if (doodad.visible) {
-                doodad.update(camera); // Updates LOD or other properties based on distance
-            }
         } else {
             console.warn('Invalid doodad encountered:', doodad);
         }

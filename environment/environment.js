@@ -1,13 +1,11 @@
-// environment.js
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
 import { scene, camera } from './scene.js';
 import { enemies, questGivers, spawnNPCs } from '../entity/npc.js';
 import { player } from '../entity/player.js';
 import { Terrain } from './terrain.js';
-import { 
-    Tree, Chest, Rock, Bush, SnowPile, 
-    Cactus, WaterPuddle, Flower, Campfire, Portal, Coral, Seaweed
-} from './doodads.js';
+import { Tree, Bush, Rock, Flower, Campfire, Cactus } from './doodads/land-doodads.js';
+import { WaterPuddle, Coral, Seaweed } from './doodads/water-doodads.js';
+import { Chest, Portal, SnowPile } from './doodads/special-doodads.js';
 import { WaterSystem } from './water.js';
 import { TimeSystem } from './TimeSystem.js';
 import { SkySystem } from './SkySystem.js';
@@ -69,6 +67,7 @@ async function loadMap(mapName) {
     portals = doodads.filter(d => d instanceof Portal);
 
     spawnNPCs(mapData);
+    doodads.forEach(doodad => doodad.adjustToTerrain(terrain));
     player.adjustToTerrain(terrain);
     enemies.forEach(enemy => enemy.adjustToTerrain(terrain));
     questGivers.forEach(qg => qg.adjustToTerrain(terrain));
@@ -90,25 +89,21 @@ function generateDoodads(mapData, terrain) {
             const [minElevation, maxElevation] = variantConfig.elevation;
 
             if ('count' in variantConfig) {
-                // Count-based spawning for exact quantities
-                const numDoodads = variantConfig.count || 1; // Default to 1 if count is malformed
+                const numDoodads = variantConfig.count || 1;
                 for (let i = 0; i < numDoodads; i++) {
                     let x, z;
                     if (variantConfig.position && i === 0) {
-                        // Use explicit position for the first instance if provided
                         x = variantConfig.position.x;
                         z = variantConfig.position.z;
                         const y = terrain.getHeightAt(x, z);
                         if (y < minElevation || y > maxElevation) {
                             console.warn(`Specified position for ${type} (${variant}) at (${x}, ${z}) is outside elevation range [${minElevation}, ${maxElevation}]`);
-                            // Fall back to random placement below
                         } else {
                             const doodad = createDoodad(type, variant, x, z, biome, variantConfig);
                             if (doodad) doodads.push(doodad);
                             continue;
                         }
                     }
-                    // Randomize position within elevation bounds
                     let attempts = 0;
                     while (attempts < 10) {
                         x = (Math.random() - 0.5) * terrain.width;
@@ -132,13 +127,12 @@ function generateDoodads(mapData, terrain) {
                     }
                 }
             } else {
-                // Density-based spawning for other doodads
                 const density = variantConfig.density || 0;
                 const area = terrain.width * terrain.height;
                 let numDoodads = Math.floor(area * density);
                 if (numDoodads > maxDoodadsPerType) {
                     numDoodads = maxDoodadsPerType;
-                    console.log('Max doodads reached for: ${type}');
+                    console.log(`Max doodads reached for: ${type}`);
                 }
 
                 for (let i = 0; i < numDoodads; i++) {
@@ -172,7 +166,7 @@ function createDoodad(type, variant, x, z, biome, variantConfig) {
     switch (type) {
         case 'Tree': return new Tree(x, z, variant, biome);
         case 'Chest': return new Chest(x, z, [{ name: "Sword", type: "weapon", damage: 10 }], variant, biome);
-        case 'Rock': return new Rock(x, z, biome, variant, biome);
+        case 'Rock': return new Rock(x, z, biome, variant);
         case 'Bush': return new Bush(x, z, variant, biome);
         case 'SnowPile': return new SnowPile(x, z, variant, biome);
         case 'Cactus': return new Cactus(x, z, variant, biome);
