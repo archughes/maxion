@@ -5,6 +5,7 @@ class Entity {
         this.mesh = mesh;
         this.health = health;
         this.position = new THREE.Vector3();
+        this.gravity = 6.5;
     }
     
     takeDamage(amount) {
@@ -13,13 +14,10 @@ class Entity {
 
     adjustToTerrain(terrain) {
         this.mesh.position.y = terrain.getHeightAt(this.mesh.position.x, this.mesh.position.z);
-
         const waterHeight = terrain?.water?.position.y || -Infinity;
-        this.isInWater = this.position.y < waterHeight;
-        
+        this.isInWater = this.mesh.position.y < waterHeight;
         if (this.isInWater) {
-            this.speedMultiplier = 0.6;
-            this.mesh.position.y = waterHeight + 0.2; // Buoyancy
+            this.speedMultiplier = 0.3; // Slow movement in water
         } else {
             this.speedMultiplier = 1;
         }

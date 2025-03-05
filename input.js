@@ -18,7 +18,16 @@ function setupInput() {
             case "KeyD": player.moveRight = true; break;
             case "KeyQ": player.rotateLeft = true; break;
             case "KeyE": player.rotateRight = true; break;
-            case "Space": if (!player.isJumping) { player.jumpVelocity = 0.75; player.isJumping = true; } break;
+            case "Space":
+                if (!player.isJumping && !player.isInWater) {
+                    player.jumpVelocity = 6;
+                    player.isJumping = true;
+                    player.firstJump = true;
+                }
+                if (player.isInWater) {
+                    player.moveUp = true;
+                }
+                break;
             case "Digit1": useAction(0); break;
             case "Digit2": useAction(1); break;
             case "Digit3": useAction(2); break;
@@ -37,6 +46,11 @@ function setupInput() {
             case "KeyD": player.moveRight = false; break;
             case "KeyQ": player.rotateLeft = false; break;
             case "KeyE": player.rotateRight = false; break;
+            case "Space":
+                if (player.isInWater) {
+                    player.moveUp = false;
+                }
+                break;
         }
     });
 

@@ -45,16 +45,27 @@ async function loadMap(mapName) {
     const mapHeight = mapData.height || 400;
     terrain = new Terrain(mapWidth, mapHeight, mapData);
 
-    scene.fog = new THREE.Fog(0xcccccc, 100, 200);
+    // Determine water creation based on mapData.water or biome
+    const biome = mapData.biome || 'summer';
+    const allowedBiomes = ['autumn', 'spring', 'summer'];
+    const shouldCreateWater = mapData.water || allowedBiomes.includes(biome);
 
-    if (mapData.water) {
-        waterSystem = new WaterSystem(
-            mapData.water.width || mapWidth, 
-            mapData.water.height || mapHeight, 
-            mapData.water.level || mapData.waterLevel || 0,
-            mapData.water.color || 0x0077be
-        );
+    if (shouldCreateWater) {
+        const waterLevel = mapData.water?.level || mapData.waterLevel || terrain.calculateAutoWaterLevel();
+        const waterWidth = mapData.water?.width || mapWidth;
+        const waterHeight = mapData.water?.height || mapHeight;
+        const waterColor = mapData.water?.color || 0x0077be;
+        waterSystem = new WaterSystem(waterWidth, waterHeight, waterLevel, waterColor);
+        terrain.waterLevel = waterLevel; // Set the water level in Terrain
+    } else {
+        terrain.waterLevel = -Infinity; // No water
     }
+
+    // Set up the terrain material and mesh after water level is determined
+    terrain.setupMaterial();
+    terrain.mesh = new THREE.Mesh(terrain.geometry, terrain.material);
+    terrain.mesh.rotation.x = -Math.PI / 2;
+    scene.add(terrain.mesh);
 
     const directionalLight = new THREE.DirectionalLight(parseInt(mapData.lighting.directional.color), mapData.lighting.directional.intensity);
     directionalLight.position.set(...mapData.lighting.directional.position);

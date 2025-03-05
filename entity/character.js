@@ -7,6 +7,11 @@ class Character extends CombatEntity {
 
         this.attackCooldown = 0;
         this.attackInterval = 1;
+
+        this.drowningTimer = 0;
+        this.drowningDamageTimer = 0;
+        this.drowningTime = 3; // 3 seconds before drowning
+        this.drowningDamageInterval = 1; // Damage every second
     }
 
     update(deltaTime) {

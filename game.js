@@ -9,7 +9,6 @@ import { loadQuests } from './quests.js';
 import { craftItem, loadItems, loadRecipes } from './items.js';
 import { loadMap, terrain, timeSystem, doodads, skySystem } from './environment/environment.js';
 import { SoundManager } from './environment/sound-manager.js';
-import { Terrain } from './environment/terrain.js';
 
 // Add Mana Bar to UI
 const manaBar = document.createElement("div");
@@ -29,7 +28,7 @@ async function init() {
     await loadQuests();
     await loadItems();
     await loadRecipes();
-    await loadMap('summer');  // Start with spring biome
+    await loadMap('summer'); 
     // Initial UI Setup
     setupInput();
     setupPopups();
@@ -63,7 +62,7 @@ function animate() {
     skySystem.update(deltaTime, timeSystem, terrain.terrainFunc);
     
     player.updateCooldowns(deltaTime);
-    updatePlayer();
+    updatePlayer(deltaTime);
     updateNPC(deltaTime);
 
     // Combat and Skills
@@ -91,15 +90,6 @@ function animate() {
         player.lastAction = null; // Clear after processing
     }
 
-    if (isJumping) {
-        player.mesh.position.y += jumpVelocity;
-        jumpVelocity -= gravity;
-        if (terrain && player.mesh.position.y <= terrain.getHeightAt(player.mesh.position.x, player.mesh.position.z) + 0.5) {
-            player.mesh.position.y = terrain.getHeightAt(player.mesh.position.x, player.mesh.position.z) + 0.5;
-            isJumping = false;
-        }
-    }
-
     // Update Camera
     const distance = 5; // Distance from player
     const horizontalDistance = distance * Math.cos(cameraState.pitch);
@@ -107,11 +97,40 @@ function animate() {
     camera.position.z = player.mesh.position.z - horizontalDistance * Math.cos(player.mesh.rotation.y);
     camera.position.y = player.mesh.position.y + 2 + distance * Math.sin(cameraState.pitch);
 
+    // Clamp camera based on player's head position
+    const waterHeight = terrain.waterLevel;
+    const headY = player.mesh.position.y + 0.5;
     const terrainHeight = terrain.getHeightAt(camera.position.x, camera.position.z);
-    const minCameraHeight = terrainHeight; // Minimum height above terrain (adjust as needed)
-    if (camera.position.y < minCameraHeight) {
-        camera.position.y = minCameraHeight;
+    if (headY > waterHeight) {
+        // Head above water: camera above water and terrain
+        const minCameraHeight = Math.max(terrainHeight, waterHeight);
+        if (camera.position.y < minCameraHeight) {
+            camera.position.y = minCameraHeight + 0.1;
+        }
+    } else {
+        // Head below water: camera between terrain and water
+        if (camera.position.y < terrainHeight) {
+            camera.position.y = terrainHeight;
+        }
+        if (camera.position.y > waterHeight) {
+            camera.position.y = waterHeight;
+        }
     }
+
+    // Underwater visual effects
+    if (!scene.fog) {
+        scene.fog = new THREE.Fog(0xcccccc, 100, 200); // Reinitialize if null
+    }
+    if (camera.position.y > waterHeight && headY > waterHeight) {
+        scene.fog.near = 100; // Default fog
+        scene.fog.far = 200;
+        scene.fog.color.set(0xcccccc);
+    } else {
+        scene.fog.near = 10; // Dense fog
+        scene.fog.far = 50;
+        scene.fog.color.set(0x0077be); // Bluish tint
+    }
+
     camera.lookAt(player.mesh.position);
     
     renderer.render(scene, camera);
@@ -182,6 +201,25 @@ export function showMessage(text) {
         messageDiv.style.opacity = "0";
         setTimeout(() => document.body.removeChild(messageDiv), 1000);
     }, 3000);
+}
+
+let drowningMessage = null;
+
+export function showDrowningMessage(text, isRed = false) {
+    if (!drowningMessage) {
+        drowningMessage = document.createElement("div");
+        drowningMessage.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:white;padding:20px;";
+        document.body.appendChild(drowningMessage);
+    }
+    drowningMessage.textContent = text;
+    drowningMessage.style.color = isRed ? "red" : "white";
+}
+
+export function removeDrowningMessage() {
+    if (drowningMessage) {
+        document.body.removeChild(drowningMessage);
+        drowningMessage = null;
+    }
 }
 
 // Initial UI Setup

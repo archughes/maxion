@@ -1,6 +1,5 @@
 // terrain.js
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-import { scene } from './scene.js';
 import { createNoise2D } from 'https://cdn.skypack.dev/simplex-noise';
 import createSeededRNG from 'https://cdn.jsdelivr.net/npm/random-seed@0.3.0/+esm';
 
@@ -21,11 +20,7 @@ class Terrain {
         this.noise2D = createNoise2D(prng);
         
         this.generateHeightmap();
-        this.setupMaterial();
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.mesh.rotation.x = -Math.PI / 2;
-        scene.add(this.mesh);
-        this.water = this.createWater(mapData) || { position: { y: -Infinity } };
+        this.waterLevel = -Infinity;
         this.terrainFunc = this.terrainFunc.bind(this);
     }
 
@@ -122,10 +117,9 @@ class Terrain {
             }
         }
 
-        const waterLevel = this.water ? this.water.position.y : -Infinity;
         const slope = this.calculateSlopeAtVertex(vertexIndex);
 
-        if (y < waterLevel + 0.1) return 'water';
+        if (y < this.waterLevel) return 'water';
         if (y > 10) return 'high mountain';
         if (y > 5) return 'mountain';
         if (slope > 0.6) return 'cliff';
@@ -188,6 +182,9 @@ class Terrain {
         for (let i = 0, j = 2; i < vertices.length; i += 3, j += 3) {
             const x = vertices[i];
             const z = vertices[i + 1];
+
+            const largeScaleNoise = this.noise2D(x * 0.005, z * 0.005) * 10;
+
             let totalHeight = 0;
             let amplitude = 1;
             let frequency = 1;
@@ -198,7 +195,7 @@ class Terrain {
                 amplitude *= persistence;
                 frequency *= lacunarity;
             }
-            vertices[j] = totalHeight * heightScale;
+            vertices[j] = totalHeight * heightScale + largeScaleNoise;
         }
         
         this.generateMountainRange();
@@ -269,7 +266,7 @@ class Terrain {
                         // Add ridged noise
                         const ridgeNoise = Math.abs(this.noise2D(gx * 0.1, gz * 0.1)); // Absolute value for ridges
                         const ridgeFactor = 1 - ridgeNoise; // Invert to make peaks at noise = 0
-                        heightBoost *= (0.5 + ridgeFactor * 0.5); // Blend: 50% base, 50% ridged
+                        heightBoost += 0.5*baseHeightScale*(0.5 + ridgeFactor * 0.5); // Blend: 50% base, 50% ridged
     
                         // Add height instead of taking max
                         vertices[index] += heightBoost;
@@ -455,40 +452,11 @@ class Terrain {
     }
 
     calculateAutoWaterLevel() {
-        const heights = Array.from(this.geometry.attributes.position.array).filter((_, i) => i % 3 === 2);
-        heights.sort((a, b) => a - b);
-        const percentileIndex = Math.floor(heights.length * 0.2); // 20th percentile
-        return heights[percentileIndex];
-    }
-    
-    createWater(mapData) {
-        const biome = mapData.biome || 'summer';
-        const waterLevel = mapData.waterLevel !== undefined ? mapData.waterLevel : this.calculateAutoWaterLevel();
-    
-        // Only create water in certain biomes
-        const allowedBiomes = ['autumn', 'spring', 'summer'];
-        if (!allowedBiomes.includes(biome)) {
-            return null;
-        }
-    
-        const waterGeometry = new THREE.PlaneGeometry(this.width, this.height);
-        const waterMaterial = new THREE.MeshPhongMaterial({
-            color: 0x0077BE,
-            transparent: true,
-            opacity: 0.7
-        });
-    
-        const waterMesh = new THREE.Mesh(waterGeometry, waterMaterial);
-        waterMesh.rotation.x = -Math.PI / 2;
-        waterMesh.position.y = waterLevel;
-        scene.add(waterMesh);
-        return waterMesh;
-    }
-
-    calculateAutoWaterLevel() {
-        // Analyze heightmap to find natural water level
-        const heights = this.geometry.attributes.position.array.filter((_,i) => i%3 === 2);
-        return Math.percentile(heights, 30); // Hypothetical percentile function
+        const heights = Array.from(this.geometry.attributes.position.array)
+            .filter((_, i) => i % 3 === 2)
+            .sort((a, b) => a - b);
+        const percentileIndex = Math.floor(heights.length * 0.3); // 30th percentile
+        return heights[percentileIndex] || 0; // Return 0 if array is empty
     }
 
     getHeightAt(x, z) {

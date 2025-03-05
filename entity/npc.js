@@ -61,6 +61,23 @@ class NPC extends Character {
             this.mesh.position.y = terrain.getHeightAt(this.mesh.position.x, this.mesh.position.z) + 0.5;
             this.healthBar.position.set(this.mesh.position.x, this.mesh.position.y + 1.5, this.mesh.position.z);
         }
+
+        // Drowning logic
+        const headY = this.mesh.position.y + 0.5;
+        const waterHeight = terrain?.water?.position.y ?? Infinity;
+        if (headY < waterHeight) {
+            this.drowningTimer += deltaTime;
+            if (this.drowningTimer >= this.drowningTime) {
+                this.drowningDamageTimer += deltaTime;
+                if (this.drowningDamageTimer >= this.drowningDamageInterval) {
+                    this.drowningDamageTimer = 0;
+                    this.takeDamage(this.health * 0.1); // 10% HP loss
+                }
+            }
+        } else {
+            this.drowningTimer = 0;
+            this.drowningDamageTimer = 0;
+        }
     }
 }
 

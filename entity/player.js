@@ -1,11 +1,12 @@
 // player.js
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-import { scene } from '../environment/scene.js';
+import { scene, camera } from '../environment/scene.js';
 import { updateHealthUI, updateManaUI, updateInventoryUI, updateXPUI, updateCharacterUI } from '../ui.js';
 import { Character } from './character.js';
 import { terrain } from '../environment/environment.js';
 import { checkCollectionQuests } from '../quests.js';
 import { items } from '../items.js';
+import { showDrowningMessage, removeDrowningMessage } from '../game.js';
 
 const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
 const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x00fff0 });
@@ -13,7 +14,7 @@ const INVENTORY_SIZE = 8;
 
 class Player extends Character {
     constructor() {
-        super(new THREE.Mesh(playerGeometry, playerMaterial), 100, 0.1);
+        super(new THREE.Mesh(playerGeometry, playerMaterial), 100, 4);
         this.mesh.position.y = 0.5;
         scene.add(this.mesh);
 
@@ -38,15 +39,6 @@ class Player extends Character {
         this.equippedWeapon = null;
         this.equippedArmor = null;
         this.equippedHelmet = null;
-        this.moveForward = false;
-        this.moveBackward = false;
-        this.moveLeft = false;
-        this.moveRight = false;
-        this.rotateLeft = false;
-        this.rotateRight = false;
-        this.isJumping = false;
-        this.jumpVelocity = 0;
-        this.gravity = 0.01;
         this.skillPoints = 0;
         this.statPoints = 0;
         this.skills = {
@@ -55,6 +47,18 @@ class Player extends Character {
             "Invisibility": 1
         };
         this.knownRecipes = []; 
+
+        this.moveForward = false;
+        this.moveBackward = false;
+        this.moveLeft = false;
+        this.moveRight = false;
+        this.rotateLeft = false;
+        this.rotateRight = false;
+        this.isJumping = false;
+        this.firstJump = false;
+        this.jumpVelocity = 0;
+                
+        this.isInWater = false;
     }
 
     useSkill(skillName) {
@@ -269,12 +273,46 @@ class Bag {
 
 const player = new Player();
 
-function updatePlayer() {
-    const speed = player.speed * (player.stats.agility / 10);
-    const direction = player.mesh.rotation.y;
+function updatePlayer(deltaTime) {
+    // Determine if player is in water
+    const terrainType = terrain.terrainFunc(player.mesh.position.x, player.mesh.position.z, player.mesh.position.y);
+    console.log(`terrainType ${terrainType}`);
+    player.isInWater = terrainType === 'water';
+
+    // Frame-rate independent speed
+    const speed = player.speed * deltaTime * player.speedMultiplier;
+
+    if (player.isInWater) {
+        // 3D movement based on camera direction
+        const dir = camera.getWorldDirection(new THREE.Vector3());
+        if (player.moveForward) {
+            player.mesh.position.addScaledVector(dir, speed);
+        }
+        if (player.moveBackward) {
+            player.mesh.position.addScaledVector(dir, -speed);
+        }
+        if (player.moveLeft) {
+            const leftDir = new THREE.Vector3().crossVectors(camera.up, dir).normalize();
+            player.mesh.position.addScaledVector(leftDir, speed);
+        }
+        if (player.moveRight) {
+            const rightDir = new THREE.Vector3().crossVectors(dir, camera.up).normalize();
+            player.mesh.position.addScaledVector(rightDir, speed);
+        }
+        if (player.moveUp) {
+            const suggestedY = player.mesh.position.y + player.speed * deltaTime;
+            if (suggestedY < (terrain?.water?.position.y ?? Infinity)) {
+                player.mesh.position.y = suggestedY;
+            }
+            // player.mesh.position.y += player.speed * deltaTime;
+        }
+    }
+
     let newX = player.mesh.position.x;
     let newZ = player.mesh.position.z;
 
+    // Existing 2D movement on land
+    const direction = player.mesh.rotation.y;
     if (player.moveForward) {
         newX += Math.sin(direction) * speed;
         newZ += Math.cos(direction) * speed;
@@ -292,26 +330,64 @@ function updatePlayer() {
         newZ += Math.sin(direction) * speed;
     }
 
+    // Apply movement (update X and Z)
     player.mesh.position.x = newX;
     player.mesh.position.z = newZ;
-    if (terrain) {
-        const height = terrain.getHeightAt(newX, newZ);
-        player.mesh.position.y = (height !== undefined ? height : 0) + 0.5;
+
+    if (player.isInWater) {
+        player.isJumping = false;
+        player.mesh.position.y -= player.speedMultiplier * player.gravity * deltaTime * deltaTime;
     }
 
-    if (player.rotateLeft) player.mesh.rotation.y += 0.05;
-    if (player.rotateRight) player.mesh.rotation.y -= 0.05;
+    // Rotation and jumping logic remain unchanged for now
+    if (player.rotateLeft) player.mesh.rotation.y += 0.5* deltaTime;
+    if (player.rotateRight) player.mesh.rotation.y -= 0.5* deltaTime;
+    if (player.isJumping && !player.isInWater) { // Disable jumping in water
+        player.mesh.position.y += player.jumpVelocity * deltaTime; // Use deltaTime for frame-rate independence
+        player.jumpVelocity -= player.gravity * deltaTime; // Apply gravity over time
 
-    if (player.isJumping) {
-        player.mesh.position.y += player.jumpVelocity;
-        player.jumpVelocity -= player.gravity;
-        if (player.mesh.position.y <= terrain.getHeightAt(newX, newZ) + 0.5) {
-            player.mesh.position.y = terrain.getHeightAt(newX, newZ) + 0.5;
+        // Check if player has landed (hit terrain or gone below it)
+        const terrainHeight = terrain.getHeightAt(player.mesh.position.x, player.mesh.position.z);
+        if (player.mesh.position.y <= terrainHeight + 0.5 && !player.firstJump) {
+            player.mesh.position.y = terrainHeight + 0.5; // Snap to terrain
             player.isJumping = false;
+            player.jumpVelocity = 0; // Reset jump velocity
         }
     }
 
+    const waterHeight = terrain.waterLevel;
+    const terrainHeight = terrain.getHeightAt(player.mesh.position.x, player.mesh.position.z);
+
+    console.log(`  player water: ${player.isInWater}, jump: ${player.isJumping}, waterHeight: ${waterHeight}`);
+    if (player.mesh.position.y <= terrainHeight + 0.5) {
+        player.mesh.position.y = terrainHeight + 0.5;
+    } else if (!player.isInWater) {
+        player.isJumping = true;
+    }
+    player.firstJump = false;
+
     player.regenerateMana(0.05);
+
+    // Drowning mechanic
+    const headY = player.mesh.position.y + 0.5; // Head at top of 1-unit cube
+    if (headY < waterHeight) {
+        if (player.drowningTimer < player.drowningTime) {
+            player.drowningTimer += deltaTime;
+            const remaining = Math.ceil(player.drowningTime - player.drowningTimer);
+            showDrowningMessage(`Drowning in ${remaining}...`);
+        } else {
+            showDrowningMessage("Drowning!", true); // Red text flag
+            player.drowningDamageTimer += deltaTime;
+            if (player.drowningDamageTimer >= player.drowningDamageInterval) {
+                player.drowningDamageTimer = 0;
+                player.takeDamage(player.health * 0.1); // 10% HP loss
+            }
+        }
+    } else {
+        player.drowningTimer = 0;
+        player.drowningDamageTimer = 0;
+        removeDrowningMessage();
+    }
 }
 
 export { player, updatePlayer };
