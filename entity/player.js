@@ -18,6 +18,7 @@ class Player extends Character {
         this.mesh.position.y = 0.5;
         scene.add(this.mesh);
 
+        this.knownMap = new Set();
         this.cooldowns = {
             "Power Attack": 0,
             "Fireball": 0,
@@ -273,7 +274,37 @@ class Bag {
 
 const player = new Player();
 
+let lastKnownMapUpdate = 0;
+const knownMapUpdateInterval = 500;
 function updatePlayer(deltaTime) {
+    const currentTime = Date.now();
+    if (currentTime - lastKnownMapUpdate >= knownMapUpdateInterval) {
+        // Exploration: Cone of viewable distance
+        const viewDistance = 50; // Adjust this value for the desired cone radius
+        const viewAngle = 2 * Math.PI / 3; // 45-degree cone (adjust as needed)
+        const playerDir = new THREE.Vector3(Math.sin(player.mesh.rotation.y), 0, Math.cos(player.mesh.rotation.y)).normalize();
+
+        const widthSegments = terrain.geometry.parameters.widthSegments;
+        const heightSegments = terrain.geometry.parameters.heightSegments;
+        const segmentWidth = terrain.width / widthSegments;
+        const segmentHeight = terrain.height / heightSegments;
+
+        for (let z = 0; z < heightSegments; z++) {
+            for (let x = 0; x < widthSegments; x++) {
+                const worldX = (x - widthSegments / 2) * segmentWidth;
+                const worldZ = (z - heightSegments / 2) * segmentHeight;
+                const toPoint = new THREE.Vector3(worldX - player.mesh.position.x, 0, worldZ - player.mesh.position.z).normalize();
+                const distance = player.mesh.position.distanceTo(new THREE.Vector3(worldX, 0, worldZ));
+                const angleDiff = Math.acos(playerDir.dot(toPoint));
+
+                if (distance <= viewDistance && angleDiff <= viewAngle / 2) {
+                    player.knownMap.add(`${x},${z}`);
+                }
+            }
+        }
+        lastKnownMapUpdate = currentTime;
+    }
+
     // Determine if player is in water
     const terrainType = terrain.terrainFunc(player.mesh.position.x, player.mesh.position.z, player.mesh.position.y);
     console.log(`terrainType ${terrainType}`);

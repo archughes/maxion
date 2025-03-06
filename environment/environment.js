@@ -65,6 +65,7 @@ async function loadMap(mapName) {
     terrain.setupMaterial();
     terrain.mesh = new THREE.Mesh(terrain.geometry, terrain.material);
     terrain.mesh.rotation.x = -Math.PI / 2;
+    terrain.renderTerrainMap();
     scene.add(terrain.mesh);
 
     const directionalLight = new THREE.DirectionalLight(parseInt(mapData.lighting.directional.color), mapData.lighting.directional.intensity);

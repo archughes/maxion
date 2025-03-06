@@ -4,7 +4,7 @@ import { setupInput } from './input.js';
 import { scene, camera, renderer } from './environment/scene.js';
 import { player, updatePlayer } from './entity/player.js';
 import { enemies, questGivers, updateNPC } from './entity/npc.js';
-import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateManaUI, updateQuestUI, updateXPUI } from './ui.js';
+import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateManaUI, updateQuestUI, updateMinimap } from './ui.js';
 import { loadQuests } from './quests.js';
 import { craftItem, loadItems, loadRecipes } from './items.js';
 import { loadMap, terrain, timeSystem, doodads, skySystem } from './environment/environment.js';
@@ -50,6 +50,9 @@ const attackSound = new Audio();
 attackSound.src = 'sounds/swordhit1.wav'; // Valid MP3 URL
 attackSound.preload = 'auto';
 
+let lastMapUpdate = 0;
+const mapUpdateInterval = 500;
+
 function animate() {
     if (player.health <= 0) {
         gameOver();
@@ -64,6 +67,12 @@ function animate() {
     player.updateCooldowns(deltaTime);
     updatePlayer(deltaTime);
     updateNPC(deltaTime);
+    
+    const currentTime = Date.now();
+    if (currentTime - lastMapUpdate >= mapUpdateInterval) {
+        updateMinimap();
+        lastMapUpdate = currentTime;
+    }
 
     // Combat and Skills
     if (player.lastAction) {
@@ -122,8 +131,8 @@ function animate() {
         scene.fog = new THREE.Fog(0xcccccc, 100, 200); // Reinitialize if null
     }
     if (camera.position.y > waterHeight && headY > waterHeight) {
-        scene.fog.near = 100; // Default fog
-        scene.fog.far = 200;
+        scene.fog.near = 50; // Default fog
+        scene.fog.far = 100;
         scene.fog.color.set(0xcccccc);
     } else {
         scene.fog.near = 10; // Dense fog
