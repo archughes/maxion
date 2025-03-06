@@ -4,15 +4,15 @@ import { scene } from '../scene.js';
 import { soundManager } from '../../game.js';
 
 export class Doodad extends Entity {
-    constructor(mesh, soundUrl = null, interactionsToHarvest = 1, respawnTime = 60) {
-        super(mesh, Infinity); // Doodads don’t take damage by default
+    constructor(object, soundUrl = null, interactionsToHarvest = 1, respawnTime = 60) {
+        super(object, Infinity); // Doodads don’t take damage by default
         this.soundUrl = soundUrl;
         this.interactionsToHarvest = interactionsToHarvest;
         this.currentInteractions = 0;
         this.respawnTime = respawnTime;
         this.isHarvested = false;
         this.baseHeight = 0;
-        scene.add(this.mesh);
+        scene.add(this.object);
     }
 
     interact() {
@@ -26,23 +26,23 @@ export class Doodad extends Entity {
 
     harvest() {
         this.isHarvested = true;
-        scene.remove(this.mesh);
+        scene.remove(this.object);
         setTimeout(() => {
             this.isHarvested = false;
             this.currentInteractions = 0;
-            scene.add(this.mesh);
+            scene.add(this.object);
         }, this.respawnTime * 1000);
     }
 
     adjustToTerrain(terrain) {
         super.adjustToTerrain(terrain);
-        this.mesh.position.y += this.baseHeight; // Add doodad-specific height offset
+        this.object.position.y += this.baseHeight; // Add doodad-specific height offset
     }
 
     addGlow(color = 0xFFFFFF, intensity = 1, distance = 3) {
         const light = new THREE.PointLight(color, intensity, distance);
         light.position.y = 1;
-        this.mesh.add(light);
+        this.object.add(light);
         return light;
     }
 }

@@ -1,11 +1,12 @@
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
 
 class Entity {
-    constructor(mesh, health) {
-        this.mesh = mesh;
+    constructor(object, health) {
+        this.object = object; // Can be a Mesh or a Group
         this.health = health;
         this.position = new THREE.Vector3();
         this.gravity = 6.5;
+        this.heightOffset = 0; // Default height offset (feet to center)
     }
     
     takeDamage(amount) {
@@ -13,9 +14,10 @@ class Entity {
     }
 
     adjustToTerrain(terrain) {
-        this.mesh.position.y = terrain.getHeightAt(this.mesh.position.x, this.mesh.position.z);
+        const terrainHeight = terrain.getHeightAt(this.object.position.x, this.object.position.z);
+        this.object.position.y = terrainHeight + this.heightOffset;
         const waterHeight = terrain?.water?.position.y || -Infinity;
-        this.isInWater = this.mesh.position.y < waterHeight;
+        this.isInWater = this.object.position.y - this.heightOffset < waterHeight; // Check feet position
         if (this.isInWater) {
             this.speedMultiplier = 0.3; // Slow movement in water
         } else {
@@ -25,8 +27,8 @@ class Entity {
 }
 
 class CombatEntity extends Entity {
-    constructor(mesh, health, armor = 0) {
-        super(mesh, health);
+    constructor(object, health, armor = 0) {
+        super(object, health);
         this.armor = armor; // Reduces incoming damage
         this.resistances = { fire: 0, cold: 0 };
     }
@@ -41,8 +43,8 @@ class CombatEntity extends Entity {
 
     adjustToTerrain(terrain) {
         super.adjustToTerrain(terrain); 
-        this.mesh.position.y += 0.5; // Magic number for character height (all types same height!).
+        // No magic number here; heightOffset is set by subclasses
     }
 }
 
-export { Entity, CombatEntity }
+export { Entity, CombatEntity };

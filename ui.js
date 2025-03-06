@@ -380,8 +380,8 @@ function renderTerrainToCanvas(canvas, terrain, player, isMinimap = false) {
     if (!terrainCanvas) return;
 
     // Player position in terrain coordinates (normalized 0 to 1, then scaled to canvas)
-    const playerX = (player.mesh.position.x / terrain.width + 0.5) * terrainCanvas.width;
-    const playerZ = (player.mesh.position.z / terrain.height + 0.5) * terrainCanvas.height;
+    const playerX = (player.object.position.x / terrain.width + 0.5) * terrainCanvas.width;
+    const playerZ = (player.object.position.z / terrain.height + 0.5) * terrainCanvas.height;
 
     if (isMinimap) {
         // Minimap: Draw a centered portion around the player
@@ -433,7 +433,7 @@ function renderTerrainToCanvas(canvas, terrain, player, isMinimap = false) {
         ctx.beginPath();
         ctx.save();
         ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(player.mesh.rotation.y); // Corrected 180-degree offset
+        ctx.rotate(player.object.rotation.y); // Corrected 180-degree offset
         ctx.moveTo(arrowSize, 0);
         ctx.lineTo(-arrowSize / 2, arrowSize / 2);
         ctx.lineTo(-arrowSize / 2, -arrowSize / 2);
@@ -447,7 +447,7 @@ function renderTerrainToCanvas(canvas, terrain, player, isMinimap = false) {
         const scale = viewWidth / terrain.width;
         ctx.save();
         ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(player.mesh.rotation.y); // Corrected 180-degree offset
+        ctx.rotate(player.object.rotation.y); // Corrected 180-degree offset
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.arc(0, 0, viewDistance * scale, -viewAngle / 2, viewAngle / 2);
@@ -482,7 +482,7 @@ function renderTerrainToCanvas(canvas, terrain, player, isMinimap = false) {
         ctx.beginPath();
         ctx.save();
         ctx.translate(scaledX, scaledZ);
-        ctx.rotate(player.mesh.rotation.y); // Corrected 180-degree offset
+        ctx.rotate(player.object.rotation.y); // Corrected 180-degree offset
         ctx.moveTo(arrowSize, 0);
         ctx.lineTo(-arrowSize / 2, arrowSize / 2);
         ctx.lineTo(-arrowSize / 2, -arrowSize / 2);
@@ -496,7 +496,7 @@ function renderTerrainToCanvas(canvas, terrain, player, isMinimap = false) {
         const scale = canvas.width / terrain.width;
         ctx.save();
         ctx.translate(scaledX, scaledZ);
-        ctx.rotate(player.mesh.rotation.y); // Corrected 180-degree offset
+        ctx.rotate(player.object.rotation.y); // Corrected 180-degree offset
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.arc(0, 0, viewDistance * scale, -viewAngle / 2, viewAngle / 2);
@@ -538,8 +538,8 @@ function renderMap() {
     const terrainCanvas = terrain.terrainMapCanvas;
     if (!terrainCanvas) return;
 
-    const playerX = (player.mesh.position.x / terrain.width + 0.5) * terrainCanvas.width;
-    const playerZ = (player.mesh.position.z / terrain.height + 0.5) * terrainCanvas.height;
+    const playerX = (player.object.position.x / terrain.width + 0.5) * terrainCanvas.width;
+    const playerZ = (player.object.position.z / terrain.height + 0.5) * terrainCanvas.height;
     const viewWidth = canvas.width;
     const viewHeight = canvas.height;
 
@@ -576,7 +576,7 @@ function renderMap() {
     ctx.beginPath();
     ctx.save();
     ctx.translate(viewWidth / 2, viewHeight / 2);
-    ctx.rotate(player.mesh.rotation.y);
+    ctx.rotate(player.object.rotation.y);
     ctx.moveTo(arrowSize, 0);
     ctx.lineTo(-arrowSize / 2, arrowSize / 2);
     ctx.lineTo(-arrowSize / 2, -arrowSize / 2);

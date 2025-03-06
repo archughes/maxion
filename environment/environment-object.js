@@ -5,10 +5,10 @@ import { soundManager } from '../game.js';
 
 // Base class for all environment objects
 class EnvironmentObject {
-    constructor(mesh, soundUrl = null, interactionsToHarvest = 1, respawnTime = 60) {
-        this.mesh = mesh;
+    constructor(object, soundUrl = null, interactionsToHarvest = 1, respawnTime = 60) {
+        this.object = object;
         this.soundUrl = soundUrl;
-        scene.add(this.mesh);
+        scene.add(this.object);
         this.baseHeight = 0;
         this.interactionsToHarvest = interactionsToHarvest;
         this.currentInteractions = 0;
@@ -42,24 +42,24 @@ class EnvironmentObject {
 
     harvest() {
         this.isHarvested = true;
-        scene.remove(this.mesh);
+        scene.remove(this.object);
         setTimeout(() => {
             this.isHarvested = false;
             this.currentInteractions = 0;
-            scene.add(this.mesh);
+            scene.add(this.object);
         }, this.respawnTime * 1000);
     }
     
     adjustToTerrain(terrain) {
-        const pos = this.mesh.position;
-        this.mesh.position.y = terrain.getHeightAt(pos.x, pos.z) + this.baseHeight;
+        const pos = this.object.position;
+        this.object.position.y = terrain.getHeightAt(pos.x, pos.z) + this.baseHeight;
     }
     
     // Helper method to create a glowing effect
     addGlow(color = 0xFFFFFF, intensity = 1, distance = 3) {
         const light = new THREE.PointLight(color, intensity, distance);
         light.position.y = 1;
-        this.mesh.add(light);
+        this.object.add(light);
         return light;
     }
     
@@ -87,7 +87,7 @@ class EnvironmentObject {
         
         const particleSystem = new THREE.Points(geometry, material);
         particles.add(particleSystem);
-        this.mesh.add(particles);
+        this.object.add(particles);
         
         // Animation data
         particleSystem.userData = {

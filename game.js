@@ -79,7 +79,7 @@ function animate() {
         const action = player.lastAction;
         if (action.type === "attack") {
             enemies.forEach(enemy => {
-                if (player.mesh.position.distanceTo(enemy.mesh.position) < 2) {
+                if (player.object.position.distanceTo(enemy.object.position) < 2) {
                     enemy.takeDamage(action.damage * (player.stats.strength / 10));
                     console.log(`Player attacked enemy for ${action.damage * (player.stats.strength / 10)} damage!`);
                     attackSound.play();
@@ -87,7 +87,7 @@ function animate() {
             });
         } else if (action.type === "fireball") {
             enemies.forEach(enemy => {
-                if (player.mesh.position.distanceTo(enemy.mesh.position) < 5) {
+                if (enemy.object.position.distanceTo(enemy.object.position) < 5) {
                     enemy.takeDamage(action.damage * (player.stats.intelligence / 10));
                     console.log(`Player cast Fireball for ${action.damage * (player.stats.intelligence / 10)} damage!`);
                 }
@@ -101,14 +101,16 @@ function animate() {
 
     // Update Camera
     const distance = 5; // Distance from player
+    const headDirection = new THREE.Vector3();
+    player.head.getWorldDirection(headDirection);
     const horizontalDistance = distance * Math.cos(cameraState.pitch);
-    camera.position.x = player.mesh.position.x - horizontalDistance * Math.sin(player.mesh.rotation.y);
-    camera.position.z = player.mesh.position.z - horizontalDistance * Math.cos(player.mesh.rotation.y);
-    camera.position.y = player.mesh.position.y + 2 + distance * Math.sin(cameraState.pitch);
+    camera.position.x = player.object.position.x - horizontalDistance * headDirection.x;
+    camera.position.z = player.object.position.z - horizontalDistance * headDirection.z;
+    camera.position.y = player.object.position.y + 2 + distance * Math.sin(cameraState.pitch);
 
     // Clamp camera based on player's head position
     const waterHeight = terrain.waterLevel;
-    const headY = player.mesh.position.y + 0.5;
+    const headY = player.object.position.y + player.heightOffset;
     const terrainHeight = terrain.getHeightAt(camera.position.x, camera.position.z);
     if (headY > waterHeight) {
         // Head above water: camera above water and terrain
@@ -140,7 +142,7 @@ function animate() {
         scene.fog.color.set(0x0077be); // Bluish tint
     }
 
-    camera.lookAt(player.mesh.position);
+    camera.lookAt(player.object.position);
     
     renderer.render(scene, camera);
 }
@@ -154,8 +156,8 @@ function update() {
 
     // Doodads
     doodads.forEach(doodad => {
-        if (doodad.mesh && doodad.mesh.position) {
-            const distance = cameraPosition.distanceTo(doodad.mesh.position);
+        if (doodad.object && doodad.object.position) {
+            const distance = cameraPosition.distanceTo(doodad.object.position);
             doodad.visible = distance < maxDoodadDistance;
         } else {
             console.warn('Invalid doodad encountered:', doodad);
@@ -164,14 +166,14 @@ function update() {
 
     // Quest Givers
     questGivers.forEach(qg => {
-        const distance = cameraPosition.distanceTo(qg.mesh.position);
-        qg.mesh.visible = distance < maxQuestGiverDistance;
+        const distance = cameraPosition.distanceTo(qg.object.position);
+        qg.object.visible = distance < maxQuestGiverDistance;
     });
 
     // Enemies
     enemies.forEach(enemy => {
-        const distance = cameraPosition.distanceTo(enemy.mesh.position);
-        enemy.mesh.visible = distance < maxEnemyDistance;
+        const distance = cameraPosition.distanceTo(enemy.object.position);
+        enemy.object.visible = distance < maxEnemyDistance;
     });
 }
 
@@ -183,7 +185,7 @@ function gameOver() {
     document.getElementById("respawn").addEventListener("click", () => {
         player.health = 100;
         player.mana = 50;
-        player.mesh.position.set(0, 0.5, 0);
+        player.object.position.set(0, player.heightOffset, 0);
         document.body.removeChild(gameOverDiv);
         animate();
     });

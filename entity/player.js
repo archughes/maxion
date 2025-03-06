@@ -8,15 +8,15 @@ import { checkCollectionQuests } from '../quests.js';
 import { items } from '../items.js';
 import { showDrowningMessage, removeDrowningMessage } from '../game.js';
 
-const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
-const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x00fff0 });
 const INVENTORY_SIZE = 8;
 
 class Player extends Character {
     constructor() {
-        super(new THREE.Mesh(playerGeometry, playerMaterial), 100, 4);
-        this.mesh.position.y = 0.5;
-        scene.add(this.mesh);
+        const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x00fff0 });
+        super(playerMaterial, 100, 4, true);
+        this.object.position.y = this.heightOffset;
+        scene.add(this.object);
+        // console.log('Player added to scene:', this.object);
 
         this.knownMap = new Set();
         this.cooldowns = {
@@ -58,6 +58,9 @@ class Player extends Character {
         this.isJumping = false;
         this.firstJump = false;
         this.jumpVelocity = 0;
+        this.limbAngle = 0; // For arm/leg animations
+        this.isRunning = false;
+        this.runTimer = 0;
                 
         this.isInWater = false;
     }
@@ -135,7 +138,7 @@ class Player extends Character {
             new THREE.SphereGeometry(1, 16, 16),
             new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 })
         );
-        effect.position.copy(this.mesh.position);
+        effect.position.copy(this.object.position);
         effect.position.y += 1;
         scene.add(effect);
         let scale = 1;
@@ -282,7 +285,7 @@ function updatePlayer(deltaTime) {
         // Exploration: Cone of viewable distance
         const viewDistance = 50; // Adjust this value for the desired cone radius
         const viewAngle = 2 * Math.PI / 3; // 45-degree cone (adjust as needed)
-        const playerDir = new THREE.Vector3(Math.sin(player.mesh.rotation.y), 0, Math.cos(player.mesh.rotation.y)).normalize();
+        const playerDir = new THREE.Vector3(Math.sin(player.object.rotation.y), 0, Math.cos(player.object.rotation.y)).normalize();
 
         const widthSegments = terrain.geometry.parameters.widthSegments;
         const heightSegments = terrain.geometry.parameters.heightSegments;
@@ -293,8 +296,8 @@ function updatePlayer(deltaTime) {
             for (let x = 0; x < widthSegments; x++) {
                 const worldX = (x - widthSegments / 2) * segmentWidth;
                 const worldZ = (z - heightSegments / 2) * segmentHeight;
-                const toPoint = new THREE.Vector3(worldX - player.mesh.position.x, 0, worldZ - player.mesh.position.z).normalize();
-                const distance = player.mesh.position.distanceTo(new THREE.Vector3(worldX, 0, worldZ));
+                const toPoint = new THREE.Vector3(worldX - player.object.position.x, 0, worldZ - player.object.position.z).normalize();
+                const distance = player.object.position.distanceTo(new THREE.Vector3(worldX, 0, worldZ));
                 const angleDiff = Math.acos(playerDir.dot(toPoint));
 
                 if (distance <= viewDistance && angleDiff <= viewAngle / 2) {
@@ -306,44 +309,53 @@ function updatePlayer(deltaTime) {
     }
 
     // Determine if player is in water
-    const terrainType = terrain.terrainFunc(player.mesh.position.x, player.mesh.position.z, player.mesh.position.y);
-    console.log(`terrainType ${terrainType}`);
+    const terrainType = terrain.terrainFunc(player.object.position.x, player.object.position.z, player.object.position.y);
+    // console.log(`terrainType ${terrainType}`);
     player.isInWater = terrainType === 'water';
 
     // Frame-rate independent speed
-    const speed = player.speed * deltaTime * player.speedMultiplier;
+    let terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
+    let speedMultiplier = player.speedMultiplier;
+    if (player.isRunning) {
+        player.runTimer -= deltaTime;
+        if (player.runTimer <= 0) {
+            player.isRunning = false;
+        } else {
+            speedMultiplier *= 1.5;
+        }
+    }
+    const speed = player.speed * deltaTime * speedMultiplier;
 
     if (player.isInWater) {
         // 3D movement based on camera direction
         const dir = camera.getWorldDirection(new THREE.Vector3());
         if (player.moveForward) {
-            player.mesh.position.addScaledVector(dir, speed);
+            player.object.position.addScaledVector(dir, speed);
         }
         if (player.moveBackward) {
-            player.mesh.position.addScaledVector(dir, -speed);
+            player.object.position.addScaledVector(dir, -speed);
         }
         if (player.moveLeft) {
             const leftDir = new THREE.Vector3().crossVectors(camera.up, dir).normalize();
-            player.mesh.position.addScaledVector(leftDir, speed);
+            player.object.position.addScaledVector(leftDir, speed);
         }
         if (player.moveRight) {
             const rightDir = new THREE.Vector3().crossVectors(dir, camera.up).normalize();
-            player.mesh.position.addScaledVector(rightDir, speed);
+            player.object.position.addScaledVector(rightDir, speed);
         }
         if (player.moveUp) {
-            const suggestedY = player.mesh.position.y + player.speed * deltaTime;
+            const suggestedY = player.object.position.y + player.speed * deltaTime;
             if (suggestedY < (terrain?.water?.position.y ?? Infinity)) {
-                player.mesh.position.y = suggestedY;
+                player.object.position.y = suggestedY;
             }
-            // player.mesh.position.y += player.speed * deltaTime;
         }
     }
 
-    let newX = player.mesh.position.x;
-    let newZ = player.mesh.position.z;
+    let newX = player.object.position.x;
+    let newZ = player.object.position.z;
 
     // Existing 2D movement on land
-    const direction = player.mesh.rotation.y;
+    const direction = player.object.rotation.y;
     if (player.moveForward) {
         newX += Math.sin(direction) * speed;
         newZ += Math.cos(direction) * speed;
@@ -362,36 +374,62 @@ function updatePlayer(deltaTime) {
     }
 
     // Apply movement (update X and Z)
-    player.mesh.position.x = newX;
-    player.mesh.position.z = newZ;
+    player.object.position.x = newX;
+    player.object.position.z = newZ;
+
+    player.isMoving = player.moveForward || player.moveBackward || player.moveLeft || player.moveRight;
+    if (player.useComplexModel) {
+        if (player.isMoving) {
+            const swingSpeed = player.isRunning ? 10 : 5;
+            player.limbAngle += deltaTime * swingSpeed;
+            const swing = Math.sin(player.limbAngle) * 0.5;
+            player.leftArm.rotation.z = swing;
+            player.rightArm.rotation.z = -swing;
+            player.leftLeg.rotation.z = -swing;
+            player.rightLeg.rotation.z = swing;
+        } else {
+            player.leftArm.rotation.z = 0;
+            player.rightArm.rotation.z = 0;
+            player.leftLeg.rotation.z = 0;
+            player.rightLeg.rotation.z = 0;
+        }
+        if (player.isJumping) {
+            player.leftArm.rotation.x = player.jumpVelocity > 0 ? -Math.PI / 4 : Math.PI / 2;
+            player.rightArm.rotation.x = player.jumpVelocity > 0 ? -Math.PI / 4 : -Math.PI / 2;
+            player.leftArm.rotation.z = 0;
+            player.rightArm.rotation.z = 0;
+        } else {
+            player.leftArm.rotation.x = 0;
+            player.rightArm.rotation.x = 0;
+        }
+    }
 
     if (player.isInWater) {
         player.isJumping = false;
-        player.mesh.position.y -= player.speedMultiplier * player.gravity * deltaTime * deltaTime;
+        player.object.position.y -= player.speedMultiplier * player.gravity * deltaTime * deltaTime;
     }
 
-    // Rotation and jumping logic remain unchanged for now
-    if (player.rotateLeft) player.mesh.rotation.y += 0.5* deltaTime;
-    if (player.rotateRight) player.mesh.rotation.y -= 0.5* deltaTime;
+    if (player.rotateLeft) player.object.rotation.y += 0.5* deltaTime;
+    if (player.rotateRight) player.object.rotation.y -= 0.5* deltaTime;
     if (player.isJumping && !player.isInWater) { // Disable jumping in water
-        player.mesh.position.y += player.jumpVelocity * deltaTime; // Use deltaTime for frame-rate independence
+        player.object.position.y += player.jumpVelocity * deltaTime; // Use deltaTime for frame-rate independence
         player.jumpVelocity -= player.gravity * deltaTime; // Apply gravity over time
 
         // Check if player has landed (hit terrain or gone below it)
-        const terrainHeight = terrain.getHeightAt(player.mesh.position.x, player.mesh.position.z);
-        if (player.mesh.position.y <= terrainHeight + 0.5 && !player.firstJump) {
-            player.mesh.position.y = terrainHeight + 0.5; // Snap to terrain
+        terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
+        if (player.object.position.y <= terrainHeight + player.heightOffset && !player.firstJump) {
+            player.object.position.y = terrainHeight + player.heightOffset; // Snap to terrain
             player.isJumping = false;
             player.jumpVelocity = 0; // Reset jump velocity
         }
     }
 
     const waterHeight = terrain.waterLevel;
-    const terrainHeight = terrain.getHeightAt(player.mesh.position.x, player.mesh.position.z);
+    terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
 
-    console.log(`  player water: ${player.isInWater}, jump: ${player.isJumping}, waterHeight: ${waterHeight}`);
-    if (player.mesh.position.y <= terrainHeight + 0.5) {
-        player.mesh.position.y = terrainHeight + 0.5;
+    // console.log(`  player water: ${player.isInWater}, jump: ${player.isJumping}, waterHeight: ${waterHeight}`);
+    if (player.object.position.y <= terrainHeight + player.heightOffset) {
+        player.object.position.y = terrainHeight + player.heightOffset;
     } else if (!player.isInWater) {
         player.isJumping = true;
     }
@@ -400,7 +438,7 @@ function updatePlayer(deltaTime) {
     player.regenerateMana(0.05);
 
     // Drowning mechanic
-    const headY = player.mesh.position.y + 0.5; // Head at top of 1-unit cube
+    const headY = player.object.position.y + player.heightOffset; // Head at top of 1-unit cube
     if (headY < waterHeight) {
         if (player.drowningTimer < player.drowningTime) {
             player.drowningTimer += deltaTime;

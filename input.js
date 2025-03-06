@@ -28,6 +28,10 @@ function setupInput() {
                     player.moveUp = true;
                 }
                 break;
+            case "ShiftLeft":
+                player.isRunning = true;
+                player.runTimer = 3;
+                break;
             case "Digit1": useAction(0); break;
             case "Digit2": useAction(1); break;
             case "Digit3": useAction(2); break;
@@ -35,6 +39,11 @@ function setupInput() {
             case "Digit5": useAction(4); break;
             case "Digit6": useAction(5); break;
             case "KeyX": interactWithEnvironment(); checkQuests(); break;
+            case "KeyM": console.log("Map key pressed"); break; // Map
+            case "KeyI": console.log("Inventory key pressed"); break; // Inventory
+            case "KeyP": console.log("Character panel key pressed"); break; // Character
+            case "KeyU": console.log("Quests key pressed"); break; // Quests
+            case "Escape": console.log("Escape key pressed"); break; // Menu/Pause
         }
     });
 
@@ -69,6 +78,11 @@ function setupInput() {
         if (event.button === 2) {
             isRightClicking = false;
             document.exitPointerLock();
+            if (player.useComplexModel) {
+                player.object.rotation.y += player.head.rotation.y; // Body follows head yaw
+                player.head.rotation.y = 0;
+                player.head.rotation.x = 0;
+            }
         } else if (event.button === 0) {
             isLeftClicking = false;
             if (!isRightClicking) interactWithEnvironment();
@@ -78,7 +92,13 @@ function setupInput() {
 
     document.addEventListener("mousemove", event => {
         if (isRightClicking && document.pointerLockElement === document.querySelector("canvas")) {
-            player.mesh.rotation.y -= event.movementX * 0.002; // Yaw (horizontal)
+            if (player.useComplexModel) {
+                player.head.rotation.y -= event.movementX * 0.004; // Yaw
+                player.head.rotation.x -= event.movementY * 0.004; // Pitch
+                player.head.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, player.head.rotation.x));
+            } else {
+                player.object.rotation.y -= event.movementX * 0.004;
+            }
     
             // Apply padding effect to pitch
             const maxPitch = Math.PI / 2; // Maximum pitch (straight up)

@@ -31,7 +31,7 @@ async function loadMap(mapName) {
     }
     doodads.forEach(d => scene.remove(d.mesh));
     enemies.forEach(e => scene.remove(e.mesh));
-    questGivers.forEach(qg => scene.remove(qg.mesh));
+    questGivers.forEach(qg => scene.remove(qg.object));
     if (currentMap?.lighting) {
         scene.remove(currentMap.lighting.directional);
         scene.remove(currentMap.lighting.ambient);
@@ -200,14 +200,14 @@ function createDoodad(type, variant, x, z, biome, variantConfig) {
 
 function interactWithEnvironment() {
     questGivers.forEach(qg => {
-        if (player.mesh.position.distanceTo(qg.mesh.position) < 2) {
+        if (player.object.position.distanceTo(qg.object.position) < 2) {
             qg.interact(player);
             return;
         }
     });
 
     doodads.forEach(doodad => {
-        if (player.mesh.position.distanceTo(doodad.mesh.position) < 2) {
+        if (player.object.position.distanceTo(doodad.object.position) < 2) {
             doodad.interact();
         }
     });

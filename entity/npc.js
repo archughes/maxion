@@ -8,22 +8,21 @@ import { Character } from './character.js'; // Assuming this exists
 import { terrain } from '../environment/environment.js';
 import { updateQuestUI } from '../ui.js'
 
-const npcGeometry = new THREE.BoxGeometry(1, 1, 1);
 const damageMultiplier = { easy: 0.5, normal: 1, hard: 2 }[settings.difficulty];
 
 class NPC extends Character {
     constructor(x, z, color = 0xff0000) {
         const material = new THREE.MeshPhongMaterial({ color });
-        super(new THREE.Mesh(npcGeometry, material), 50 * damageMultiplier, 0.05);
-        this.mesh.position.set(x || 5, 0.5, z || 5);
+        super(material, 50 * damageMultiplier, 0.05, false);
+        this.object.position.set(x || 5, this.heightOffset, z || 5);
         this.damage = 20 * damageMultiplier;
-        scene.add(this.mesh);
+        scene.add(this.object);
 
         this.healthBar = new THREE.Mesh(
             new THREE.PlaneGeometry(1, 0.1),
             new THREE.MeshBasicMaterial({ color: 0xff0000 })
         );
-        this.healthBar.position.set(this.mesh.position.x, this.mesh.position.y + 1.5, this.mesh.position.z);
+        this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
         scene.add(this.healthBar);
     }
 
@@ -34,36 +33,36 @@ class NPC extends Character {
 
     adjustToTerrain(terrain) {
         super.adjustToTerrain(terrain); 
-        this.healthBar.position.set(this.mesh.position.x, this.mesh.position.y + 1.5, this.mesh.position.z);
+        this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
     }
 
     update(deltaTime) {
         super.update(deltaTime);
         if (this.health <= 0) return;
-        const distanceToPlayer = this.mesh.position.distanceTo(player.mesh.position);
+        const distanceToPlayer = this.object.position.distanceTo(player.object.position);
         if (distanceToPlayer < 5) {
             const direction = Math.atan2(
-                player.mesh.position.z - this.mesh.position.z,
-                player.mesh.position.x - this.mesh.position.x
+                player.object.position.z - this.object.position.z,
+                player.object.position.x - this.object.position.x
             );
-            this.mesh.position.x += Math.cos(direction) * this.speed;
-            this.mesh.position.z += Math.sin(direction) * this.speed;
-            this.mesh.position.y = terrain.getHeightAt(this.mesh.position.x, this.mesh.position.z) + 0.5;
-            this.healthBar.position.set(this.mesh.position.x, this.mesh.position.y + 1.5, this.mesh.position.z);
+            this.object.position.x += Math.cos(direction) * this.speed;
+            this.object.position.z += Math.sin(direction) * this.speed;
+            this.object.position.y = terrain.getHeightAt(this.object.position.x, this.object.position.z) + 0 + this.heightOffset;
+            this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
             if (distanceToPlayer < 1 && this.attackCooldown <= 0) {
                 player.takeDamage(this.damage);
                 this.attackCooldown = this.attackInterval;
             }
         } else {
             const direction = Math.random() * 2 * Math.PI;
-            this.mesh.position.x += Math.cos(direction) * this.speed;
-            this.mesh.position.z += Math.sin(direction) * this.speed;
-            this.mesh.position.y = terrain.getHeightAt(this.mesh.position.x, this.mesh.position.z) + 0.5;
-            this.healthBar.position.set(this.mesh.position.x, this.mesh.position.y + 1.5, this.mesh.position.z);
+            this.object.position.x += Math.cos(direction) * this.speed;
+            this.object.position.z += Math.sin(direction) * this.speed;
+            this.object.position.y = terrain.getHeightAt(this.object.position.x, this.object.position.z) + 0 + this.heightOffset;
+            this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
         }
 
         // Drowning logic
-        const headY = this.mesh.position.y + 0.5;
+        const headY = this.object.position.y + this.heightOffset;
         const waterHeight = terrain?.water?.position.y ?? Infinity;
         if (headY < waterHeight) {
             this.drowningTimer += deltaTime;
@@ -90,7 +89,7 @@ class QuestGiver extends NPC {
 
     adjustToTerrain(terrain) {
         super.adjustToTerrain(terrain);
-        this.exclamation.position.y = this.mesh.position.y + 1.5;
+        this.exclamation.position.y = this.object.position.y + 1.0 + this.heightOffset;
     }
 
     update() {
@@ -98,7 +97,7 @@ class QuestGiver extends NPC {
     }
 
     interact() {
-        if (player.mesh.position.distanceTo(this.mesh.position) < 2) {
+        if (player.object.position.distanceTo(this.object.position) < 2) {
             // Find an active quest this NPC can handle (e.g., talk-type quests)
             const relevantQuest = activeQuests.find(q => q.type === "talk" || q.type === "defeat" || q.type === "boss") || this.quest;
             
@@ -141,7 +140,7 @@ class QuestGiver extends NPC {
             new THREE.SphereGeometry(0.2),
             new THREE.MeshPhongMaterial({ color: 0xffff00 })
         );
-        exclamation.position.set(this.mesh.position.x, this.mesh.position.y + 1.5, this.mesh.position.z);
+        exclamation.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
         scene.add(exclamation);
         return exclamation;
     }
@@ -161,10 +160,10 @@ function spawnEnemy() {
 }
 
 function spawnNPCs(mapData) {
-    enemies.forEach(enemy => scene.remove(enemy.mesh));
+    enemies.forEach(enemy => scene.remove(enemy.object));
     enemies.length = 0;
     questGivers.forEach(qg => {
-        scene.remove(qg.mesh);
+        scene.remove(qg.object);
         scene.remove(qg.exclamation);
     });
     questGivers.length = 0;
@@ -193,7 +192,7 @@ function updateNPC(deltaTime) {
     enemies.forEach(enemy => {
         enemy.update(deltaTime);
         if (enemy.health <= 0) {
-            scene.remove(enemy.mesh);
+            scene.remove(enemy.object);
             enemies.splice(enemies.indexOf(enemy), 1);
             player.gainXP(50);
             activeQuests.forEach(quest => {
