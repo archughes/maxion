@@ -472,8 +472,9 @@ function drawPlayerIndicator(ctx, player, terrainCanvas, srcX, srcY, srcW, srcH,
 function setupMinimap() {
     const minimap = document.querySelector('.minimap');
     const timeFrame = document.querySelector('.time-frame');
+    const defaultSize = 150; // Default minimap size when not expanded
 
-    function updateTimeFramePosition(newSize) {
+    function updateTimeFramePosition(newSize = defaultSize) {
         const minimapRect = minimap.getBoundingClientRect();
         const timeFrameWidth = timeFrame.offsetWidth;
 
@@ -486,17 +487,24 @@ function setupMinimap() {
 
     minimap.addEventListener('click', () => {
         const isExpanded = minimap.classList.toggle('expanded');
-        const newSize = isExpanded ? 500 : 150;
+        const newSize = isExpanded ? 500 : defaultSize;
         const canvas = document.querySelector('.map-frame canvas');
         if (canvas) {
             canvas.width = newSize;
             canvas.height = newSize;
         }
         updateTimeFramePosition(newSize);
-        updateMinimap()
+        updateMinimap();
     });
 
-    updateTimeFramePosition();
+    // Ensure DOM is ready before positioning
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        updateTimeFramePosition(defaultSize);
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTimeFramePosition(defaultSize);
+        });
+    }
 }
 
 function updateMinimap() {
