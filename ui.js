@@ -177,45 +177,6 @@ function setupPopups() {
                 else if (target.id === "character-popup") updateCharacterUI();
                 else if (target.id === "stats-popup") updateStatsUI();
                 else if (target.id === "quests-popup") updateQuestUI();
-                else if (target.id === "map-popup") {
-                    renderMap(); // Render initially
-
-                    // Draggable functionality
-                    let isDragging = false;
-                    let startX, startY;
-                    target.addEventListener("mousedown", (e) => {
-                        isDragging = true;
-                        startX = e.clientX - target.offsetLeft;
-                        startY = e.clientY - target.offsetTop;
-                    });
-                    document.addEventListener("mousemove", (e) => {
-                        if (isDragging) {
-                            target.style.left = `${e.clientX - startX}px`;
-                            target.style.top = `${e.clientY - startY}px`;
-                        }
-                    });
-                    document.addEventListener("mouseup", () => {
-                        isDragging = false;
-                    });
-
-                    // Periodic updates (twice per second)
-                    let mapUpdateInterval;
-                    const startMapUpdate = () => {
-                        if (mapUpdateInterval) clearInterval(mapUpdateInterval);
-                        mapUpdateInterval = setInterval(() => {
-                            if (target.style.display === "block") {
-                                renderMap();
-                            }
-                        }, 500); // 500ms = twice per second
-                    };
-                    startMapUpdate();
-
-                    // Stop updates when closed
-                    target.querySelector(".close-btn").addEventListener("click", () => {
-                        target.style.display = "none";
-                        clearInterval(mapUpdateInterval);
-                    }, { once: true });
-                }
             }
         });
     });
@@ -372,139 +333,169 @@ function updateXPUI() {
     document.querySelector(".xp-fill").style.width = `${xpPercent}%`;
 }
 
-function renderTerrainToCanvas(canvas, terrain, player, isMinimap = false) {
+let terrainCacheCanvas = null;
+export const terrainCache = {
+    terrainCacheNeedsUpdate: true,
+    newDiscoveries: []
+};
+
+function initializeTerrainCache() {
+    terrainCacheCanvas = document.createElement('canvas');
+    terrainCacheCanvas.width = terrain.terrainMapCanvas.width;
+    terrainCacheCanvas.height = terrain.terrainMapCanvas.height;
+    const ctx = terrainCacheCanvas.getContext('2d');
+    
+    // Draw the static terrain map
+    ctx.drawImage(terrain.terrainMapCanvas, 0, 0);
+    
+    // Apply full fog initially (since nothing is known yet)
+    ctx.globalAlpha = 0.5; // Semi-transparent fog
+    ctx.fillStyle = 'rgb(102, 102, 102)';
+    ctx.fillRect(0, 0, terrainCacheCanvas.width, terrainCacheCanvas.height);
+    ctx.globalAlpha = 1.0; // Reset alpha
+}
+
+function renderTerrainToCanvas(canvas, terrain, player) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const terrainCanvas = terrain.terrainMapCanvas;
-    if (!terrainCanvas) return;
+    if (!terrainCacheCanvas) initializeTerrainCache();
 
-    // Player position in terrain coordinates (normalized 0 to 1, then scaled to canvas)
+    if (terrainCache.terrainCacheNeedsUpdate) {
+        const cacheCtx = terrainCacheCanvas.getContext('2d');
+        
+        if (terrainCache.newDiscoveries && terrainCache.newDiscoveries.length > 0) {
+            // Calculate segment size on the canvas
+            const widthSegments = terrain.geometry.parameters.widthSegments;
+            const heightSegments = terrain.geometry.parameters.heightSegments;
+            const segWidth = terrainCacheCanvas.width / widthSegments;
+            const segHeight = terrainCacheCanvas.height / heightSegments;
+
+            // Update only the newly discovered segments
+            terrainCache.newDiscoveries.forEach(({ x, z }) => {
+                const canvasX = x * segWidth;
+                const canvasY = z * segHeight;
+                // Redraw the terrain segment to remove fog
+                cacheCtx.drawImage(
+                    terrain.terrainMapCanvas,
+                    canvasX, canvasY, segWidth, segHeight, // Source rectangle
+                    canvasX, canvasY, segWidth, segHeight  // Destination rectangle
+                );
+            });
+            
+            // Clear the discoveries list after processing
+            terrainCache.newDiscoveries = [];
+        }
+        // Note: No else clause needed; initial full render is handled in initializeTerrainCache
+        
+        terrainCache.terrainCacheNeedsUpdate = false;
+    }
+
+    // Crop and draw to the minimap canvas (unchanged)
+    const playerX = (player.object.position.x / terrain.width + 0.5) * terrainCacheCanvas.width;
+    const playerZ = (player.object.position.z / terrain.height + 0.5) * terrainCacheCanvas.height;
+    const viewWidth = canvas.width;
+    const viewHeight = canvas.height;
+
+    let srcX = playerX - viewWidth / 2;
+    let srcY = playerZ - viewHeight / 2;
+    srcX = Math.max(0, Math.min(srcX, terrainCacheCanvas.width - viewWidth));
+    srcY = Math.max(0, Math.min(srcY, terrainCacheCanvas.height - viewHeight));
+
+    ctx.drawImage(terrainCacheCanvas, srcX, srcY, viewWidth, viewHeight, 0, 0, viewWidth, viewHeight);
+    drawPlayerIndicator(ctx, player, terrainCacheCanvas, srcX, srcY, viewWidth, viewHeight, viewWidth, viewHeight, { arrowSize: 10 });
+}
+
+function drawPlayerIndicator(ctx, player, terrainCanvas, srcX, srcY, srcW, srcH, viewWidth, viewHeight, options = {}) {
+    // Default options with fallback values
+    const {
+        arrowSize = 20,
+        arrowColor = 'red',
+        coneDistance = 70,
+        coneAngle = Math.PI / 2,
+        coneColor = 'rgba(0, 0, 255, 0.3)',
+        angleOffset = Math.PI / 2,
+        showCone = true
+    } = options;
+
+    // Scale player position to terrainCanvas coordinates
     const playerX = (player.object.position.x / terrain.width + 0.5) * terrainCanvas.width;
     const playerZ = (player.object.position.z / terrain.height + 0.5) * terrainCanvas.height;
+    const playerRotation = -player.object.rotation.y;
 
-    if (isMinimap) {
-        // Minimap: Draw a centered portion around the player
-        const viewWidth = canvas.width;
-        const viewHeight = canvas.height;
+    let scaledX, scaledZ;
 
-        let srcX = playerX - viewWidth / 2;
-        let srcY = playerZ - viewHeight / 2;
-        let srcW = viewWidth;
-        let srcH = viewHeight;
+    // Adjust position based on whether it's a minimap or full map
+    if (srcW !== viewWidth || srcH !== viewHeight) { // Minimap case (cropped view)
+        scaledX = (playerX - srcX) * (viewWidth / srcW);
+        scaledZ = (playerZ - srcY) * (viewHeight / srcH);
+    } else { // Full map case (no cropping)
+        scaledX = playerX * (viewWidth / terrainCanvas.width);
+        scaledZ = playerZ * (viewHeight / terrainCanvas.height);
+    }
 
-        // Clamp to terrainCanvas bounds
-        if (srcX < 0) {
-            srcW += srcX;
-            srcX = 0;
-        }
-        if (srcY < 0) {
-            srcH += srcY;
-            srcY = 0;
-        }
-        if (srcX + srcW > terrainCanvas.width) {
-            srcW = terrainCanvas.width - srcX;
-        }
-        if (srcY + srcH > terrainCanvas.height) {
-            srcH = terrainCanvas.height - srcY;
-        }
-
-        // Draw terrain, overlaying knownMap
-        ctx.drawImage(terrainCanvas, srcX, srcY, srcW, srcH, 0, 0, viewWidth, viewHeight);
-
-        // Overlay knownMap (green for known, gray for unknown)
-        const widthSegments = terrain.geometry.parameters.widthSegments;
-        const heightSegments = terrain.geometry.parameters.heightSegments;
-        for (let z = 0; z < heightSegments; z++) {
-            for (let x = 0; x < widthSegments; x++) {
-                const gridPos = `${x},${z}`;
-                if (!player.knownMap.has(gridPos)) {
-                    const terrainX = (x / widthSegments) * viewWidth;
-                    const terrainY = (z / heightSegments) * viewHeight;
-                    ctx.fillStyle = 'rgba(102, 102, 102, 1.0)'; // Gray for unexplored
-                    ctx.fillRect(terrainX, terrainY, viewWidth / widthSegments, viewHeight / heightSegments);
-                }
-            }
-        }
-
-        // Draw player arrow at center
-        const arrowSize = 10;
-        ctx.fillStyle = 'red';
-        ctx.beginPath();
-        ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(player.object.rotation.y); // Corrected 180-degree offset
-        ctx.moveTo(arrowSize, 0);
-        ctx.lineTo(-arrowSize / 2, arrowSize / 2);
-        ctx.lineTo(-arrowSize / 2, -arrowSize / 2);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-
-        // Draw exploration cone
-        const viewDistance = 50;
-        const viewAngle = 2 * Math.PI / 3; // As per updatePlayer
-        const scale = viewWidth / terrain.width;
-        ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(player.object.rotation.y); // Corrected 180-degree offset
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, viewDistance * scale, -viewAngle / 2, viewAngle / 2);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
-        ctx.fill();
-        ctx.restore();
-    } else {
-        // World map: Draw the entire terrain
-        ctx.drawImage(terrainCanvas, 0, 0, canvas.width, canvas.height);
-
-        // Overlay knownMap (green for known, gray for unknown)
-        const widthSegments = terrain.geometry.parameters.widthSegments;
-        const heightSegments = terrain.geometry.parameters.heightSegments;
-        for (let z = 0; z < heightSegments; z++) {
-            for (let x = 0; x < widthSegments; x++) {
-                const gridPos = `${x},${z}`;
-                if (!player.knownMap.has(gridPos)) {
-                    const terrainX = (x / widthSegments) * canvas.width;
-                    const terrainY = (z / heightSegments) * canvas.height;
-                    ctx.fillStyle = 'rgba(102, 102, 102, 0.5)'; // Gray for unexplored
-                    ctx.fillRect(terrainX, terrainY, canvas.width / widthSegments, canvas.height / heightSegments);
-                }
-            }
-        }
-
-        // Draw player arrow at scaled position
-        const scaledX = (playerX / terrainCanvas.width) * canvas.width;
-        const scaledZ = (playerZ / terrainCanvas.height) * canvas.height;
-        const arrowSize = 20;
-        ctx.fillStyle = 'red';
-        ctx.beginPath();
+    // Draw exploration cone
+    if (showCone) {
         ctx.save();
         ctx.translate(scaledX, scaledZ);
-        ctx.rotate(player.object.rotation.y); // Corrected 180-degree offset
-        ctx.moveTo(arrowSize, 0);
-        ctx.lineTo(-arrowSize / 2, arrowSize / 2);
-        ctx.lineTo(-arrowSize / 2, -arrowSize / 2);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
+        ctx.rotate(playerRotation + angleOffset); // Align cone with player direction
 
-        // Draw exploration cone
-        const viewDistance = 50;
-        const viewAngle = 2 * Math.PI / 3; // As per updatePlayer
-        const scale = canvas.width / terrain.width;
-        ctx.save();
-        ctx.translate(scaledX, scaledZ);
-        ctx.rotate(player.object.rotation.y); // Corrected 180-degree offset
+        const originalSize = 150;
+        const originalScale = originalSize / terrain.width;
+        const fixedConeRadius = coneDistance * originalScale;
+
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.arc(0, 0, viewDistance * scale, -viewAngle / 2, viewAngle / 2);
+        ctx.arc(0, 0, fixedConeRadius, -coneAngle / 2, coneAngle / 2);
         ctx.closePath();
-        ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
+        ctx.fillStyle = coneColor;
         ctx.fill();
         ctx.restore();
     }
+
+    // Draw player arrow
+    ctx.fillStyle = arrowColor;
+    ctx.beginPath();
+    ctx.save();
+    ctx.translate(scaledX, scaledZ);
+    ctx.rotate(playerRotation + angleOffset); // Adjust rotation for arrow direction
+    ctx.moveTo(arrowSize, 0);
+    ctx.lineTo(-arrowSize / 2, arrowSize / 2);
+    ctx.lineTo(-arrowSize / 2, -arrowSize / 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+}
+
+function setupMinimap() {
+    const minimap = document.querySelector('.minimap');
+    const timeFrame = document.querySelector('.time-frame');
+
+    function updateTimeFramePosition(newSize) {
+        const minimapRect = minimap.getBoundingClientRect();
+        const timeFrameWidth = timeFrame.offsetWidth;
+
+        const top = 5;
+        const left = minimapRect.right - (newSize / 2) - (timeFrameWidth / 2);
+
+        timeFrame.style.top = `${top}px`;
+        timeFrame.style.left = `${left}px`;
+    }
+
+    minimap.addEventListener('click', () => {
+        const isExpanded = minimap.classList.toggle('expanded');
+        const newSize = isExpanded ? 500 : 150;
+        const canvas = document.querySelector('.map-frame canvas');
+        if (canvas) {
+            canvas.width = newSize;
+            canvas.height = newSize;
+        }
+        updateTimeFramePosition(newSize);
+        updateMinimap()
+    });
+
+    updateTimeFramePosition();
 }
 
 function updateMinimap() {
@@ -515,7 +506,7 @@ function updateMinimap() {
         canvas.height = 150;
         document.querySelector(".map-frame").appendChild(canvas);
     }
-    renderTerrainToCanvas(canvas, terrain, player, true);
+    renderTerrainToCanvas(canvas, terrain, player);
 
     // Update time display
     const timeDisplay = document.querySelector(".time-display");
@@ -524,65 +515,6 @@ function updateMinimap() {
         const minutes = Math.floor(timeSystem.time % 60);
         timeDisplay.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
-}
-
-function renderMap() {
-    const canvas = document.querySelector("#map-popup .map-canvas canvas") || document.createElement('canvas');
-    if (!document.querySelector("#map-popup .map-canvas canvas")) {
-        canvas.width = 512;
-        canvas.height = 300; // Match CSS height
-        document.querySelector("#map-popup .map-canvas").appendChild(canvas);
-    }
-
-    const ctx = canvas.getContext('2d');
-    const terrainCanvas = terrain.terrainMapCanvas;
-    if (!terrainCanvas) return;
-
-    const playerX = (player.object.position.x / terrain.width + 0.5) * terrainCanvas.width;
-    const playerZ = (player.object.position.z / terrain.height + 0.5) * terrainCanvas.height;
-    const viewWidth = canvas.width;
-    const viewHeight = canvas.height;
-
-    let srcX = playerX - viewWidth / 2;
-    let srcY = playerZ - viewHeight / 2;
-    let srcW = viewWidth;
-    let srcH = viewHeight;
-
-    srcX = Math.max(0, Math.min(srcX, terrainCanvas.width - srcW));
-    srcY = Math.max(0, Math.min(srcY, terrainCanvas.height - srcH));
-    srcW = Math.min(srcW, terrainCanvas.width - srcX);
-    srcH = Math.min(srcH, terrainCanvas.height - srcY);
-
-    ctx.drawImage(terrainCanvas, srcX, srcY, srcW, srcH, 0, 0, viewWidth, viewHeight);
-
-    // Fog of War
-    const widthSegments = terrain.geometry.parameters.widthSegments;
-    const heightSegments = terrain.geometry.parameters.heightSegments;
-    for (let z = 0; z < heightSegments; z++) {
-        for (let x = 0; x < widthSegments; x++) {
-            const gridPos = `${x},${z}`;
-            if (!player.knownMap.has(gridPos)) {
-                const terrainX = (x / widthSegments) * viewWidth;
-                const terrainY = (z / heightSegments) * viewHeight;
-                ctx.fillStyle = 'rgba(102, 102, 102, 0.5)';
-                ctx.fillRect(terrainX, terrainY, viewWidth / widthSegments, viewHeight / heightSegments);
-            }
-        }
-    }
-
-    // Player arrow at center
-    const arrowSize = 20;
-    ctx.fillStyle = 'red';
-    ctx.beginPath();
-    ctx.save();
-    ctx.translate(viewWidth / 2, viewHeight / 2);
-    ctx.rotate(player.object.rotation.y);
-    ctx.moveTo(arrowSize, 0);
-    ctx.lineTo(-arrowSize / 2, arrowSize / 2);
-    ctx.lineTo(-arrowSize / 2, -arrowSize / 2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
 }
 
 export { 
@@ -598,5 +530,6 @@ export {
     updateXPUI, 
     updateStatsUI, 
     updateMinimap,
-    renderMap
+    initializeTerrainCache, 
+    setupMinimap
 };

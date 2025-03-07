@@ -2,9 +2,9 @@
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
 import { setupInput } from './input.js';
 import { scene, camera, renderer } from './environment/scene.js';
-import { player, updatePlayer } from './entity/player.js';
+import { player, updatePlayer, updateKnownMap } from './entity/player.js';
 import { enemies, questGivers, updateNPC } from './entity/npc.js';
-import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateManaUI, updateQuestUI, updateMinimap } from './ui.js';
+import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateManaUI, updateQuestUI, initializeTerrainCache, setupMinimap } from './ui.js';
 import { loadQuests } from './quests.js';
 import { craftItem, loadItems, loadRecipes } from './items.js';
 import { loadMap, terrain, timeSystem, doodads, skySystem } from './environment/environment.js';
@@ -17,7 +17,7 @@ manaBar.innerHTML = '<div class="mana-fill" style="width: 100px;"></div>';
 document.querySelector(".ui").appendChild(manaBar);
 
 // Input Handling
-let clock = new THREE.Clock(), attack = false, fireball = false, invisibility = false, jumpVelocity = 0, isJumping = false, gravity = 0.01;
+let clock = new THREE.Clock();
 export const cameraState = {
     pitch: 0
 };
@@ -38,6 +38,8 @@ async function init() {
     updateHealthUI();
     updateManaUI();
     updateQuestUI();
+    initializeTerrainCache();
+    setupMinimap();
     animate();
     update();
 }
@@ -49,9 +51,6 @@ window.levelUpSound = levelUpSound; // Make it globally accessible
 const attackSound = new Audio();
 attackSound.src = 'sounds/swordhit1.wav'; // Valid MP3 URL
 attackSound.preload = 'auto';
-
-let lastMapUpdate = 0;
-const mapUpdateInterval = 500;
 
 function animate() {
     if (player.health <= 0) {
@@ -65,14 +64,9 @@ function animate() {
     skySystem.update(deltaTime, timeSystem, terrain.terrainFunc);
     
     player.updateCooldowns(deltaTime);
+    updateKnownMap();
     updatePlayer(deltaTime);
     updateNPC(deltaTime);
-    
-    const currentTime = Date.now();
-    if (currentTime - lastMapUpdate >= mapUpdateInterval) {
-        updateMinimap();
-        lastMapUpdate = currentTime;
-    }
 
     // Combat and Skills
     if (player.lastAction) {

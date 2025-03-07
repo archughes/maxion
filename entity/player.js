@@ -7,6 +7,7 @@ import { terrain } from '../environment/environment.js';
 import { checkCollectionQuests } from '../quests.js';
 import { items } from '../items.js';
 import { showDrowningMessage, removeDrowningMessage } from '../game.js';
+import { updateMinimap, terrainCache } from '../ui.js';
 
 const INVENTORY_SIZE = 8;
 
@@ -278,36 +279,78 @@ class Bag {
 const player = new Player();
 
 let lastKnownMapUpdate = 0;
+let lastPlayerPosition = new THREE.Vector3();
+let lastPlayerRotationY = 0;
 const knownMapUpdateInterval = 500;
-function updatePlayer(deltaTime) {
+
+function updateKnownMap() {
     const currentTime = Date.now();
     if (currentTime - lastKnownMapUpdate >= knownMapUpdateInterval) {
-        // Exploration: Cone of viewable distance
-        const viewDistance = 50; // Adjust this value for the desired cone radius
-        const viewAngle = 2 * Math.PI / 3; // 45-degree cone (adjust as needed)
-        const playerDir = new THREE.Vector3(Math.sin(player.object.rotation.y), 0, Math.cos(player.object.rotation.y)).normalize();
+        const playerPos = player.object.position;
+        const playerRotationY = player.object.rotation.y;
+        
+        if (playerPos.equals(lastPlayerPosition) && playerRotationY === lastPlayerRotationY) {
+            return;
+        }
+        
+        lastPlayerPosition.copy(playerPos);
+        lastPlayerRotationY = playerRotationY;
+
+        const viewDistance = 25;
+        const viewAngle = Math.PI / 2;
+        const playerDir = new THREE.Vector3(Math.sin(playerRotationY), 0, Math.cos(playerRotationY)).normalize();
 
         const widthSegments = terrain.geometry.parameters.widthSegments;
         const heightSegments = terrain.geometry.parameters.heightSegments;
         const segmentWidth = terrain.width / widthSegments;
         const segmentHeight = terrain.height / heightSegments;
 
-        for (let z = 0; z < heightSegments; z++) {
-            for (let x = 0; x < widthSegments; x++) {
+        const playerSegX = Math.floor((playerPos.x / segmentWidth) + widthSegments / 2);
+        const playerSegZ = Math.floor((playerPos.z / segmentHeight) + heightSegments / 2);
+        const segRadius = Math.ceil(viewDistance / Math.min(segmentWidth, segmentHeight));
+
+        // Collect newly discovered segments
+        let newDiscoveries = [];
+
+        const minX = Math.max(0, playerSegX - segRadius);
+        const maxX = Math.min(widthSegments - 1, playerSegX + segRadius);
+        const minZ = Math.max(0, playerSegZ - segRadius);
+        const maxZ = Math.min(heightSegments - 1, playerSegZ + segRadius);
+
+        for (let z = minZ; z <= maxZ; z++) {
+            for (let x = minX; x <= maxX; x++) {
                 const worldX = (x - widthSegments / 2) * segmentWidth;
                 const worldZ = (z - heightSegments / 2) * segmentHeight;
-                const toPoint = new THREE.Vector3(worldX - player.object.position.x, 0, worldZ - player.object.position.z).normalize();
-                const distance = player.object.position.distanceTo(new THREE.Vector3(worldX, 0, worldZ));
-                const angleDiff = Math.acos(playerDir.dot(toPoint));
+                const toPoint = new THREE.Vector3(worldX - playerPos.x, 0, worldZ - playerPos.z);
+                const distance = toPoint.length();
 
-                if (distance <= viewDistance && angleDiff <= viewAngle / 2) {
-                    player.knownMap.add(`${x},${z}`);
+                if (distance > viewDistance) continue;
+
+                const toPointNorm = toPoint.normalize();
+                const angleDiff = Math.acos(playerDir.dot(toPointNorm));
+
+                if (angleDiff <= viewAngle / 2) {
+                    const key = `${x},${z}`;
+                    if (!player.knownMap.has(key)) {
+                        player.knownMap.add(key);
+                        newDiscoveries.push({ x, z }); // Store new segment
+                    }
                 }
             }
         }
+
+        // If there are new discoveries, store them and flag an update
+        if (newDiscoveries.length > 0) {
+            terrainCache.newDiscoveries = newDiscoveries;
+            terrainCache.terrainCacheNeedsUpdate = true;
+        }
+        
+        updateMinimap();
         lastKnownMapUpdate = currentTime;
     }
+}
 
+function updatePlayer(deltaTime) {
     // Determine if player is in water
     const terrainType = terrain.terrainFunc(player.object.position.x, player.object.position.z, player.object.position.y);
     // console.log(`terrainType ${terrainType}`);
@@ -428,8 +471,8 @@ function updatePlayer(deltaTime) {
     terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
 
     // console.log(`  player water: ${player.isInWater}, jump: ${player.isJumping}, waterHeight: ${waterHeight}`);
-    if (player.object.position.y <= terrainHeight + player.heightOffset) {
-        player.object.position.y = terrainHeight + player.heightOffset;
+    if (player.object.position.y <= terrainHeight + 0.5) {
+        player.object.position.y = terrainHeight + 0.5;
     } else if (!player.isInWater) {
         player.isJumping = true;
     }
@@ -459,4 +502,4 @@ function updatePlayer(deltaTime) {
     }
 }
 
-export { player, updatePlayer };
+export { player, updatePlayer, updateKnownMap };
