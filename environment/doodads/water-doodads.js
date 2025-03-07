@@ -39,6 +39,11 @@ export class Coral extends Doodad {
         this.variant = variant;
         this.biome = biome;
         this.baseHeight = 0;
+        this.isPlant = true;
+    }
+
+    update(deltaTime) {
+        this.updateGrowth();
     }
 
     harvest() {
@@ -68,6 +73,11 @@ export class Seaweed extends Doodad {
         this.variant = variant;
         this.biome = biome;
         this.baseHeight = 0;
+        this.isPlant = true;
+    }
+
+    update(deltaTime) {
+        this.updateGrowth();
     }
 
     harvest() {

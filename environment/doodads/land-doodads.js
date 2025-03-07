@@ -98,6 +98,11 @@ export class Tree extends Doodad {
         this.baseHeight = 0;
         this.trunk = trunk;
         this.leaves = leaves;
+        this.isPlant = true;
+    }
+
+    update(deltaTime) {
+        this.updateGrowth();
     }
 
     harvest() {
@@ -190,6 +195,11 @@ export class Bush extends Doodad {
         this.variant = variant;
         this.biome = biome;
         this.baseHeight = 0.4;
+        this.isPlant = true;
+    }
+
+    update(deltaTime) {
+        this.updateGrowth();
     }
 
     harvest() {
@@ -227,6 +237,7 @@ export class Rock extends Doodad {
                     opacity: 0.8,
                     shininess: 100
                 });
+                this.glow = this.addGlow(0x88CCEE, 0.5, 2);
                 break;
             case 'large':
                 geometry = new THREE.SphereGeometry(1.2, 8, 8);
@@ -321,6 +332,11 @@ export class Flower extends Doodad {
         this.variant = variant;
         this.biome = biome;
         this.baseHeight = 0.25;
+        this.isPlant = true;
+    }
+
+    update(deltaTime) {
+        this.updateGrowth();
     }
 
     harvest() {
@@ -337,19 +353,53 @@ export class Campfire extends Doodad {
             new THREE.CylinderGeometry(0.5, 0.5, 0.3, 8),
             new THREE.MeshPhongMaterial({ color: 0x8B4513 })
         );
-        const flames = new THREE.Mesh(
-            new THREE.ConeGeometry(0.3, 0.5, 8),
-            new THREE.MeshPhongMaterial({ color: 0xFF4500 })
-        );
-        flames.position.y = 0.2;
         group.add(logs);
-        group.add(flames);
         group.position.set(x, 0.15, z);
         const difficulty = { 'summer': 1, 'autumn': 1.5, 'spring': 2, 'winter': 2.5 }[biome] || 1;
         super(group, 'https://freesound.org/data/previews/171/171104_2995897-lq.mp3', Math.ceil(2 * difficulty), 60 * difficulty);
         this.variant = variant;
         this.biome = biome;
         this.baseHeight = 0.15;
+
+        // Add particle system for flames
+        this.particleSystem = this.createFlameParticles();
+        this.object.add(this.particleSystem);
+
+        // Add dynamic lighting
+        this.light = this.addGlow(0xFF4500, 1.5, 5);
+    }
+
+    createFlameParticles() {
+        const particleCount = 50;
+        const particles = new THREE.Group();
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = new THREE.Mesh(
+                new THREE.SphereGeometry(0.05, 8, 8),
+                new THREE.MeshBasicMaterial({ color: 0xFF4500 })
+            );
+            particle.position.set(
+                (Math.random() - 0.5) * 0.5,
+                Math.random() * 0.5 + 0.2,
+                (Math.random() - 0.5) * 0.5
+            );
+            particle.userData.velocity = new THREE.Vector3(
+                (Math.random() - 0.5) * 0.01,
+                Math.random() * 0.02 + 0.01,
+                (Math.random() - 0.5) * 0.01
+            );
+            particles.add(particle);
+        }
+        return particles;
+    }
+
+    update(deltaTime) {
+        this.particleSystem.children.forEach(particle => {
+            particle.position.add(particle.userData.velocity.clone().multiplyScalar(deltaTime * 60));
+            if (particle.position.y > 1) {
+                particle.position.y = 0.2;
+            }
+        });
     }
 
     harvest() {
@@ -382,6 +432,11 @@ export class Cactus extends Doodad {
         this.variant = variant;
         this.biome = biome;
         this.baseHeight = 1;
+        this.isPlant = true;
+    }
+
+    update(deltaTime) {
+        this.updateGrowth();
     }
 
     harvest() {

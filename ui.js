@@ -2,7 +2,8 @@ import { player } from './entity/player.js';
 import { activeQuests, factions, canStartQuest, completedQuests } from './quests.js';
 import { useItem, craftItem } from './items.js';
 import { useAction } from './input.js';
-import { terrain, timeSystem } from './environment/environment.js';
+import { terrain } from './environment/environment.js';
+import { timeSystem } from './environment/TimeSystem.js';
 
 function updateInventoryUI() {
     const grid = document.querySelector("#inventory-popup .inventory-grid");

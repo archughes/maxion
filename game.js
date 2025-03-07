@@ -7,8 +7,9 @@ import { enemies, questGivers, updateNPC } from './entity/npc.js';
 import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateManaUI, updateQuestUI, initializeTerrainCache, setupMinimap } from './ui.js';
 import { loadQuests } from './quests.js';
 import { craftItem, loadItems, loadRecipes } from './items.js';
-import { loadMap, terrain, timeSystem, doodads, skySystem } from './environment/environment.js';
+import { loadMap, terrain, doodads, skySystem } from './environment/environment.js';
 import { SoundManager } from './environment/sound-manager.js';
+import { timeSystem } from './environment/TimeSystem.js';
 
 // Add Mana Bar to UI
 const manaBar = document.createElement("div");
@@ -61,7 +62,7 @@ function animate() {
 
     const deltaTime = clock.getDelta();
     timeSystem.update(deltaTime);
-    skySystem.update(deltaTime, timeSystem, terrain.terrainFunc);
+    skySystem.update(deltaTime, terrain.terrainFunc);
     
     player.updateCooldowns(deltaTime);
     updateKnownMap();
@@ -146,6 +147,8 @@ const maxQuestGiverDistance = 100;
 const maxEnemyDistance = 120;
 
 function update() {
+    const deltaTime = clock.getDelta();
+
     const cameraPosition = camera.position;
 
     // Doodads
@@ -153,6 +156,9 @@ function update() {
         if (doodad.object && doodad.object.position) {
             const distance = cameraPosition.distanceTo(doodad.object.position);
             doodad.visible = distance < maxDoodadDistance;
+            if (doodad.update) {
+                doodad.update(deltaTime);
+            }
         } else {
             console.warn('Invalid doodad encountered:', doodad);
         }

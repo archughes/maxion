@@ -7,7 +7,6 @@ import { Tree, Bush, Rock, Flower, Campfire, Cactus } from './doodads/land-dooda
 import { WaterPuddle, Coral, Seaweed } from './doodads/water-doodads.js';
 import { Chest, Portal, SnowPile } from './doodads/special-doodads.js';
 import { WaterSystem } from './water.js';
-import { TimeSystem } from './TimeSystem.js';
 import { SkySystem } from './SkySystem.js';
 
 // Load doodads dynamically
@@ -17,7 +16,6 @@ let currentMap = null;
 let terrain = null;
 let waterSystem = null;
 let skySystem = null;
-let timeSystem = null;
 
 async function loadMap(mapName) {
     if (terrain) scene.remove(terrain.mesh);
@@ -84,7 +82,6 @@ async function loadMap(mapName) {
     enemies.forEach(enemy => enemy.adjustToTerrain(terrain));
     questGivers.forEach(qg => qg.adjustToTerrain(terrain));
 
-    timeSystem = new TimeSystem();
     skySystem = new SkySystem(mapData);
 }
 
@@ -213,4 +210,4 @@ function interactWithEnvironment() {
     });
 }
 
-export { loadMap, interactWithEnvironment, doodads, portals, terrain, skySystem, timeSystem };
+export { loadMap, interactWithEnvironment, doodads, portals, terrain, skySystem };

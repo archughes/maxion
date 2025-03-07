@@ -1,6 +1,7 @@
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
 import { scene } from './scene.js';
 import { CloudSystem } from './CloudSystem.js';
+import { timeSystem } from './TimeSystem.js';
 
 class CelestialBody {
     constructor(config, skySystem) {
@@ -359,7 +360,7 @@ export class SkySystem {
         }));
     }
 
-    update(deltaTime, timeSystem, terrainFunc) {
+    update(deltaTime, terrainFunc) {
         const time = timeSystem.getTimeOfDay();
         const day = timeSystem.getDay();
         const isDay = time >= 6 && time < 18;
