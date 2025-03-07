@@ -7,6 +7,8 @@ class Entity {
         this.position = new THREE.Vector3();
         this.gravity = 6.5;
         this.heightOffset = 0; // Default height offset (feet to center)
+        this.baseSpeedMultiplier = 1; // Base value
+        this.speedMultiplier = this.baseSpeedMultiplier; // Dynamic value
     }
     
     takeDamage(amount) {
@@ -18,11 +20,8 @@ class Entity {
         this.object.position.y = terrainHeight + this.heightOffset;
         const waterHeight = terrain?.water?.position.y || -Infinity;
         this.isInWater = this.object.position.y - this.heightOffset < waterHeight; // Check feet position
-        if (this.isInWater) {
-            this.speedMultiplier = 0.3; // Slow movement in water
-        } else {
-            this.speedMultiplier = 1;
-        }
+        this.baseSpeedMultiplier = this.isInWater ? 0.3 : 1;
+        this.speedMultiplier = this.baseSpeedMultiplier;
     }
 }
 

@@ -358,15 +358,16 @@ function updatePlayer(deltaTime) {
 
     // Frame-rate independent speed
     let terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
-    let speedMultiplier = player.speedMultiplier;
+    let speedMultiplier = player.baseSpeedMultiplier; // Start with base
     if (player.isRunning) {
         player.runTimer -= deltaTime;
         if (player.runTimer <= 0) {
             player.isRunning = false;
         } else {
-            speedMultiplier *= 1.5;
+            speedMultiplier *= 1.5; // Apply sprint multiplier
         }
     }
+    player.speedMultiplier = speedMultiplier; // Update the dynamic multiplier
     const speed = player.speed * deltaTime * speedMultiplier;
 
     if (player.isInWater) {
@@ -449,7 +450,7 @@ function updatePlayer(deltaTime) {
 
     if (player.isInWater) {
         player.isJumping = false;
-        player.object.position.y -= player.speedMultiplier * player.gravity * deltaTime * deltaTime;
+        player.object.position.y -= player.baseSpeedMultiplier * player.gravity * deltaTime * deltaTime;
     }
 
     if (player.rotateLeft) player.object.rotation.y += 0.5* deltaTime;
@@ -471,8 +472,8 @@ function updatePlayer(deltaTime) {
     terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
 
     // console.log(`  player water: ${player.isInWater}, jump: ${player.isJumping}, waterHeight: ${waterHeight}`);
-    if (player.object.position.y <= terrainHeight + 0.5) {
-        player.object.position.y = terrainHeight + 0.5;
+    if (!player.isJumping && !player.isInWater && player.object.position.y <= terrainHeight + player.heightOffset) {
+        player.object.position.y = terrainHeight + player.heightOffset;
     } else if (!player.isInWater) {
         player.isJumping = true;
     }

@@ -60,6 +60,9 @@ function setupInput() {
                     player.moveUp = false;
                 }
                 break;
+            case "ShiftLeft":
+                player.isRunning = false;
+                break;
         }
     });
 
