@@ -29,7 +29,10 @@
             left: 80px; /* Adjusted for character image */
             width: 200px;
             height: 20px;
-            background: url('parchment-texture.jpg'); /* Medieval parchment texture */
+            background: url('parchment-texture-fill.jpg');
+            background-size: cover; 
+            background-position: center;
+            background-repeat: no-repeat; 
             border: 3px solid #8B4513; /* Brown wood-like border */
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
         }
@@ -42,7 +45,10 @@
             transform: translateX(-50%);
             width: 400px; /* Wider than the original 200px */
             height: 20px;
-            background: url('parchment-texture.jpg');
+            background: url('parchment-texture-fill.jpg');
+            background-size: cover; 
+            background-position: center;
+            background-repeat: no-repeat; 
             border: 3px solid #8B4513;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
         }
@@ -105,7 +111,10 @@
             gap: 10px;
         }
         .popup-btn, .action-slot, .item-slot, .popup, .close-btn {
-            background: url('parchment-texture.jpg');
+            background: url('parchment-texture-fill.jpg');
+            background-size: cover; 
+            background-position: center;
+            background-repeat: no-repeat; 
             border: 2px solid #8B4513;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
             color: #3C2F2F;
@@ -149,7 +158,10 @@
             height: 40px;
             text-align: center;
             line-height: 40px;
-            background: url('parchment-texture.jpg');
+            background: url('parchment-texture-fill.jpg');
+            background-size: cover; 
+            background-position: center;
+            background-repeat: no-repeat; 
             border: 2px solid #8B4513;
             cursor: pointer;
             --cooldown-percent: 0; /* Custom property for cooldown */
@@ -184,7 +196,9 @@
             right: 10px;
             width: 150px;
             height: 150px;
-            background: url('parchment-texture.jpg');
+            background: url('parchment-texture-fill.jpg');
+            background-position: center;
+            background-repeat: no-repeat; 
             border: 3px solid #8B4513;
             border-radius: 50%;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
@@ -200,7 +214,10 @@
         .time-frame {
             position: absolute;
             width: 60px;
-            background: url('parchment-texture.jpg');
+            background: url('parchment-texture-fill.jpg');
+            background-size: cover; 
+            background-position: center;
+            background-repeat: no-repeat; 
             border: 2px solid #8B4513;
             padding: 2px 8px;
             border-radius: 4px;
@@ -231,13 +248,17 @@
             bottom: 60px;
             left: 50%;
             transform: translateX(-50%);
-            background: url('parchment-texture.jpg');
-            padding: 20px;
+            background: url('parchment-texture.png');
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat; 
+            padding: 40px;
             width: 600px;
             max-height: 400px; /* Fixed height to prevent overflow */
             z-index: 20;
             overflow: hidden; /* Prevent map from spilling out */
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+            border: none;
+            box-shadow: none;
         }
     </style>
 </head>
@@ -312,6 +333,5 @@
     </div>
     <script type="module" src="game.js"></script>
     <script type="module" src="ui.js"></script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91ade7cf1e321357',t:'MTc0MTA1NDk0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
