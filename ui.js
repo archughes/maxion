@@ -540,5 +540,6 @@ export {
     updateStatsUI, 
     updateMinimap,
     initializeTerrainCache, 
-    setupMinimap
+    setupMinimap,
+    closeAllPopups
 };

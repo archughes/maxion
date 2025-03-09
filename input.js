@@ -6,6 +6,7 @@ import { activeQuests, completeQuest } from './quests.js';
 import { camera } from './environment/scene.js';
 import { useItem } from './items.js';
 import { cameraState } from './game.js';
+import { updateInventoryUI, updateCharacterUI, updateQuestUI, updateStatsUI, closeAllPopups, updateMinimap } from './ui.js';
 
 let isRightClicking = false, isLeftClicking = false, cameraDistance = 5;;
 
@@ -40,11 +41,58 @@ function setupInput() {
             case "Digit5": useAction(4); break;
             case "Digit6": useAction(5); break;
             case "KeyX": interactWithEnvironment(); checkQuests(); break;
-            case "KeyM": console.log("Map key pressed"); break; // Map
-            case "KeyI": console.log("Inventory key pressed"); break; // Inventory
-            case "KeyP": console.log("Character panel key pressed"); break; // Character
-            case "KeyU": console.log("Quests key pressed"); break; // Quests
-            case "Escape": console.log("Escape key pressed"); break; // Menu/Pause
+            case "KeyM":
+            console.log("Map key pressed");
+            const minimap = document.querySelector('.minimap');
+            minimap.classList.toggle('expanded'); // Toggle minimap expansion
+            const canvas = document.querySelector('.map-frame canvas');
+                if (canvas) {
+                    canvas.width = minimap.classList.contains('expanded') ? 500 : 150;
+                    canvas.height = minimap.classList.contains('expanded') ? 500 : 150;
+                }
+                updateMinimap(); // Refresh minimap
+                break;
+
+            case "KeyI":
+                console.log("Inventory key pressed");
+                const inventoryPopup = document.getElementById("inventory-popup");
+                closeAllPopups(inventoryPopup); // Close others
+                inventoryPopup.style.display = inventoryPopup.style.display === "block" ? "none" : "block";
+                if (inventoryPopup.style.display === "block") updateInventoryUI();
+                break;
+
+            case "KeyP":
+                console.log("Character panel key pressed");
+                const characterPopup = document.getElementById("character-popup");
+                closeAllPopups(characterPopup);
+                characterPopup.style.display = characterPopup.style.display === "block" ? "none" : "block";
+                if (characterPopup.style.display === "block") updateCharacterUI();
+                break;
+
+            case "KeyU":
+                console.log("Quests key pressed");
+                const questsPopup = document.getElementById("quests-popup");
+                closeAllPopups(questsPopup);
+                questsPopup.style.display = questsPopup.style.display === "block" ? "none" : "block";
+                if (questsPopup.style.display === "block") updateQuestUI();
+                break;
+
+            case "KeyK":
+                console.log("Stats key pressed");
+                const statsPopup = document.getElementById("stats-popup");
+                closeAllPopups(statsPopup);
+                statsPopup.style.display = statsPopup.style.display === "block" ? "none" : "block";
+                if (statsPopup.style.display === "block") updateStatsUI();
+                break;
+
+            case "Escape":
+                console.log("Escape key pressed");
+                closeAllPopups(); // Close all popups
+                // Optionally, add pause menu logic here if needed
+                break;
+
+            default:
+                break;
         }
     });
 
