@@ -81,81 +81,81 @@ class Terrain {
     }
 
     // In terrain.js, within the Terrain class
-renderTerrainMap() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;  // Matches typical world map size for clarity
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
+    renderTerrainMap() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;  // Matches typical world map size for clarity
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
 
-    const widthSegments = this.geometry.parameters.widthSegments;
-    const heightSegments = this.geometry.parameters.heightSegments;
-    const positions = this.geometry.attributes.position.array;
+        const widthSegments = this.geometry.parameters.widthSegments;
+        const heightSegments = this.geometry.parameters.heightSegments;
+        const positions = this.geometry.attributes.position.array;
 
-    // Helper function to interpolate colors for grass variation
-    function interpolateColor(color1, color2, factor) {
-        const r1 = parseInt(color1.slice(1, 3), 16);
-        const g1 = parseInt(color1.slice(3, 5), 16);
-        const b1 = parseInt(color1.slice(5, 7), 16);
-        const r2 = parseInt(color2.slice(1, 3), 16);
-        const g2 = parseInt(color2.slice(3, 5), 16);
-        const b2 = parseInt(color2.slice(5, 7), 16);
-        const r = Math.round(r1 + (r2 - r1) * factor);
-        const g = Math.round(g1 + (g2 - g1) * factor);
-        const b = Math.round(b1 + (b2 - b1) * factor);
-        return `rgb(${r}, ${g}, ${b})`;
-    }
-
-    // Render each grid cell based on terrain.terrainFunc
-    for (let z = 0; z < heightSegments; z++) {
-        for (let x = 0; x < widthSegments; x++) {
-            const vertexIndex = z * (widthSegments + 1) + x;
-            const index = vertexIndex * 3;
-            const vx = positions[index];      // x-coordinate
-            const vz = positions[index + 1];  // z-coordinate
-            const vy = positions[index + 2];  // y-coordinate (height)
-
-            // Use terrain.terrainFunc to determine the terrain type
-            const type = this.terrainFunc(vx, vz, vy, vertexIndex);
-            let color;
-
-            // Assign colors based on terrain type
-            switch (type) {
-                case 'path':
-                    color = '#D2B48C'; // Sandy tan
-                    break;
-                case 'river':
-                    color = '#4682B4'; // Steel blue
-                    break;
-                case 'lake':
-                    color = '#4169E1'; // Royal blue
-                    break;
-                case 'water':
-                    color = '#4682C1'; // Sand near water
-                    break;
-                case 'cliff':
-                    color = '#5A4D41'; // Dark brown
-                    break;
-                case 'mountain':
-                    color = '#8B4513'; // Mountain tops
-                    break;
-                case 'high mountain':
-                    color = '#6E3A10'; // Darker mountain tops
-                    break;
-                default: // Grass with noise-based variation
-                    const blend = (this.noise2D(vx * 0.1, vz * 0.1) + 1) / 2;
-                    color = interpolateColor('#228B22', '#32CD32', blend); // Forest green to light green
-            }
-
-            ctx.fillStyle = color;
-            const rectWidth = canvas.width / widthSegments;
-            const rectHeight = canvas.height / heightSegments;
-            ctx.fillRect(x * rectWidth, z * rectHeight, rectWidth, rectHeight);
+        // Helper function to interpolate colors for grass variation
+        function interpolateColor(color1, color2, factor) {
+            const r1 = parseInt(color1.slice(1, 3), 16);
+            const g1 = parseInt(color1.slice(3, 5), 16);
+            const b1 = parseInt(color1.slice(5, 7), 16);
+            const r2 = parseInt(color2.slice(1, 3), 16);
+            const g2 = parseInt(color2.slice(3, 5), 16);
+            const b2 = parseInt(color2.slice(5, 7), 16);
+            const r = Math.round(r1 + (r2 - r1) * factor);
+            const g = Math.round(g1 + (g2 - g1) * factor);
+            const b = Math.round(b1 + (b2 - b1) * factor);
+            return `rgb(${r}, ${g}, ${b})`;
         }
-    }
 
-    this.terrainMapCanvas = canvas; // Store the pre-rendered canvas
-}
-    
+        // Render each grid cell based on terrain.terrainFunc
+        for (let z = 0; z < heightSegments; z++) {
+            for (let x = 0; x < widthSegments; x++) {
+                const vertexIndex = z * (widthSegments + 1) + x;
+                const index = vertexIndex * 3;
+                const vx = positions[index];      // x-coordinate
+                const vz = positions[index + 1];  // z-coordinate
+                const vy = positions[index + 2];  // y-coordinate (height)
+
+                // Use terrain.terrainFunc to determine the terrain type
+                const type = this.terrainFunc(vx, vz, vy, vertexIndex);
+                let color;
+
+                // Assign colors based on terrain type
+                switch (type) {
+                    case 'path':
+                        color = '#D2B48C'; // Sandy tan
+                        break;
+                    case 'river':
+                        color = '#4682B4'; // Steel blue
+                        break;
+                    case 'lake':
+                        color = '#4169E1'; // Royal blue
+                        break;
+                    case 'water':
+                        color = '#4682C1'; // Sand near water
+                        break;
+                    case 'cliff':
+                        color = '#5A4D41'; // Dark brown
+                        break;
+                    case 'mountain':
+                        color = '#8B4513'; // Mountain tops
+                        break;
+                    case 'high mountain':
+                        color = '#6E3A10'; // Darker mountain tops
+                        break;
+                    default: // Grass with noise-based variation
+                        const blend = (this.noise2D(vx * 0.1, vz * 0.1) + 1) / 2;
+                        color = interpolateColor('#228B22', '#32CD32', blend); // Forest green to light green
+                }
+
+                ctx.fillStyle = color;
+                const rectWidth = canvas.width / widthSegments;
+                const rectHeight = canvas.height / heightSegments;
+                ctx.fillRect(x * rectWidth, z * rectHeight, rectWidth, rectHeight);
+            }
+        }
+
+        this.terrainMapCanvas = canvas; // Store the pre-rendered canvas
+    }
+        
     terrainFunc(x, z, y, vertexIndex) {
         const gridX = Math.floor((x + this.width/2) / (this.width / this.geometry.parameters.widthSegments));
         const gridZ = Math.floor((z + this.height/2) / (this.height / this.geometry.parameters.heightSegments));
@@ -525,6 +525,18 @@ renderTerrainMap() {
         }
         
         this.lakePoints = lakePoints;
+    }
+
+    getSlopeAt(x, z) {
+        const delta = 1;
+        const heightHere = this.getHeightAt(x, z);
+        const heightX = this.getHeightAt(x + delta, z);
+        const heightZ = this.getHeightAt(x, z + delta);
+        const slopeX = (heightX - heightHere) / delta; // Gradient in x-direction
+        const slopeZ = (heightZ - heightHere) / delta; // Gradient in z-direction
+        const magnitude = Math.sqrt(slopeX * slopeX + slopeZ * slopeZ);
+        const direction = new THREE.Vector3(-slopeX, 0, -slopeZ).normalize(); // Downhill direction
+        return { magnitude, direction };
     }
 
     calculateAutoWaterLevel() {

@@ -37,7 +37,7 @@ class CombatEntity extends Entity {
             Math.max(0, amount - this.armor) : 
             amount * (1 - this.resistances[type] || 0);
         this.health = Math.max(0, this.health - finalDamage);
-        console.log(`CombatEntity took ${amount} damage! Current health: ${this.health}`);
+        // console.log(`CombatEntity took ${amount} damage! Current health: ${this.health}`);
     }
 
     adjustToTerrain(terrain) {

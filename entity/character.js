@@ -9,6 +9,9 @@ class Character extends CombatEntity {
         super(object, health);
 
         this.speed = speed;
+        this.isSliding = false;
+        this.slideVelocity = new THREE.Vector3();
+        this.maxSlideSpeed = 8;
         this.useComplexModel = useComplexModel;
 
         this.attackCooldown = 0;
@@ -24,6 +27,7 @@ class Character extends CombatEntity {
         } else {
             this.heightOffset = 0.5; // Simple model: 1 unit high, center at 0.5
         }
+        
     }
 
     setupComplexModel(group, material) {

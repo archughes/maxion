@@ -1,6 +1,6 @@
 // game.js
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-import { setupInput } from './input.js';
+import { setupInput, cameraDistance } from './input.js';
 import { scene, camera, renderer } from './environment/scene.js';
 import { player, updatePlayer, updateKnownMap } from './entity/player.js';
 import { enemies, questGivers, updateNPC } from './entity/npc.js';
@@ -73,35 +73,30 @@ function animate() {
     if (player.lastAction) {
         const action = player.lastAction;
         if (action.type === "attack") {
-            enemies.forEach(enemy => {
-                if (player.object.position.distanceTo(enemy.object.position) < 2) {
-                    enemy.takeDamage(action.damage * (player.stats.strength / 10));
-                    console.log(`Player attacked enemy for ${action.damage * (player.stats.strength / 10)} damage!`);
-                    attackSound.play();
-                }
-            });
+            if (player.selectedTarget && player.object.position.distanceTo(player.selectedTarget.object.position) < 2) {
+                player.selectedTarget.takeDamage(action.damage * (player.stats.strength / 10));
+                console.log(`Player attacked selected target for ${action.damage * (player.stats.strength / 10)} damage!`);
+                attackSound.play();
+            }
         } else if (action.type === "fireball") {
-            enemies.forEach(enemy => {
-                if (enemy.object.position.distanceTo(enemy.object.position) < 5) {
-                    enemy.takeDamage(action.damage * (player.stats.intelligence / 10));
-                    console.log(`Player cast Fireball for ${action.damage * (player.stats.intelligence / 10)} damage!`);
-                }
-            });
+            if (player.selectedTarget && player.object.position.distanceTo(player.selectedTarget.object.position) < 5) {
+                player.selectedTarget.takeDamage(action.damage * (player.stats.intelligence / 10));
+                console.log(`Player cast Fireball on selected target for ${action.damage * (player.stats.intelligence / 10)} damage!`);
+            }
         } else if (action.type === "invisibility") {
             console.log("Player is invisible!");
-            // Handle invisibility effects in npc.js if needed
         }
-        player.lastAction = null; // Clear after processing
+        player.lastAction = null;
     }
 
     // Update Camera
-    const distance = 5; // Distance from player
+
     const headDirection = new THREE.Vector3();
     player.head.getWorldDirection(headDirection);
-    const horizontalDistance = distance * Math.cos(cameraState.pitch);
+    const horizontalDistance = cameraDistance * Math.cos(cameraState.pitch);
     camera.position.x = player.object.position.x - horizontalDistance * headDirection.x;
     camera.position.z = player.object.position.z - horizontalDistance * headDirection.z;
-    camera.position.y = player.object.position.y + 2 + distance * Math.sin(cameraState.pitch);
+    camera.position.y = player.object.position.y + 2 + cameraDistance * Math.sin(cameraState.pitch);
 
     // Clamp camera based on player's head position
     const waterHeight = terrain.waterLevel;

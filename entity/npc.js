@@ -17,6 +17,7 @@ class NPC extends Character {
         this.object.position.set(x || 5, this.heightOffset, z || 5);
         this.damage = 20 * damageMultiplier;
         scene.add(this.object);
+        this.object.userData.entity = this;
 
         this.healthBar = new THREE.Mesh(
             new THREE.PlaneGeometry(1, 0.1),
@@ -39,14 +40,46 @@ class NPC extends Character {
     update(deltaTime) {
         super.update(deltaTime);
         if (this.health <= 0) return;
+        const slopeInfo = terrain.getSlopeAt(player.object.position.x, player.object.position.z);
+        const steepThreshold = 1.5;
+        const slopeMultiplier = 1 / (1 + slopeInfo.magnitude);
+        const effectiveSpeed = this.speed * this.baseSpeedMultiplier * slopeMultiplier;
+
+        if (!this.isInWater && slopeInfo.magnitude > steepThreshold) {
+            this.isSliding = true;
+            const slideAcceleration = this.gravity * slopeInfo.magnitude * deltaTime;
+            this.slideVelocity.addScaledVector(slopeInfo.direction, slideAcceleration);
+            this.slideVelocity.clampLength(0, this.maxSlideSpeed);
+    
+            this.object.position.x += this.slideVelocity.x * deltaTime;
+            this.object.position.z += this.slideVelocity.z * deltaTime;
+    
+            const terrainHeight = terrain.getHeightAt(this.object.position.x, this.object.position.z);
+            if (this.object.position.y > terrainHeight + this.heightOffset) {
+                this.object.position.y -= this.gravity * deltaTime * deltaTime;
+            }
+            if (this.object.position.y <= terrainHeight + this.heightOffset) {
+                this.object.position.y = terrainHeight + this.heightOffset;
+                const newSlopeInfo = terrain.getSlopeAt(this.object.position.x, this.object.position.z);
+                if (newSlopeInfo.magnitude <= steepThreshold) {
+                    this.isSliding = false;
+                    this.slideVelocity.set(0, 0, 0);
+                }
+            }
+            this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
+        } else {
+            this.isSliding = false;
+            this.slideVelocity.set(0, 0, 0);
+        }
+        
         const distanceToPlayer = this.object.position.distanceTo(player.object.position);
         if (distanceToPlayer < 5) {
             const direction = Math.atan2(
                 player.object.position.z - this.object.position.z,
                 player.object.position.x - this.object.position.x
             );
-            this.object.position.x += Math.cos(direction) * this.speed;
-            this.object.position.z += Math.sin(direction) * this.speed;
+            this.object.position.x += Math.cos(direction) * effectiveSpeed;
+            this.object.position.z += Math.sin(direction) * effectiveSpeed;
             this.object.position.y = terrain.getHeightAt(this.object.position.x, this.object.position.z) + 0 + this.heightOffset;
             this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
             if (distanceToPlayer < 1 && this.attackCooldown <= 0) {
@@ -55,8 +88,8 @@ class NPC extends Character {
             }
         } else {
             const direction = Math.random() * 2 * Math.PI;
-            this.object.position.x += Math.cos(direction) * this.speed;
-            this.object.position.z += Math.sin(direction) * this.speed;
+            this.object.position.x += Math.cos(direction) * effectiveSpeed;
+            this.object.position.z += Math.sin(direction) * effectiveSpeed;
             this.object.position.y = terrain.getHeightAt(this.object.position.x, this.object.position.z) + 0 + this.heightOffset;
             this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
         }
