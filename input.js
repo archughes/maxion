@@ -124,8 +124,13 @@ function setupInput() {
             rightClickStartTime = Date.now();
             mouseMovementSum = 0;
             document.querySelector("canvas").requestPointerLock();
+            if (player.useComplexModel) {
+                player.head.rotation.y = 0; // Reset head yaw to align with body
+                player.head.rotation.x = 0; // Reset head pitch to neutral
+            }
         } else if (event.button === 0) {
             isLeftClicking = true;
+            document.querySelector("canvas").requestPointerLock();
         }
         if (isLeftClicking && isRightClicking) player.moveForward = true;
     });
@@ -157,6 +162,7 @@ function setupInput() {
         } else if (event.button === 0) {
             isLeftClicking = false;
             if (!isRightClicking) {
+                document.exitPointerLock();
                 const mouse = new THREE.Vector2();
                 mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -262,4 +268,4 @@ function checkQuests() {
     });
 }
 
-export { setupInput, useAction, cameraDistance };
+export { setupInput, useAction, cameraDistance, isLeftClicking, isRightClicking };

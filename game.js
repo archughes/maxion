@@ -1,6 +1,6 @@
 // game.js
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-import { setupInput, cameraDistance } from './input.js';
+import { setupInput, cameraDistance, isRightClicking } from './input.js';
 import { scene, camera, renderer } from './environment/scene.js';
 import { player, updatePlayer, updateKnownMap } from './entity/player.js';
 import { enemies, questGivers, updateNPC } from './entity/npc.js';
@@ -90,14 +90,22 @@ function animate() {
     }
 
     // Update Camera
-
     const headDirection = new THREE.Vector3();
     player.head.getWorldDirection(headDirection);
-    const horizontalDistance = cameraDistance * Math.cos(cameraState.pitch);
-    camera.position.x = player.object.position.x - horizontalDistance * headDirection.x;
-    camera.position.z = player.object.position.z - horizontalDistance * headDirection.z;
-    camera.position.y = player.object.position.y + 2 + cameraDistance * Math.sin(cameraState.pitch);
+    const bodyDirection = new THREE.Vector3();
+    player.object.getWorldDirection(bodyDirection);
 
+    const horizontalDistance = cameraDistance * Math.cos(cameraState.pitch);
+
+    if (isRightClicking) {
+        camera.position.x = player.object.position.x - horizontalDistance * bodyDirection.x;
+        camera.position.z = player.object.position.z - horizontalDistance * bodyDirection.z;
+        camera.position.y = player.object.position.y + 2 + cameraDistance * Math.sin(cameraState.pitch);
+    } else {
+        camera.position.x = player.object.position.x - horizontalDistance * headDirection.x;
+        camera.position.z = player.object.position.z - horizontalDistance * headDirection.z;
+        camera.position.y = player.object.position.y + 2 + cameraDistance * Math.sin(cameraState.pitch);
+    }
     // Clamp camera based on player's head position
     const waterHeight = terrain.waterLevel;
     const headY = player.object.position.y + player.heightOffset;
