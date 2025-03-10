@@ -372,7 +372,8 @@ function updatePlayer(deltaTime) {
     const slopeInfo = terrain.getSlopeAt(player.object.position.x, player.object.position.z);
     const steepThreshold = 1.5;
     const slopeMultiplier = 1 / (1 + slopeInfo.magnitude); // Speed reduces as slope increases
-    const speed = player.speed * deltaTime * player.speedMultiplier * slopeMultiplier;
+    const baseSpeed = player.speed * deltaTime * player.speedMultiplier; // Speed without slope effect
+    const speed = baseSpeed * slopeMultiplier;
     
     let landedFlag = false;
     if (!player.isInWater && !player.isJumping && slopeInfo.magnitude > steepThreshold) {
@@ -408,22 +409,26 @@ function updatePlayer(deltaTime) {
     }
 
     if (player.isInWater) {
-        // 3D movement based on camera direction
+        // Calculate movement direction in water
+        const moveDir = new THREE.Vector3(0, 0, 0);
         const dir = camera.getWorldDirection(new THREE.Vector3());
-        if (player.moveForward) {
-            player.object.position.addScaledVector(dir, speed);
+        const leftDir = new THREE.Vector3().crossVectors(camera.up, dir).normalize();
+        const rightDir = new THREE.Vector3().crossVectors(dir, camera.up).normalize();
+    
+        if (player.moveForward) moveDir.add(dir);
+        if (player.moveBackward) moveDir.sub(dir);
+        if (player.moveLeft) moveDir.add(leftDir);
+        if (player.moveRight) moveDir.add(rightDir);
+        
+        // Normalize and scale the movement vector
+        if (moveDir.lengthSq() > 0) {
+            moveDir.normalize().multiplyScalar(baseSpeed);
         }
-        if (player.moveBackward) {
-            player.object.position.addScaledVector(dir, -speed);
-        }
-        if (player.moveLeft) {
-            const leftDir = new THREE.Vector3().crossVectors(camera.up, dir).normalize();
-            player.object.position.addScaledVector(leftDir, speed);
-        }
-        if (player.moveRight) {
-            const rightDir = new THREE.Vector3().crossVectors(dir, camera.up).normalize();
-            player.object.position.addScaledVector(rightDir, speed);
-        }
+    
+        // Apply movement
+        player.object.position.add(moveDir);
+    
+        // Handle vertical movement separately (unchanged)
         if (player.moveUp) {
             const suggestedY = player.object.position.y + player.speed * deltaTime;
             if (suggestedY < (terrain?.water?.position.y ?? Infinity)) {
@@ -432,31 +437,34 @@ function updatePlayer(deltaTime) {
         }
     }
 
-    let newX = player.object.position.x;
-    let newZ = player.object.position.z;
-    let newY = player.object.position.y;
-
-    // Existing 2D movement on land
+    const moveDir = new THREE.Vector3(0, 0, 0);
     const direction = player.object.rotation.y;
+
     if (player.moveForward) {
-        newX += Math.sin(direction) * speed;
-        newZ += Math.cos(direction) * speed;
+        moveDir.x += Math.sin(direction);
+        moveDir.z += Math.cos(direction);
     }
     if (player.moveBackward) {
-        newX -= Math.sin(direction) * speed;
-        newZ -= Math.cos(direction) * speed;
+        moveDir.x -= Math.sin(direction);
+        moveDir.z -= Math.cos(direction);
     }
     if (player.moveLeft) {
-        newX += Math.cos(direction) * speed;
-        newZ -= Math.sin(direction) * speed;
+        moveDir.x += Math.cos(direction);
+        moveDir.z -= Math.sin(direction);
     }
     if (player.moveRight) {
-        newX -= Math.cos(direction) * speed;
-        newZ += Math.sin(direction) * speed;
+        moveDir.x -= Math.cos(direction);
+        moveDir.z += Math.sin(direction);
     }
 
-    // Apply movement (update X and Z)
-    if (!player.isInWater  && (slopeInfo.magnitude <= steepThreshold || player.isJumping)) {
+    if (moveDir.lengthSq() > 0) {
+        moveDir.normalize().multiplyScalar(speed);
+    }
+
+    const newX = player.object.position.x + moveDir.x;
+    const newZ = player.object.position.z + moveDir.z;
+
+    if (!player.isInWater && (slopeInfo.magnitude <= steepThreshold || player.isJumping)) {
         player.object.position.x = newX;
         player.object.position.z = newZ;
     }
@@ -514,7 +522,7 @@ function updatePlayer(deltaTime) {
     terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
 
     // console.log(`  player water: ${player.isInWater}, jump: ${player.isJumping}, waterHeight: ${waterHeight}`);
-    if (!player.isJumping && !player.isInWater && player.object.position.y <= terrainHeight + player.heightOffset) {
+    if (!player.isJumping && player.object.position.y <= terrainHeight + player.heightOffset) {
         player.object.position.y = terrainHeight + player.heightOffset;
         landedFlag = true;
     } 

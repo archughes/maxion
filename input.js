@@ -117,6 +117,7 @@ function setupInput() {
 
     let rightClickStartTime = 0;
     let mouseMovementSum = 0;
+    let dualMouseForwardFlag = false;
     document.addEventListener("mousedown", event => {
         if (event.target.closest(".inventory-container, .popup, .action-bar, .minimap")) return;
         if (event.button === 2) {
@@ -132,7 +133,10 @@ function setupInput() {
             isLeftClicking = true;
             document.querySelector("canvas").requestPointerLock();
         }
-        if (isLeftClicking && isRightClicking) player.moveForward = true;
+        if (isLeftClicking && isRightClicking) {
+            player.moveForward = true;
+            dualMouseForwardFlag = true;
+        }
     });
     
     document.addEventListener("mouseup", event => {
@@ -181,7 +185,10 @@ function setupInput() {
                 }
             }
         }
-        player.moveForward = false;
+        if (!isLeftClicking && !isRightClicking && dualMouseForwardFlag) {
+            player.moveForward = false;
+            dualMouseForwardFlag = false;
+        }
     });
 
     document.addEventListener("mousemove", event => {
