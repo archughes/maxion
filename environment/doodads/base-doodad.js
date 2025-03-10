@@ -13,16 +13,38 @@ export class Doodad extends Entity {
         this.respawnTime = respawnTime;
         this.isHarvested = false;
         this.baseHeight = 0;
+        this.collisionDamage = 0; // Default no damage
+        this.damageCooldown = 1;
+        this.lastDamageTime = -this.damageCooldown;
         scene.add(this.object);
 
         // Growth properties
         this.isPlant = false;
         this.growthStages = 4;
-        this.currentGrowthStage = 0;
+        this.currentGrowthStage = Math.floor(Math.random() * this.growthStages);
         this.daysPerStage = 1;
-        this.startDay = timeSystem ? timeSystem.getDay() : 0;
+        this.startDay = -this.currentGrowthStage * this.daysPerStage;
         this.fullScale = this.object.scale.clone();
-        this.object.scale.set(0, 0, 0); // Start at size 0
+        if (this.isPlant) {
+            const growthFraction = this.currentGrowthStage / (this.growthStages - 1); // Fraction from 0 to 1
+            this.object.scale.lerpVectors(
+                new THREE.Vector3(0, 0, 0),
+                this.fullScale,
+                growthFraction
+            );
+        } else {
+            this.object.scale.copy(this.fullScale);
+        }
+
+        this.collisionRadius = this.calculateCollisionRadius()
+    }
+
+    calculateCollisionRadius() {
+        const boundingBox = new THREE.Box3().setFromObject(this.object);
+        const size = new THREE.Vector3();
+        boundingBox.getSize(size);
+        // Use the maximum of width, depth, or half-height as the radius
+        return Math.max(size.x, size.z, size.y / 2) * 0.5; // Scale factor can be adjusted
     }
 
     updateGrowth() {
@@ -75,5 +97,16 @@ export class Doodad extends Entity {
         light.position.y = 1;
         this.object.add(light);
         return light;
+    }
+
+    onCollision() {
+        if (this.collisionDamage > 0) {
+            const currentTime = timeSystem.getTimeOfDay() + timeSystem.getDay() * 24;
+            if (currentTime - this.lastDamageTime >= this.damageCooldown) {
+                player.takeDamage(this.collisionDamage);
+                this.lastDamageTime = currentTime;
+                if (this.soundUrl) soundManager.playSound(this.soundUrl);
+            }
+        }
     }
 }

@@ -76,6 +76,10 @@ export class Portal extends Doodad {
         this.biome = biome;
         this.baseHeight = 0.1;
         this.addGlow(0x800080, 0.8, 3);
+
+        this.glowSprite = this.createGlowSprite(0x800080);
+        this.glowSprite.visible = false; // Initially hidden
+        this.object.add(this.glowSprite);
     }
 
     interact() {
@@ -92,6 +96,30 @@ export class Portal extends Doodad {
 
     harvest() {
         // Portals don’t harvest traditionally
+    }
+
+    createGlowSprite(color) {
+        const geometry = new THREE.CylinderGeometry(1.5, 1.5, 50, 16, 1, true);
+        const material = new THREE.MeshPhongMaterial({
+            color: color,
+            transparent: true,
+            opacity: 0.4,
+            emissive: color,
+            emissiveIntensity: 1.5,
+            side: THREE.DoubleSide
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(0, 25, 0); // Raise it 50 units
+        return mesh;
+    }
+
+    update(deltaTime) {
+        if (!this.requiredQuest || completedQuests.includes(this.requiredQuest)) {
+            this.glowSprite.visible = true;
+        } else {
+            this.glowSprite.visible = false;
+        }
     }
 }
 

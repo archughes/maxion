@@ -426,13 +426,15 @@ export class Cactus extends Doodad {
             flower.position.set(0, 2.2, 0);
             group.add(flower);
         }
-        group.position.set(x, 1, z);
+        group.position.set(x, 0, z);
         const difficulty = { 'summer': 1, 'autumn': 1.5, 'spring': 2, 'winter': 2.5 }[biome] || 1;
         super(group, 'https://freesound.org/data/previews/171/171671_2436898-lq.mp3', Math.ceil(3 * difficulty), 60 * difficulty);
         this.variant = variant;
         this.biome = biome;
-        this.baseHeight = 1;
+        this.baseHeight = 0;
         this.isPlant = true;
+        this.collisionDamage = 2; // Override default to deal damage
+        this.damageCooldown = 1;
     }
 
     update(deltaTime) {

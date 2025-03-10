@@ -68,6 +68,7 @@ function animate() {
     updateKnownMap();
     updatePlayer(deltaTime);
     updateNPC(deltaTime);
+    handleCollisions();
 
     // Combat and Skills
     if (player.lastAction) {
@@ -177,6 +178,28 @@ function update() {
     enemies.forEach(enemy => {
         const distance = cameraPosition.distanceTo(enemy.object.position);
         enemy.object.visible = distance < maxEnemyDistance;
+    });
+}
+
+function handleCollisions() {
+    const playerPos = player.object.position.clone();
+    const playerRadius = player.collisionRadius || 0.5;
+
+    doodads.forEach(doodad => {
+        if (doodad.isHarvested || !doodad.object.visible) return; // Skip harvested or invisible doodads
+
+        const doodadPos = doodad.object.position.clone();
+        const doodadRadius = doodad.collisionRadius * doodad.object.scale.x; // Scale-adjusted radius
+        const distance = playerPos.distanceTo(doodadPos);
+        const minDistance = playerRadius + doodadRadius;
+
+        if (distance < minDistance) {
+            // Collision detected, push player back
+            const direction = playerPos.sub(doodadPos).normalize();
+            const overlap = minDistance - distance;
+            player.object.position.add(direction.multiplyScalar(overlap));
+            doodad.onCollision();
+        }
     });
 }
 

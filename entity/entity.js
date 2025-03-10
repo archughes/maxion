@@ -30,6 +30,7 @@ class CombatEntity extends Entity {
         super(object, health);
         this.armor = armor; // Reduces incoming damage
         this.resistances = { fire: 0, cold: 0 };
+        this.collisionRadius = 0.5;
     }
 
     takeDamage(amount, type = 'physical') {
