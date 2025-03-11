@@ -545,7 +545,7 @@ function updatePlayer(deltaTime) {
             player.drowningDamageTimer += deltaTime;
             if (player.drowningDamageTimer >= player.drowningDamageInterval) {
                 player.drowningDamageTimer = 0;
-                player.takeDamage(player.health * 0.1); // 10% HP loss
+                player.takeDamage(player.maxHealth * 0.1); // 10% HP loss
             }
         }
     } else {
@@ -555,7 +555,7 @@ function updatePlayer(deltaTime) {
     }
 
     if (player.jumpVelocity < -8 && landedFlag) {
-        const fallDamage = Math.floor(this.maxFallVelocity * 2);
+        const fallDamage = Math.floor(this.jumpVelocity * 2);
         player.takeDamage(fallDamage);
         console.log(`Fall damage taken: ${fallDamage} HP (Velocity: ${this.jumpVelocity.toFixed(2)})`);
     }

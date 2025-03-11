@@ -4,6 +4,7 @@ class Entity {
     constructor(object, health) {
         this.object = object; // Can be a Mesh or a Group
         this.health = health;
+        this.maxHealth = health;
         this.position = new THREE.Vector3();
         this.gravity = 6.5;
         this.heightOffset = 0; // Default height offset (feet to center)
