@@ -70,26 +70,6 @@ function animate() {
     updateNPC(deltaTime);
     handleCollisions();
 
-    // Combat and Skills
-    if (player.lastAction) {
-        const action = player.lastAction;
-        if (action.type === "attack") {
-            if (player.selectedTarget && player.object.position.distanceTo(player.selectedTarget.object.position) < 2) {
-                player.selectedTarget.takeDamage(action.damage * (player.stats.strength / 10));
-                console.log(`Player attacked selected target for ${action.damage * (player.stats.strength / 10)} damage!`);
-                attackSound.play();
-            }
-        } else if (action.type === "fireball") {
-            if (player.selectedTarget && player.object.position.distanceTo(player.selectedTarget.object.position) < 5) {
-                player.selectedTarget.takeDamage(action.damage * (player.stats.intelligence / 10));
-                console.log(`Player cast Fireball on selected target for ${action.damage * (player.stats.intelligence / 10)} damage!`);
-            }
-        } else if (action.type === "invisibility") {
-            console.log("Player is invisible!");
-        }
-        player.lastAction = null;
-    }
-
     // Update Camera
     const headDirection = new THREE.Vector3();
     player.head.getWorldDirection(headDirection);

@@ -8,7 +8,7 @@ import { useItem } from './items.js';
 import { cameraState } from './game.js';
 import { updateInventoryUI, updateCharacterUI, updateQuestUI, updateStatsUI, closeAllPopups, updateMinimap } from './ui.js';
 
-let isRightClicking = false, isLeftClicking = false, cameraDistance = 5;;
+let isRightClicking = false, isLeftClicking = false, cameraDistance = 5, nearbyEnemies = [], currentEnemyIndex = -1, previousTarget = null;
 
 function setupInput() {
     document.addEventListener("keydown", event => {
@@ -52,7 +52,6 @@ function setupInput() {
                 }
                 updateMinimap(); // Refresh minimap
                 break;
-
             case "KeyI":
                 console.log("Inventory key pressed");
                 const inventoryPopup = document.getElementById("inventory-popup");
@@ -60,7 +59,6 @@ function setupInput() {
                 inventoryPopup.style.display = inventoryPopup.style.display === "block" ? "none" : "block";
                 if (inventoryPopup.style.display === "block") updateInventoryUI();
                 break;
-
             case "KeyP":
                 console.log("Character panel key pressed");
                 const characterPopup = document.getElementById("character-popup");
@@ -68,7 +66,6 @@ function setupInput() {
                 characterPopup.style.display = characterPopup.style.display === "block" ? "none" : "block";
                 if (characterPopup.style.display === "block") updateCharacterUI();
                 break;
-
             case "KeyU":
                 console.log("Quests key pressed");
                 const questsPopup = document.getElementById("quests-popup");
@@ -76,7 +73,6 @@ function setupInput() {
                 questsPopup.style.display = questsPopup.style.display === "block" ? "none" : "block";
                 if (questsPopup.style.display === "block") updateQuestUI();
                 break;
-
             case "KeyK":
                 console.log("Stats key pressed");
                 const statsPopup = document.getElementById("stats-popup");
@@ -84,13 +80,22 @@ function setupInput() {
                 statsPopup.style.display = statsPopup.style.display === "block" ? "none" : "block";
                 if (statsPopup.style.display === "block") updateStatsUI();
                 break;
-
+            case "Tab":
+                event.preventDefault(); // Prevent default browser behavior (e.g., focus switch)
+                selectNextEnemy();
+                break;
             case "Escape":
                 console.log("Escape key pressed");
-                closeAllPopups(); // Close all popups
-                // Optionally, add pause menu logic here if needed
+                closeAllPopups();
+                if (previousTarget && previousTarget.selectionDisc) {
+                    previousTarget.selectionDisc.visible = false;
+                }
+                player.selectedTarget = null;
+                previousTarget = null;
+                nearbyEnemies = [];
+                currentEnemyIndex = -1;
+                console.log("Target unselected");
                 break;
-
             default:
                 break;
         }
@@ -154,11 +159,18 @@ function setupInput() {
                 if (intersects.length > 0) {
                     const hitObject = intersects[0].object;
                     if (hitObject.userData.entity) {
+                        if (previousTarget && previousTarget.selectionDisc) {
+                            previousTarget.selectionDisc.visible = false;
+                        }
+                        // Select new target
                         player.selectedTarget = hitObject.userData.entity;
+                        if (player.selectedTarget.selectionDisc) {
+                            player.selectedTarget.selectionDisc.visible = true;
+                        }
+                        previousTarget = player.selectedTarget;
                         console.log("Selected target with button 2:", player.selectedTarget);
-                        if (player.object.position.distanceTo(player.selectedTarget.object.position) < 2) {
-                            const action = player.useSkill("Power Attack");
-                            if (action) player.lastAction = action;
+                        if (player.object.position.distanceTo(player.selectedTarget.object.position) < 5) {
+                            useAction(0);
                         }
                     }
                 }
@@ -176,10 +188,21 @@ function setupInput() {
                 if (intersects.length > 0) {
                     const hitObject = intersects[0].object;
                     if (hitObject.userData.entity) {
+                        if (previousTarget && previousTarget.selectionDisc) {
+                            previousTarget.selectionDisc.visible = false;
+                        }
+                        // Select new target
                         player.selectedTarget = hitObject.userData.entity;
+                        if (player.selectedTarget.selectionDisc) {
+                            player.selectedTarget.selectionDisc.visible = true;
+                        }
+                        previousTarget = player.selectedTarget;
                         console.log("Selected target with button 1:", player.selectedTarget);
                     }
                 } else {
+                    if (previousTarget && previousTarget.selectionDisc) {
+                        previousTarget.selectionDisc.visible = false;
+                    }
                     player.selectedTarget = null;
                     interactWithEnvironment();
                 }
@@ -245,25 +268,25 @@ function useAction(slot) {
     const action = player.actionBar[slot];
     if (action) {
         if (action.type === "skill") {
-            const result = player.useSkill(action.name);
-            if (result) {
-                player.lastAction = result;
-                console.log(`Skill used: ${action.name}`, result);
+            const success = player.useSkill(action.name);
+            if (success) {
+                console.log(`Skill used: ${action.name}`);
             } else {
-                console.log(`Skill ${action.name} failed (cooldown/mana)`);
+                console.log(`Skill ${action.name} failed (cooldown/mana/range)`);
             }
+            player.updateSkillAvailability(); // Update UI after use
         } else if (action.type === "consumable") {
             useItem(action);
             console.log(`Consumable used: ${action.name}`);
             if (action.amount !== undefined) {
-                action.amount -= 1; // Decrement stack
+                action.amount -= 1;
                 if (action.amount <= 0) {
-                    player.removeItem(action, 0); // Remove fully if stack is 0
-                    player.actionBar[slot] = null; // Clear slot
+                    player.removeItem(action, 0);
+                    player.actionBar[slot] = null;
                 }
             } else {
-                player.removeItem(action); // Single item, remove it
-                player.actionBar[slot] = null; // Clear slot
+                player.removeItem(action);
+                player.actionBar[slot] = null;
             }
         }
     }
@@ -275,4 +298,97 @@ function checkQuests() {
     });
 }
 
-export { setupInput, useAction, cameraDistance, isLeftClicking, isRightClicking };
+function selectNextEnemy() {
+    const playerPos = player.object.position;
+    const playerFacing = new THREE.Vector3();
+    player.object.getWorldDirection(playerFacing);
+    playerFacing.normalize();
+
+    nearbyEnemies = enemies
+        .filter(enemy => {
+            if (!enemy || !enemy.object || enemy.health <= 0) return false;
+            const enemyPos = enemy.object.position;
+            const distance = playerPos.distanceTo(enemyPos);
+            if (distance > 25) return false;
+            if (distance > 5) {
+                const toEnemy = new THREE.Vector3().subVectors(enemyPos, playerPos).normalize();
+                const angle = playerFacing.angleTo(toEnemy);
+                const fovRadians = THREE.MathUtils.degToRad(120) / 2;
+                if (angle > fovRadians) return false;
+            }
+            return true;
+        })
+        .map(enemy => ({
+            enemy,
+            distance: playerPos.distanceTo(enemy.object.position)
+        }))
+        .sort((a, b) => a.distance - b.distance)
+        .map(item => item.enemy);
+
+    if (nearbyEnemies.length === 0) {
+        if (previousTarget && previousTarget.selectionDisc) {
+            previousTarget.selectionDisc.visible = false;
+        }
+        player.selectedTarget = null;
+        previousTarget = null;
+        currentEnemyIndex = -1;
+        console.log("No valid enemies nearby");
+        return;
+    }
+
+    // Deselect previous target
+    if (previousTarget && previousTarget.selectionDisc) {
+        previousTarget.selectionDisc.visible = false;
+    }
+
+    // Cycle to the next enemy
+    currentEnemyIndex = (currentEnemyIndex + 1) % nearbyEnemies.length;
+    player.selectedTarget = nearbyEnemies[currentEnemyIndex];
+    if (player.selectedTarget.selectionDisc) {
+        player.selectedTarget.selectionDisc.visible = true;
+    }
+    previousTarget = player.selectedTarget; // Update previous target
+    console.log(`Selected enemy ${currentEnemyIndex + 1}/${nearbyEnemies.length} at distance ${playerPos.distanceTo(player.selectedTarget.object.position).toFixed(2)} units`);
+}
+
+function selectAttackingEnemy(attackingNPC) {
+    if (!player.selectedTarget) { // Only if no target is currently selected
+        // Deselect previous target (just in case)
+        if (previousTarget && previousTarget.selectionDisc) {
+            previousTarget.selectionDisc.visible = false;
+        }
+
+        // Set the new target
+        player.selectedTarget = attackingNPC;
+        if (player.selectedTarget.selectionDisc) {
+            player.selectedTarget.selectionDisc.visible = true;
+        }
+        previousTarget = player.selectedTarget;
+
+        // Update nearbyEnemies and currentEnemyIndex to keep Tab targeting consistent
+        const playerPos = player.object.position;
+        nearbyEnemies = enemies
+            .filter(enemy => {
+                if (!enemy || !enemy.object || enemy.health <= 0) return false;
+                const distance = playerPos.distanceTo(enemy.object.position);
+                return distance <= 25; // Same range as selectNextEnemy
+            })
+            .map(enemy => ({
+                enemy,
+                distance: playerPos.distanceTo(enemy.object.position)
+            }))
+            .sort((a, b) => a.distance - b.distance)
+            .map(item => item.enemy);
+
+        currentEnemyIndex = nearbyEnemies.indexOf(attackingNPC);
+        if (currentEnemyIndex === -1) {
+            // If the attacking NPC isn’t in the list (e.g., outside FOV), add it
+            nearbyEnemies.push(attackingNPC);
+            currentEnemyIndex = nearbyEnemies.length - 1;
+        }
+
+        console.log(`Player auto-targeted attacking enemy at distance ${playerPos.distanceTo(attackingNPC.object.position).toFixed(2)} units`);
+    }
+}
+
+export { setupInput, useAction, cameraDistance, isLeftClicking, isRightClicking, selectAttackingEnemy };

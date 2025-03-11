@@ -124,6 +124,10 @@ function updateCharacterUI() {
 
 function updateStatsUI() {
     const statsDiv = document.querySelector("#stats-popup .stats-info");
+    const powerAttack = player.actionBar.find(a => a?.name === "Power Attack");
+    const fireball = player.actionBar.find(a => a?.name === "Fireball");
+    const invisibility = player.actionBar.find(a => a?.name === "Invisibility");
+
     statsDiv.innerHTML = `
         <p>Level: ${player.level}</p>
         <h4>Stats (Points: ${player.statPoints})</h4>
@@ -131,9 +135,9 @@ function updateStatsUI() {
         <p>Agility: ${player.stats.agility} ${player.statPoints > 0 ? '<button onclick="player.increaseStat(\'agility\'); updateStatsUI();">+</button>' : ''}</p>
         <p>Intelligence: ${player.stats.intelligence} ${player.statPoints > 0 ? '<button onclick="player.increaseStat(\'intelligence\'); updateStatsUI();">+</button>' : ''}</p>
         <h4>Skills (Points: ${player.skillPoints})</h4>
-        <p>Power Attack: ${player.skills["Power Attack"] > 0 ? `Level ${player.skills["Power Attack"]}` : "Locked"} ${player.skillPoints > 0 ? '<button onclick="player.upgradeSkill(\'Power Attack\'); updateStatsUI();">+</button>' : ''}</p>
-        <p>Fireball: ${player.skills["Fireball"] > 0 ? `Level ${player.skills["Fireball"]}` : "Locked"} ${player.skillPoints > 0 ? '<button onclick="player.upgradeSkill(\'Fireball\'); updateStatsUI();">+</button>' : ''}</p>
-        <p>Invisibility: ${player.skills["Invisibility"] > 0 ? `Level ${player.skills["Invisibility"]}` : "Locked"} ${player.skillPoints > 0 ? '<button onclick="player.upgradeSkill(\'Invisibility\'); updateStatsUI();">+</button>' : ''}</p>
+        <p>Power Attack: ${powerAttack?.level > 0 ? `Level ${powerAttack.level}` : "Locked"} ${player.skillPoints > 0 ? '<button onclick="player.upgradeSkill(\'Power Attack\'); updateStatsUI();">+</button>' : ''}</p>
+        <p>Fireball: ${fireball?.level > 0 ? `Level ${fireball.level}` : "Locked"} ${player.skillPoints > 0 ? '<button onclick="player.upgradeSkill(\'Fireball\'); updateStatsUI();">+</button>' : ''}</p>
+        <p>Invisibility: ${invisibility?.level > 0 ? `Level ${invisibility.level}` : "Locked"} ${player.skillPoints > 0 ? '<button onclick="player.upgradeSkill(\'Invisibility\'); updateStatsUI();">+</button>' : ''}</p>
     `;
 }
 
@@ -240,14 +244,23 @@ function setupActionBar() {
         slot.addEventListener("mouseenter", (e) => {
             if (action) {
                 const tooltip = document.getElementById("tooltip");
-                tooltip.innerHTML = `
+                let tooltipContent = `
                     <strong>${action.name}</strong><br>
                     Type: ${action.type}<br>
-                    ${action.amount ? `Amount: ${action.amount}` : ''}
-                    ${player.cooldowns[action.name] > 0 ? `Cooldown: ${player.cooldowns[action.name].toFixed(1)}s` : ''}
                 `;
+                if (action.type === "skill") {
+                    tooltipContent += `
+                        Level: ${action.level}<br>
+                        ${action.cooldown > 0 ? `Cooldown: ${action.cooldown.toFixed(1)}s / ${action.maxCooldown}s` : `Cooldown: ${action.maxCooldown}s`}<br>
+                        ${action.range > 0 ? `Range: ${action.range}` : ''}<br>
+                        ${action.manaCost ? `Mana Cost: ${action.manaCost}` : ''}
+                    `;
+                } else if (action.type === "consumable") {
+                    tooltipContent += `${action.amount ? `Amount: ${action.amount}` : ''}`;
+                }
+                tooltip.innerHTML = tooltipContent;
                 tooltip.style.display = "block";
-                // Position tooltip, ensuring it stays within viewport
+
                 const tooltipWidth = tooltip.offsetWidth;
                 const tooltipHeight = tooltip.offsetHeight;
                 let left = e.pageX + 10;
@@ -255,12 +268,8 @@ function setupActionBar() {
                 const viewportWidth = window.innerWidth;
                 const viewportHeight = window.innerHeight;
 
-                if (left + tooltipWidth > viewportWidth) {
-                    left = e.pageX - tooltipWidth - 10;
-                }
-                if (top + tooltipHeight > viewportHeight) {
-                    top = e.pageY - tooltipHeight - 10;
-                }
+                if (left + tooltipWidth > viewportWidth) left = e.pageX - tooltipWidth - 10;
+                if (top + tooltipHeight > viewportHeight) top = e.pageY - tooltipHeight - 10;
 
                 tooltip.style.left = `${left}px`;
                 tooltip.style.top = `${top}px`;
@@ -276,12 +285,8 @@ function setupActionBar() {
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
 
-            if (left + tooltipWidth > viewportWidth) {
-                left = e.pageX - tooltipWidth - 10;
-            }
-            if (top + tooltipHeight > viewportHeight) {
-                top = e.pageY - tooltipHeight - 10;
-            }
+            if (left + tooltipWidth > viewportWidth) left = e.pageX - tooltipWidth - 10;
+            if (top + tooltipHeight > viewportHeight) top = e.pageY - tooltipHeight - 10;
 
             tooltip.style.left = `${left}px`;
             tooltip.style.top = `${top}px`;
@@ -298,15 +303,20 @@ function updateActionBar() {
     const slots = document.querySelectorAll(".action-slot");
     slots.forEach((slot, index) => {
         const action = player.actionBar[index];
-        if (action && action.type === "skill" && player.cooldowns[action.name] > 0) {
-            const maxCooldown = { "Power Attack": 5, "Fireball": 10, "Invisibility": 15 }[action.name];
-            const cooldownPercent = player.cooldowns[action.name] / maxCooldown;
-            slot.style.setProperty('--cooldown-percent', cooldownPercent);
-            slot.textContent = action.name.charAt(0); // Initial letter for simplicity
+        if (action && action.type === "skill") {
+            if (action.cooldown > 0) {
+                const cooldownPercent = (action.cooldown / action.maxCooldown) * 100;
+                slot.style.setProperty('--cooldown-percent', `${cooldownPercent}%`);
+                slot.textContent = `${action.name} (${action.cooldown.toFixed(1)}s)`;
+            } else {
+                slot.style.setProperty('--cooldown-percent', '0%');
+                slot.textContent = action.name;
+            }
         } else if (action && action.type === "consumable") {
             slot.textContent = `${action.name}${action.amount ? " x" + action.amount : ""}`;
+            slot.style.setProperty('--cooldown-percent', '0%'); // No cooldown for consumables
         } else {
-            slot.style.setProperty('--cooldown-percent', 0);
+            slot.style.setProperty('--cooldown-percent', '0%');
             slot.textContent = `${index + 1}`;
         }
     });

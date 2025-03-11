@@ -6,7 +6,8 @@ import { settings } from '../settings.js';
 import { quests, activeQuests, addQuest, completeQuest, completedQuests, canStartQuest, updateQuestProgress  } from '../quests.js';
 import { Character } from './character.js'; // Assuming this exists
 import { terrain } from '../environment/environment.js';
-import { updateQuestUI } from '../ui.js'
+import { updateQuestUI } from '../ui.js';
+import { selectAttackingEnemy } from '../input.js';
 
 const damageMultiplier = { easy: 0.5, normal: 1, hard: 2 }[settings.difficulty];
 
@@ -25,17 +26,56 @@ class NPC extends Character {
         );
         this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
         scene.add(this.healthBar);
+
+        this.selectionDisc = this.createSelectionDisc(0xff0000); // Red for enemies
+        scene.add(this.selectionDisc);
+    }
+
+    createSelectionDisc(color) {
+        const geometry = new THREE.CircleGeometry(1.5, 32); // Radius 1, 32 segments
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                color: { value: new THREE.Color(color) },
+                opacity: { value: 1.0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                uniform float opacity;
+                varying vec2 vUv;
+                void main() {
+                    float dist = distance(vUv, vec2(0.5, 0.5));
+                    float alpha = smoothstep(0.0, 0.5, dist) * opacity;
+                    gl_FragColor = vec4(color, alpha);
+                }
+            `,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+        const disc = new THREE.Mesh(geometry, material);
+        disc.rotation.x = -Math.PI / 2; // Face upward
+        disc.position.y = 0.01; // Slightly above ground to avoid z-fighting
+        disc.visible = false; // Hidden by default
+        return disc;
     }
 
     updateHealthBar() {
-        const healthPercent = this.health / (50 * damageMultiplier);
+        const healthPercent = this.health / this.maxHealth; // 0 to 1
         this.healthBar.scale.x = healthPercent;
+        this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
         this.healthBar.lookAt(camera.position)
+        this.selectionDisc.position.set(this.object.position.x, this.object.position.y + 0.01 - this.heightOffset , this.object.position.z);
     }
 
     adjustToTerrain(terrain) {
         super.adjustToTerrain(terrain); 
-        this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
+        this.updateHealthBar();
     }
 
     update(deltaTime) {
@@ -67,7 +107,7 @@ class NPC extends Character {
                     this.slideVelocity.set(0, 0, 0);
                 }
             }
-            this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
+            this.updateHealthBar();
         } else {
             this.isSliding = false;
             this.slideVelocity.set(0, 0, 0);
@@ -82,17 +122,18 @@ class NPC extends Character {
             this.object.position.x += Math.cos(direction) * effectiveSpeed;
             this.object.position.z += Math.sin(direction) * effectiveSpeed;
             this.object.position.y = terrain.getHeightAt(this.object.position.x, this.object.position.z) + 0 + this.heightOffset;
-            this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
+            this.updateHealthBar();
             if (distanceToPlayer < 1 && this.attackCooldown <= 0) {
-                player.takeDamage(this.damage);
+                player.takeDamage(this.damage, undefined, 'npc');
                 this.attackCooldown = this.attackInterval;
+                selectAttackingEnemy(this);
             }
         } else {
             const direction = Math.random() * 2 * Math.PI;
             this.object.position.x += Math.cos(direction) * effectiveSpeed;
             this.object.position.z += Math.sin(direction) * effectiveSpeed;
             this.object.position.y = terrain.getHeightAt(this.object.position.x, this.object.position.z) + 0 + this.heightOffset;
-            this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
+            this.updateHealthBar();
         }
 
         // Drowning logic
@@ -104,7 +145,7 @@ class NPC extends Character {
                 this.drowningDamageTimer += deltaTime;
                 if (this.drowningDamageTimer >= this.drowningDamageInterval) {
                     this.drowningDamageTimer = 0;
-                    this.takeDamage(this.maxHealth * 0.1); // 10% HP loss
+                    this.takeDamage(this.maxHealth * 0.1, undefined, 'drown'); // 10% HP loss
                 }
             }
         } else {
@@ -230,7 +271,7 @@ function updateNPC(deltaTime) {
             scene.remove(enemy.object);
             scene.remove(enemy.healthBar);
             enemies.splice(enemies.indexOf(enemy), 1);
-            player.gainXP(50);
+            if (enemy.whoKill === 'player') player.gainXP(50);
             activeQuests.forEach(quest => {
                 if ((quest.type === "defeat" || quest.type === "boss") && !quest.completed) {
                     quest.progress = (quest.progress || 0) + 1;

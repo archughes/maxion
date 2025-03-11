@@ -20,18 +20,12 @@ class Player extends Character {
         // console.log('Player added to scene:', this.object);
 
         this.knownMap = new Set();
-        this.cooldowns = {
-            "Power Attack": 0,
-            "Fireball": 0,
-            "Invisibility": 0
-        };
         this.actionBar = [
-            { type: "skill", name: "Power Attack" }, // Slot 1 (index 0)
-            { type: "skill", name: "Fireball" },     // Slot 2 (index 1)
-            { type: "skill", name: "Invisibility" }, // Slot 3 (index 2)
-            null, null, null                         // Slots 4-6 (indices 3-5) for items
+            { type: "skill", name: "Power Attack", level: 1, cooldown: 0, maxCooldown: 5, range: 2 },
+            { type: "skill", name: "Fireball", level: 1, cooldown: 0, maxCooldown: 10, range: 5, manaCost: 10 },
+            { type: "skill", name: "Invisibility", level: 1, cooldown: 0, maxCooldown: 15, range: 0, manaCost: 5 },
+            null, null, null // Slots 4-6 for items
         ];
-        this.lastAction = null;
         this.mana = 50;
         this.xp = 0;
         this.level = 1;
@@ -43,12 +37,8 @@ class Player extends Character {
         this.equippedHelmet = null;
         this.skillPoints = 0;
         this.statPoints = 0;
-        this.skills = {
-            "Power Attack": 1,
-            "Fireball": 1,
-            "Invisibility": 1
-        };
         this.knownRecipes = []; 
+        this.isAutoAttacking = false;
 
         this.moveForward = false;
         this.moveBackward = false;
@@ -68,28 +58,81 @@ class Player extends Character {
     }
 
     useSkill(skillName) {
-        if (this.skills[skillName] === undefined || this.skills[skillName] <= 0) return null;
-        if (this.cooldowns[skillName] > 0) return null;
-        let action = null;
+        const action = this.actionBar.find(a => a?.type === "skill" && a.name === skillName);
+        if (!action || action.level <= 0 || action.cooldown > 0) return false;
+
+        const distanceToTarget = this.selectedTarget ? this.object.position.distanceTo(this.selectedTarget.object.position) : Infinity;
+
+        // Skill-specific logic with immediate effect
         if (skillName === "Power Attack") {
-            const damage = 15 + this.skills["Power Attack"] * 5; // +5 damage per level
-            action = { type: "attack", damage: damage };
-            this.cooldowns[skillName] = 5 - this.skills["Power Attack"] * 0.5; // Reduce cooldown
-        } else if (skillName === "Fireball" && this.useMana(10)) {
-            const damage = 20 + this.skills["Fireball"] * 10; // +10 damage per level
-            action = { type: "fireball", damage: damage };
-            this.cooldowns[skillName] = 10 - this.skills["Fireball"] * 1;
-        } else if (skillName === "Invisibility" && this.useMana(5)) {
-            action = { type: "invisibility" };
-            this.cooldowns[skillName] = 15 - this.skills["Invisibility"] * 2;
+            if (distanceToTarget <= action.range) {
+                const damage = 15 + action.level * 5;
+                this.selectedTarget.takeDamage(damage * (this.stats.strength / 10), 'physical', 'player');
+                console.log(`Player used Power Attack for ${damage * (this.stats.strength / 10)} damage!`);
+                action.cooldown = action.maxCooldown - action.level * 0.5;
+                this.isAutoAttacking = true; // Enable auto-attack
+                return true;
+            }
+        } else if (skillName === "Fireball" && this.useMana(action.manaCost)) {
+            if (distanceToTarget <= action.range) {
+                const damage = 20 + action.level * 10;
+                this.selectedTarget.takeDamage(damage * (this.stats.intelligence / 10), 'magic', 'player');
+                console.log(`Player cast Fireball for ${damage * (this.stats.intelligence / 10)} damage!`);
+                action.cooldown = action.maxCooldown - action.level * 1;
+                return true;
+            }
+        } else if (skillName === "Invisibility" && this.useMana(action.manaCost)) {
+            console.log("Player is invisible!");
+            action.cooldown = action.maxCooldown - action.level * 2;
+            // TODO: Add invisibility effect
+            return true;
         }
-        return action;
+        return false; // Failed due to range, mana, or other conditions
     }
 
     updateCooldowns(delta) {
-        Object.keys(this.cooldowns).forEach(skill => {
-            if (this.cooldowns[skill] > 0) this.cooldowns[skill] = Math.max(0, this.cooldowns[skill] - delta);
+        this.actionBar.forEach(action => {
+            if (action?.type === "skill" && action.cooldown > 0) {
+                action.cooldown = Math.max(0, action.cooldown - delta);
+            }
         });
+        this.updateSkillAvailability(); // Check range and update UI
+    }
+
+    updateSkillAvailability() {
+        const distanceToTarget = this.selectedTarget ? this.object.position.distanceTo(this.selectedTarget.object.position) : Infinity;
+        this.actionBar.forEach((action, slot) => {
+            if (action?.type === "skill") {
+                const outOfRange = action.range > 0 && distanceToTarget > action.range;
+                const onCooldown = action.cooldown > 0;
+                const unavailable = outOfRange || onCooldown || (action.manaCost && this.mana < action.manaCost);
+                this.updateActionBarSlotUI(slot, unavailable);
+            }
+        });
+    }
+
+    updateActionBarSlotUI(slot, unavailable) {
+        const slotElement = document.querySelector(`.action-slot:nth-child(${slot + 1})`);
+        if (slotElement) {
+            slotElement.style.filter = unavailable ? "grayscale(100%)" : "none";
+            slotElement.style.opacity = unavailable ? "0.5" : "1";
+        }
+    }
+
+    autoAttack(delta) {
+        if (!this.isAutoAttacking || !this.selectedTarget || this.selectedTarget.health <= 0) {
+            this.isAutoAttacking = false;
+            return;
+        }
+        const action = this.actionBar[0]; // Power Attack is in slot 0
+        if (action && action.name === "Power Attack" && action.cooldown <= 0) {
+            const distanceToTarget = this.object.position.distanceTo(this.selectedTarget.object.position);
+            if (distanceToTarget <= action.range) {
+                this.useSkill("Power Attack");
+            } else {
+                this.isAutoAttacking = false; // Stop if out of range
+            }
+        }
     }
 
     takeDamage(amount) {
@@ -226,11 +269,13 @@ class Player extends Character {
     }
     
     upgradeSkill(skillName) {
-        if (this.skillPoints > 0 && this.skills[skillName] !== undefined) {
-            this.skills[skillName]++;
+        if (this.skillPoints <= 0) return;
+        const action = this.actionBar.find(a => a?.type === "skill" && a.name === skillName);
+        if (action) {
+            action.level++;
             this.skillPoints--;
-            console.log(`Upgraded ${skillName} to level ${this.skills[skillName]}`);
-            updateCharacterUI(); // Refresh UI
+            console.log(`Upgraded ${skillName} to level ${action.level}`);
+            updateCharacterUI();
         }
     }
 }
@@ -352,6 +397,7 @@ function updateKnownMap() {
 }
 
 function updatePlayer(deltaTime) {
+    player.autoAttack(deltaTime);
     // Determine if player is in water
     const terrainType = terrain.terrainFunc(player.object.position.x, player.object.position.z, player.object.position.y);
     // console.log(`terrainType ${terrainType}`);
@@ -545,7 +591,7 @@ function updatePlayer(deltaTime) {
             player.drowningDamageTimer += deltaTime;
             if (player.drowningDamageTimer >= player.drowningDamageInterval) {
                 player.drowningDamageTimer = 0;
-                player.takeDamage(player.maxHealth * 0.1); // 10% HP loss
+                player.takeDamage(player.maxHealth * 0.1, attacker='drown'); // 10% HP loss
             }
         }
     } else {
@@ -556,7 +602,7 @@ function updatePlayer(deltaTime) {
 
     if (player.jumpVelocity < -8 && landedFlag) {
         const fallDamage = Math.floor(this.jumpVelocity * 2);
-        player.takeDamage(fallDamage);
+        player.takeDamage(fallDamage, attacker='fall');
         console.log(`Fall damage taken: ${fallDamage} HP (Velocity: ${this.jumpVelocity.toFixed(2)})`);
     }
 }

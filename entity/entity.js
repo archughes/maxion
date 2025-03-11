@@ -10,10 +10,12 @@ class Entity {
         this.heightOffset = 0; // Default height offset (feet to center)
         this.baseSpeedMultiplier = 1; // Base value
         this.speedMultiplier = this.baseSpeedMultiplier; // Dynamic value
+        this.whoKill = '';
     }
     
-    takeDamage(amount) {
+    takeDamage(amount, attacker = '') {
         this.health = Math.max(0, this.health - amount);
+        if (this.health <= 0) this.whoKill = attacker;
     }
 
     adjustToTerrain(terrain) {
@@ -30,15 +32,27 @@ class CombatEntity extends Entity {
     constructor(object, health, armor = 0) {
         super(object, health);
         this.armor = armor; // Reduces incoming damage
-        this.resistances = { fire: 0, cold: 0 };
+        this.resistances = { physical: armor, magic: 0 };
         this.collisionRadius = 0.5;
     }
 
-    takeDamage(amount, type = 'physical') {
-        let finalDamage = type === 'physical' ? 
-            Math.max(0, amount - this.armor) : 
-            amount * (1 - this.resistances[type] || 0);
-        this.health = Math.max(0, this.health - finalDamage);
+    takeDamage(amount, type = 'physical', attacker = '') {
+        let finalDamage = amount;
+
+        switch (type) {
+            case 'physical':
+                const maxArmor = 100; // TODO: Map to entity level?
+                finalDamage = amount * (1 - (this.resistances[type] / maxArmor || 0));
+                break;
+            case 'magic':
+                finalDamage = amount * (1 - (this.resistances[type] || 0));
+                break;
+            default:
+                finalDamage = Math.max(0, amount - this.armor);
+                break;
+        }
+
+        super.takeDamage(finalDamage, attacker);
         // console.log(`CombatEntity took ${amount} damage! Current health: ${this.health}`);
     }
 
