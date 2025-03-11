@@ -205,17 +205,41 @@ function handleCollisions() {
 
 function gameOver() {
     const gameOverDiv = document.createElement("div");
-    gameOverDiv.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:white;padding:20px;";
-    gameOverDiv.innerHTML = "<h1>Game Over</h1><button id='respawn'>Respawn</button>";
+    gameOverDiv.className = 'popup';
+    gameOverDiv.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: url('parchment-texture-fill.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        border: 2px solid #8B4513; /* Optional: Give it a scroll look */
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+    `;
+
+    gameOverDiv.innerHTML = `
+        <h1>Game Over</h1>
+        <button id="respawn" style="cursor: pointer; pointer-events: auto; padding: 10px 20px; background: brown; color: white; border: none; font-size: 16px;">
+            Respawn
+        </button>
+    `;
+
     document.body.appendChild(gameOverDiv);
+
     document.getElementById("respawn").addEventListener("click", () => {
         player.health = 100;
         player.mana = 50;
         player.object.position.set(0, player.heightOffset, 0);
         document.body.removeChild(gameOverDiv);
-        animate();
+        requestAnimationFrame(animate);
     });
 }
+
 
 function toggleSettings() {
     const settingsDiv = document.querySelector(".settings");
