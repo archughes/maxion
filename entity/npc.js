@@ -1,6 +1,6 @@
 // npc.js
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-import { scene } from '../environment/scene.js';
+import { scene, camera } from '../environment/scene.js';
 import { player } from './player.js';
 import { settings } from '../settings.js';
 import { quests, activeQuests, addQuest, completeQuest, completedQuests, canStartQuest, updateQuestProgress  } from '../quests.js';
@@ -21,7 +21,7 @@ class NPC extends Character {
 
         this.healthBar = new THREE.Mesh(
             new THREE.PlaneGeometry(1, 0.1),
-            new THREE.MeshBasicMaterial({ color: 0xff0000 })
+            new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide })
         );
         this.healthBar.position.set(this.object.position.x, this.object.position.y + 1.0 + this.heightOffset, this.object.position.z);
         scene.add(this.healthBar);
@@ -30,6 +30,7 @@ class NPC extends Character {
     updateHealthBar() {
         const healthPercent = this.health / (50 * damageMultiplier);
         this.healthBar.scale.x = healthPercent;
+        this.healthBar.lookAt(camera.position)
     }
 
     adjustToTerrain(terrain) {
@@ -103,7 +104,7 @@ class NPC extends Character {
                 this.drowningDamageTimer += deltaTime;
                 if (this.drowningDamageTimer >= this.drowningDamageInterval) {
                     this.drowningDamageTimer = 0;
-                    this.takeDamage(this.health * 0.1); // 10% HP loss
+                    this.takeDamage(this.maxHealth * 0.1); // 10% HP loss
                 }
             }
         } else {
@@ -118,6 +119,7 @@ class QuestGiver extends NPC {
         super(x, z, 0x0000ff); // Blue for quest givers
         this.quest = quest;
         this.exclamation = this.createExclamationMark();
+        scene.remove(this.healthBar);
     }
 
     adjustToTerrain(terrain) {
@@ -226,6 +228,7 @@ function updateNPC(deltaTime) {
         enemy.update(deltaTime);
         if (enemy.health <= 0) {
             scene.remove(enemy.object);
+            scene.remove(enemy.healthBar);
             enemies.splice(enemies.indexOf(enemy), 1);
             player.gainXP(50);
             activeQuests.forEach(quest => {
