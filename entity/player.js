@@ -431,7 +431,7 @@ function updatePlayer(deltaTime) {
         // Handle vertical movement separately (unchanged)
         if (player.moveUp) {
             const suggestedY = player.object.position.y + player.speed * deltaTime;
-            if (suggestedY < (terrain?.water?.position.y ?? Infinity)) {
+            if (suggestedY < (terrain.waterHeight)) {
                 player.object.position.y = suggestedY;
             }
         }

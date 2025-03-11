@@ -97,7 +97,7 @@ class NPC extends Character {
 
         // Drowning logic
         const headY = this.object.position.y + this.heightOffset;
-        const waterHeight = terrain?.water?.position.y ?? Infinity;
+        const waterHeight = terrain.waterLevel;
         if (headY < waterHeight) {
             this.drowningTimer += deltaTime;
             if (this.drowningTimer >= this.drowningTime) {
