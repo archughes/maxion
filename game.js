@@ -4,12 +4,13 @@ import { setupInput, cameraDistance, isRightClicking } from './input.js';
 import { scene, camera, renderer } from './environment/scene.js';
 import { player, updatePlayer, updateKnownMap } from './entity/player.js';
 import { enemies, questGivers, updateNPC } from './entity/npc.js';
-import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateManaUI, updateQuestUI, initializeTerrainCache, setupMinimap } from './ui.js';
+import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateManaUI, updateQuestUI } from './ui.js';
 import { loadQuests } from './quests.js';
 import { craftItem, loadItems, loadRecipes } from './items.js';
 import { loadMap, terrain, doodads, skySystem } from './environment/environment.js';
 import { SoundManager } from './environment/sound-manager.js';
 import { timeSystem } from './environment/TimeSystem.js';
+import { initializeTerrainCache, setupMinimap } from './environment/map.js';
 
 // Add Mana Bar to UI
 const manaBar = document.createElement("div");

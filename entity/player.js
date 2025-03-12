@@ -7,7 +7,7 @@ import { terrain } from '../environment/environment.js';
 import { checkCollectionQuests } from '../quests.js';
 import { items } from '../items.js';
 import { showDrowningMessage, removeDrowningMessage } from '../game.js';
-import { updateMinimap, terrainCache } from '../ui.js';
+import { updateMinimap, terrainCache } from '../environment/map.js';
 import { PlayerAnimation, AnimationQueue } from './animation.js';
 
 const INVENTORY_SIZE = 8;

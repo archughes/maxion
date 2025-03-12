@@ -6,7 +6,8 @@ import { activeQuests, completeQuest } from './quests.js';
 import { camera } from './environment/scene.js';
 import { useItem } from './items.js';
 import { cameraState } from './game.js';
-import { updateInventoryUI, updateCharacterUI, updateQuestUI, updateStatsUI, closeAllPopups, updateMinimap } from './ui.js';
+import { updateInventoryUI, updateCharacterUI, updateQuestUI, updateStatsUI, closeAllPopups } from './ui.js';
+import { updateMinimap } from './environment/map.js';
 
 let isRightClicking = false, isLeftClicking = false, cameraDistance = 5, nearbyEnemies = [], currentEnemyIndex = -1, previousTarget = null;
 
