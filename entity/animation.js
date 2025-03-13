@@ -6,7 +6,7 @@ class AnimationQueue {
     }
 
     enqueue(animation) {
-        if (this.lastQueued && this.lastQueued.name === animation.name) return; // Prevent redundant enqueues
+        // if (this.lastQueued && this.lastQueued.name === animation.name) return; // Prevent redundant enqueues
         
         this.lastQueued = animation;
         if (!this.currentAnimation || this.currentAnimation.completed) {
