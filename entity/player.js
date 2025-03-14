@@ -62,6 +62,7 @@ class Player extends Character {
           };
                 
         this.isInWater = false;
+        this.collisionRadius = 0.5;
     }
 
     useSkill(skillName) {
