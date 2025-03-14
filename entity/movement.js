@@ -8,6 +8,7 @@ export class Movement {
         this.camera = camera; // THREE.Camera for water movement direction
         this.steepThreshold = opts.steepThreshold || 1.5; // Threshold for sliding
         this.slideVelocity = new THREE.Vector3(); // Velocity when sliding on steep slopes
+        this.lastJumpTime = 0;
     }
 
     update(deltaTime) {
@@ -30,17 +31,42 @@ export class Movement {
             if (moveDir.lengthSq() > 0) {
                 moveDir.normalize().multiplyScalar(baseSpeed);
             }
+
+            const headY = pos.y + this.owner.heightOffset; // Current head position
+            const waterHeight = this.terrain.waterLevel;
+            const headNearSurface = Math.abs(headY - waterHeight) < 0.3;
+            const headAboveSurface = headY - waterHeight > 0.0;
+            if (moveDir.lengthSq() > 0) {
+                moveDir.normalize(); // Normalize first to work with direction only
+        
+                // Calculate the angle of moveDir relative to the horizontal plane (x-z)
+                const horizontalComponent = new THREE.Vector3(moveDir.x, 0, moveDir.z);
+                const horizontalLength = horizontalComponent.length();
+                let angleDegrees = 0;
+                if (horizontalLength > 0) { // Avoid division by zero
+                    const verticalComponent = moveDir.y;
+                    angleDegrees = THREE.MathUtils.radToDeg(Math.atan2(verticalComponent, horizontalLength));
+                }
+        
+                // Only allow downward movement if angle is more negative than -45 degrees
+                if (angleDegrees > -30 && headAboveSurface) {
+                    // Project moveDir onto the horizontal plane (remove y component if not steep enough)
+                    moveDir.y = 0;
+                    if (moveDir.lengthSq() > 0) moveDir.normalize(); // Re-normalize after zeroing y
+                }
+        
+                // Apply speed after angle check
+                moveDir.multiplyScalar(baseSpeed);
+            }
+
             pos.add(moveDir);
         
             // Vertical movement in water
-            const headY = pos.y + this.owner.heightOffset; // Current head position
-            const waterHeight = this.terrain.waterLevel;
-            const headNearSurface = Math.abs(headY - waterHeight) < 0.1;
             if (this.owner.moveUp) {
                 const suggestedY = pos.y + this.owner.speed * deltaTime;
                 if (headNearSurface && suggestedY >= waterHeight) {
                     // Apply boost to surface
-                    pos.y = waterHeight + 0.3;
+                    simulateSpacebarJump(this.owner)
                 } else if (suggestedY < waterHeight) {
                     // Normal upward swimming
                     pos.y = suggestedY;
@@ -91,7 +117,7 @@ export class Movement {
                 pos.x += this.slideVelocity.x * deltaTime;
                 pos.z += this.slideVelocity.z * deltaTime;
                 const terrainHeight = this.terrain.getHeightAt(pos.x, pos.z);
-                if (pos.y > terrainHeight + this.owner.heightOffset) {
+                if (pos.y > terrainHeight + this.owner.heightOffset && !this.owner.isInWater) {
                     pos.y -= this.owner.gravity * deltaTime * deltaTime;
                 }
                 if (pos.y < terrainHeight + this.owner.heightOffset) {
@@ -146,10 +172,28 @@ export class Movement {
         }
     }
 
-    // jump(initialVelocity) {
-    //     if (!this.owner.isJumping && !this.owner.isInWater) { // Prevent jumping in water
-    //         this.owner.isJumping = true;
-    //         this.jumpVelocity = initialVelocity;
-    //     }
-    // }
+    simulateSpacebarJump(owner) {
+        const currentTime = Date.now();
+        const cooldown = 1000; // 1 second in milliseconds
+
+        // Only trigger if cooldown has elapsed
+        if (currentTime - this.lastJumpTime >= cooldown) {
+            // Simulate Space keydown
+            const spaceKeydownEvent = new KeyboardEvent("keydown", { code: "Space" });
+            document.dispatchEvent(spaceKeydownEvent);
+
+            // // Simulate Mouse Button 2 (right-click) mouseup
+            // const mouseupEvent = new MouseEvent("mouseup", { button: 2, buttons: 0 });
+            // document.dispatchEvent(mouseupEvent);
+
+            // Schedule Space keyup after 0.5 seconds
+            setTimeout(() => {
+                const spaceKeyupEvent = new KeyboardEvent("keyup", { code: "Space" });
+                document.dispatchEvent(spaceKeyupEvent);
+            }, 500); // 500ms = 0.5 seconds
+
+            // Update last jump time
+            this.lastJumpTime = currentTime;
+        }
+    }
 }
