@@ -8,7 +8,7 @@ import { checkCollectionQuests } from '../quests.js';
 import { items } from '../items.js';
 import { showDrowningMessage, removeDrowningMessage } from '../game.js';
 import { updateMinimap, terrainCache } from '../environment/map.js';
-import { PlayerAnimation, AnimationQueue } from './animation.js';
+import { AnimationQueue, animationSelector } from './animation.js';
 
 const INVENTORY_SIZE = 8;
 
@@ -410,56 +410,19 @@ function updatePlayer(deltaTime, movement) {
     player.isMoving = player.moveForward || player.moveBackward || player.moveLeft || player.moveRight;
     if (player.useComplexModel) {
         player.animationQueue.update(deltaTime);
-
-        if (player.isMoving) {
-            player.animationQueue.enqueue(new PlayerAnimation(
-                "walk",
-                0.5,
-                () => console.log("Start walking animation"),
-                (progress) => {
-                    player.limbAngle = Math.sin(progress * Math.PI * 2) * 0.5;
-                    player.leftArm.rotation.z = player.limbAngle;
-                    player.rightArm.rotation.z = -player.limbAngle;
-                    player.leftLeg.rotation.z = -player.limbAngle;
-                    player.rightLeg.rotation.z = player.limbAngle;
-                },
-                () => console.log("Walking cycle completed")
-            ));
-        }
-
-        if (player.isInWater) {
-            player.animationQueue.enqueue(new PlayerAnimation(
-                "swim",
-                0.7,
-                () => console.log("Start swimming animation"),
-                (progress) => {
-                    player.limbAngle = Math.sin(progress * Math.PI * 2) * 0.3;
-                    player.leftArm.rotation.z = player.limbAngle * 0.5;
-                    player.rightArm.rotation.z = -player.limbAngle * 0.5;
-                    player.leftLeg.rotation.z = -player.limbAngle * 0.5;
-                    player.rightLeg.rotation.z = player.limbAngle * 0.5;
-                },
-                () => console.log("Swimming cycle completed")
-            ));
-        }
-    
-        if (player.isJumping) {
-            player.animationQueue.enqueue(new PlayerAnimation(
-                "jump",
-                0.3,
-                () => console.log("Start jump animation"),
-                (progress) => {
-                    player.leftArm.rotation.x = player.jumpVelocity > 0 ? -Math.PI / 4 : Math.PI / 2;
-                    player.rightArm.rotation.x = player.jumpVelocity > 0 ? -Math.PI / 4 : -Math.PI / 2;
-                    player.leftArm.rotation.z = 0;
-                    player.rightArm.rotation.z = 0;
-                },
-                () => console.log("Jump completed")
-            ));
-        }
-
-        if (!player.isMoving && !player.isJumping && !player.isInWater) {
-            player.animationQueue.clear();
+        switch (true) {
+            case player.isJumping:
+                player.animationQueue.enqueue(animationSelector("jump", player));
+                break;
+            case player.isInWater:
+                player.animationQueue.enqueue(animationSelector("swim", player));
+                break;
+            case player.isMoving:
+                player.animationQueue.enqueue(animationSelector("walk", player));
+                break;
+            default:
+                player.animationQueue.clear();
+                break;
         }
     }
 

@@ -17,7 +17,7 @@ export class Movement {
         let moveDir = new THREE.Vector3();
         
         const waterLevel = this.terrain.waterLevel;
-        this.owner.isInWater = this.owner.object.position.y - this.owner.heightOffset < waterLevel; // Check feet position
+        this.owner.isInWater = this.owner.object.position.y - this.owner.heightOffset + 0.5 < waterLevel; // Check feet position
         if (this.owner.isInWater) {
             // Water movement: use camera directions
             const camDir = this.camera.getWorldDirection(new THREE.Vector3());
@@ -39,7 +39,7 @@ export class Movement {
             if (this.owner.moveUp) {
                 const suggestedY = pos.y + this.owner.speed * deltaTime;
                 if (headNearSurface && suggestedY >= waterHeight) {
-                    // Apply jump boost to surface
+                    // Apply boost to surface
                     pos.y = waterHeight + 0.3;
                 } else if (suggestedY < waterHeight) {
                     // Normal upward swimming

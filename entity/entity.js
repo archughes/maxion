@@ -22,7 +22,7 @@ class Entity {
         const terrainHeight = terrain.getHeightAt(this.object.position.x, this.object.position.z);
         this.object.position.y = terrainHeight + this.heightOffset;
         const waterLevel = terrain.waterLevel;
-        this.isInWater = this.object.position.y - this.heightOffset < waterLevel; // Check feet position
+        this.isInWater = this.object.position.y - this.heightOffset + 0.5 < waterLevel; // Check feet position
         this.baseSpeedMultiplier = this.isInWater ? 0.3 : 1;
         this.speedMultiplier = this.baseSpeedMultiplier;
     }
