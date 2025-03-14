@@ -12,6 +12,8 @@ import { updateMinimap } from './environment/map.js';
 let isRightClicking = false, isLeftClicking = false, cameraDistance = 5, nearbyEnemies = [], currentEnemyIndex = -1, previousTarget = null;
 
 function setupInput() {
+    const gameCanvas = document.querySelector("canvas");
+
     document.addEventListener("keydown", event => {
         console.log(`Key pressed: ${event.code}`);
         switch (event.code) {
@@ -263,8 +265,10 @@ function setupInput() {
     });
 
     document.addEventListener("wheel", event => {
-        cameraDistance += event.deltaY * 0.01;
-        cameraDistance = Math.max(5, Math.min(20, cameraDistance));
+        if (event.target === gameCanvas) {
+            cameraDistance += event.deltaY * 0.01;
+            cameraDistance = Math.max(5, Math.min(20, cameraDistance));
+        }
     });
 }
 
