@@ -40,6 +40,7 @@ class Player extends Character {
         this.statPoints = 0;
         this.knownRecipes = []; 
         this.isAutoAttacking = false;
+        this.isInvisible = false;
 
         this.moveForward = false;
         this.moveBackward = false;
@@ -92,10 +93,77 @@ class Player extends Character {
         } else if (skillName === "Invisibility" && this.useMana(action.manaCost)) {
             console.log("Player is invisible!");
             action.cooldown = action.maxCooldown - action.level * 2;
-            // TODO: Add invisibility effect
+            this.isInvisible = true;
+            this.setInvisibilityEffect(true);
+            setTimeout(() => {
+                this.isInvisible = false;
+                this.setInvisibilityEffect(false);
+            }, 5000);
             return true;
         }
         return false; // Failed due to range, mana, or other conditions
+    }
+
+    setInvisibilityEffect(isInvisible) {
+        // Apply effect to all meshes in the player group
+        this.object.traverse((child) => {
+            if (child.isMesh && child.material) {
+                child.material.transparent = true;
+                child.material.opacity = isInvisible ? 0.3 : 1.0;
+            }
+        });
+        
+        if (isInvisible) {
+            this.sparklesEffect();
+        }
+    }
+
+    sparklesEffect() {
+        const particleCount = 50;
+        const positions = new Float32Array(particleCount * 3);
+        
+        for (let i = 0; i < particleCount * 3; i += 3) {
+            positions[i] = (Math.random() - 0.5) * 2;
+            positions[i + 1] = (Math.random() - 0.5) * 2;
+            positions[i + 2] = (Math.random() - 0.5) * 2;
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const material = new THREE.PointsMaterial({
+            color: 0x00ffff,
+            size: 0.1,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        this.object.add(particles);
+
+        // Animate particles
+        const animate = () => {
+            if (!this.isInvisible) {
+                this.object.remove(particles);
+                return;
+            }
+            particles.rotation.y += 0.01;
+            requestAnimationFrame(animate);
+        };
+        animate();
+    }
+
+    toggleVisibility(duration) {
+        this.object.visible = true; // Ensure the object is visible first
+        if (this.object.material) {
+            this.object.material.opacity = 0.3; // Set opacity to 30%
+        }
+        setTimeout(() => {
+            this.object.visible = true; // Ensure player reappears
+            if (this.object.material) {
+                this.object.material.opacity = 1; // Reset opacity
+            }
+        }, duration);
     }
 
     updateCooldowns(delta) {

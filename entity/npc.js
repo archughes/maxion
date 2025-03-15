@@ -79,6 +79,11 @@ class NPC extends Character {
     }
 
     update(deltaTime) {
+        if (player.isInvisible) {
+            // Ignore player while invisible
+            return;
+        }
+        
         super.update(deltaTime);
         if (this.health <= 0) return;
         const slopeInfo = terrain.getSlopeAt(player.object.position.x, player.object.position.z);
