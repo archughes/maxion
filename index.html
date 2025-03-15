@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,12 +8,16 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
 
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: #1a1a1a; 
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #1a1a1a;
         }
-        canvas { display: block; }
+
+        canvas {
+            display: block;
+        }
+
         .ui {
             position: absolute;
             top: 0;
@@ -22,39 +27,57 @@
             pointer-events: none;
             z-index: 10;
             font-family: 'Cinzel', serif;
-            color: #3C2F2F; /* Dark brown text for medieval feel */
+            color: #3C2F2F;
+            /* Dark brown text for medieval feel */
         }
-        .health-bar, .mana-bar, .xp-bar {
+
+        .health-bar,
+        .mana-bar,
+        .xp-bar {
             position: absolute;
-            left: 80px; /* Adjusted for character image */
+            left: 80px;
+            /* Adjusted for character image */
             width: 200px;
             height: 20px;
             background: url('parchment-texture-fill.jpg');
-            background-size: cover; 
+            background-size: cover;
             background-position: center;
-            background-repeat: no-repeat; 
-            border: 3px solid #8B4513; /* Brown wood-like border */
+            background-repeat: no-repeat;
+            border: 3px solid #8B4513;
+            /* Brown wood-like border */
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
         }
-        .health-bar { top: 10px; }
-        .mana-bar { top: 40px; }
+
+        .health-bar {
+            top: 10px;
+        }
+
+        .mana-bar {
+            top: 40px;
+        }
+
         .xp-bar {
             position: absolute;
             bottom: 90px;
             left: 50%;
             transform: translateX(-50%);
-            width: 400px; /* Wider than the original 200px */
+            width: 400px;
+            /* Wider than the original 200px */
             height: 20px;
             background: url('parchment-texture-fill.jpg');
-            background-size: cover; 
+            background-size: cover;
             background-position: center;
-            background-repeat: no-repeat; 
+            background-repeat: no-repeat;
             border: 3px solid #8B4513;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
         }
-        .health-fill, .mana-fill, .xp-fill {
+
+        .health-fill,
+        .mana-fill,
+        .xp-fill {
             height: 100%;
-            transition: width 0.3s ease; /* Smooth width transition */
+            transition: width 0.3s ease;
+            /* Smooth width transition */
         }
 
         .health-fill {
@@ -70,14 +93,24 @@
         }
 
         .low-health {
-            animation: pulse 1s infinite; /* Pulsing effect for low health */
+            animation: pulse 1s infinite;
+            /* Pulsing effect for low health */
         }
 
         @keyframes pulse {
-            0% { background-color: #FF4040; }
-            50% { background-color: #FF0000; }
-            100% { background-color: #FF4040; }
+            0% {
+                background-color: #FF4040;
+            }
+
+            50% {
+                background-color: #FF0000;
+            }
+
+            100% {
+                background-color: #FF4040;
+            }
         }
+
         .character-btn {
             position: absolute;
             left: 10px;
@@ -91,6 +124,7 @@
             background-size: contain;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
         }
+
         .bottom-row {
             position: absolute;
             bottom: 10px;
@@ -100,21 +134,28 @@
             gap: 20px;
             align-items: center;
         }
+
         .action-bar {
             position: static;
             display: flex;
             gap: 5px;
         }
+
         .inventory-container {
             position: static;
             display: flex;
             gap: 10px;
         }
-        .popup-btn, .action-slot, .item-slot, .popup, .close-btn {
+
+        .popup-btn,
+        .action-slot,
+        .item-slot,
+        .popup,
+        .close-btn {
             background: url('parchment-texture-fill.jpg');
-            background-size: cover; 
+            background-size: cover;
             background-position: center;
-            background-repeat: no-repeat; 
+            background-repeat: no-repeat;
             border: 2px solid #8B4513;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
             color: #3C2F2F;
@@ -123,12 +164,20 @@
             pointer-events: auto;
             font-family: 'Cinzel', serif;
         }
-        .popup-btn, .action-slot, .item-slot {
+
+        .popup-btn,
+        .action-slot,
+        .item-slot {
             background-size: cover;
         }
-        .popup-btn:hover, .action-slot:hover, .item-slot:hover, .close-btn:hover {
+
+        .popup-btn:hover,
+        .action-slot:hover,
+        .item-slot:hover,
+        .close-btn:hover {
             border-color: goldenrod;
         }
+
         .search-bar {
             width: 100%;
             padding: 5px;
@@ -139,19 +188,24 @@
             font-family: 'Cinzel', serif;
             pointer-events: auto;
         }
+
         .scroll-box {
             max-height: 350px;
             overflow-y: auto;
         }
+
         .inventory-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 5px;
         }
-        .recipe-list > div, .quest-list > div {
+
+        .recipe-list>div,
+        .quest-list>div {
             padding: 5px;
             border-bottom: 1px solid #8B4513;
         }
+
         .action-slot {
             position: relative;
             width: 40px;
@@ -159,12 +213,13 @@
             text-align: center;
             line-height: 40px;
             background: url('parchment-texture-fill.jpg');
-            background-size: cover; 
+            background-size: cover;
             background-position: center;
-            background-repeat: no-repeat; 
+            background-repeat: no-repeat;
             border: 2px solid #8B4513;
             cursor: pointer;
-            --cooldown-percent: 0; /* Custom property for cooldown */
+            --cooldown-percent: 0;
+            /* Custom property for cooldown */
         }
 
         .action-slot::after {
@@ -174,20 +229,25 @@
             left: 0;
             width: 100%;
             height: calc(var(--cooldown-percent) * 100%);
-            background: rgba(139, 69, 19, 0.5); /* Brownish cooldown overlay */
+            background: rgba(139, 69, 19, 0.5);
+            /* Brownish cooldown overlay */
             transition: height 0.1s linear;
         }
+
         .item-slot {
             width: 50px;
             height: 50px;
             text-align: center;
             line-height: 50px;
         }
+
         .item-slot.equipped {
             border-color: goldenrod;
         }
+
         .completed {
-            color: #FFD700; /* Gold for completed quests */
+            color: #FFD700;
+            /* Gold for completed quests */
         }
 
         .minimap {
@@ -198,7 +258,7 @@
             height: 150px;
             background: url('parchment-texture-fill.jpg');
             background-position: center;
-            background-repeat: no-repeat; 
+            background-repeat: no-repeat;
             border: 3px solid #8B4513;
             border-radius: 50%;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
@@ -207,17 +267,19 @@
             cursor: pointer;
             pointer-events: auto;
         }
+
         .minimap.expanded {
             width: 500px;
             height: 500px;
         }
+
         .time-frame {
             position: absolute;
             width: 60px;
             background: url('parchment-texture-fill.jpg');
-            background-size: cover; 
+            background-size: cover;
             background-position: center;
-            background-repeat: no-repeat; 
+            background-repeat: no-repeat;
             border: 2px solid #8B4513;
             padding: 2px 8px;
             border-radius: 4px;
@@ -225,6 +287,7 @@
             text-align: center;
             z-index: 15;
         }
+
         .time-display {
             color: #3C2F2F;
             font-size: 12px;
@@ -243,6 +306,78 @@
             transform-origin: center;
             transform: translate(-50%, -50%) rotate(0deg);
         }
+
+        .settings-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .tab-btn {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #8B4513;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .tab-btn:hover {
+            background: #A0522D;
+        }
+
+        .tab-btn.active {
+            background: #5C4033;
+            /* Highlight active tab */
+            font-weight: bold;
+        }
+
+        .tab-content {
+            padding: 15px;
+            background: transparent;
+            /* Remove inner parchment texture */
+            border: 2px solid #8B4513;
+            /* Add subtle border for separation */
+        }
+
+        label {
+            display: inline-block;
+            width: 200px;
+            margin-bottom: 10px;
+            color: #3C2F2F;
+            /* Darker brown for better contrast */
+        }
+
+        select,
+        input {
+            margin-bottom: 10px;
+            padding: 5px;
+            background: #F5E8C7;
+            /* Light parchment color for inputs */
+            border: 1px solid #8B4513;
+            color: #3C2F2F;
+        }
+
+        .button-bar {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .button-bar button {
+            margin: 5px;
+            padding: 10px 20px;
+            background: #8B4513;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .button-bar button:hover {
+            background: #A0522D;
+        }
+
         .popup {
             position: absolute;
             bottom: 60px;
@@ -251,23 +386,32 @@
             background: url('parchment-texture.png');
             background-size: 100% 100%;
             background-position: center;
-            background-repeat: no-repeat; 
+            background-repeat: no-repeat;
             padding: 40px;
             width: 600px;
-            max-height: 400px; /* Fixed height to prevent overflow */
+            max-height: 400px;
+            /* Fixed height to prevent overflow */
             z-index: 20;
-            overflow: hidden; /* Prevent map from spilling out */
+            overflow: hidden;
+            /* Prevent map from spilling out */
             border: none;
             box-shadow: none;
         }
     </style>
 </head>
+
 <body>
     <div class="ui">
         <img src="character-icon.png" class="character-btn" data-target="stats-popup">
-        <div class="health-bar"><div class="health-fill" style="width: 100%;"></div></div>
-        <div class="mana-bar"><div class="mana-fill" style="width: 100%;"></div></div>
-        <div class="xp-bar"><div class="xp-fill" style="width: 0%;"></div></div>
+        <div class="health-bar">
+            <div class="health-fill" style="width: 100%;"></div>
+        </div>
+        <div class="mana-bar">
+            <div class="mana-fill" style="width: 100%;"></div>
+        </div>
+        <div class="xp-bar">
+            <div class="xp-fill" style="width: 0%;"></div>
+        </div>
 
         <div class="bottom-row">
             <div class="action-bar">
@@ -306,10 +450,70 @@
             <button class="close-btn">Close</button>
         </div>
         <div class="popup" id="settings-popup" style="display:none;">
-            <h2>Settings</h2>
-            <button onclick="toggleAudio()">Toggle Audio</button>
-            <button onclick="toggleFullscreen()">Fullscreen</button>
-            <button class="close-btn">Close</button>
+            <h2 style="text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">Settings</h2>
+            <div class="settings-tabs" style="display: flex; justify-content: center; margin-bottom: 15px;">
+                <button class="tab-btn" data-tab="gameplay" aria-label="Gameplay Settings">Gameplay</button>
+                <button class="tab-btn" data-tab="media" aria-label="Video and Audio Settings">Video & Audio</button>
+                <button class="tab-btn" data-tab="developer" aria-label="Developer Settings">Developer</button>
+                <button class="tab-btn" data-tab="credits" aria-label="Credits">Credits</button>
+            </div>
+            <div class="tab-content" id="gameplay-tab">
+                <h3 style="color: #5C4033; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">Gameplay Settings</h3>
+                <label for="difficulty" style="margin-bottom: 10px; color: #5C4033;">Difficulty:</label>
+                <select id="difficulty" style="margin-bottom: 10px;">
+                    <option value="easy">Easy</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="hard">Hard</option>
+                </select>
+                <br>
+                <label for="auto-save" style="margin-bottom: 10px; color: #5C4033;">Auto-Save Interval
+                    (minutes):</label>
+                <input type="number" id="auto-save" min="1" max="60" value="5" style="margin-bottom: 10px;">
+            </div>
+            <div class="tab-content" id="media-tab" style="display:none;">
+                <h3>Video & Audio Settings</h3>
+                <label for="master-volume">Master Volume:</label>
+                <input type="range" id="master-volume" min="0" max="100" value="50">
+                <br>
+                <label for="music-volume">Music Volume:</label>
+                <input type="range" id="music-volume" min="0" max="100" value="30">
+                <br>
+                <label for="sfx-volume">SFX Volume:</label>
+                <input type="range" id="sfx-volume" min="0" max="100" value="70">
+                <br>
+                <label for="shadow-quality">Shadow Quality:</label>
+                <select id="shadow-quality">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                </select>
+                <br>
+                <label for="anti-aliasing">Anti-Aliasing:</label>
+                <input type="checkbox" id="anti-aliasing" checked>
+            </div>
+            <div class="tab-content" id="developer-tab" style="display:none;">
+                <h3>Developer Settings</h3>
+                <label for="debug-mode">Debug Mode:</label>
+                <input type="checkbox" id="debug-mode">
+                <br>
+                <label for="show-fps">Show FPS:</label>
+                <input type="checkbox" id="show-fps">
+                <br>
+                <label for="wire-frame">Wireframe Mode:</label>
+                <input type="checkbox" id="wire-frame">
+            </div>
+            <div class="tab-content" id="credits-tab" style="display:none;">
+                <h3>Credits</h3>
+                <p>Developed by [Your Name]</p>
+                <p>Assets from [Asset Sources]</p>
+                <p>Special thanks to [Contributors]</p>
+            </div>
+            <div class="button-bar" style="margin-top: 20px;">
+                <button class="save-settings-btn" aria-label="Save Settings">Apply Settings</button>
+                <button class="load-game-btn" aria-label="Load Game">Load Game</button>
+                <button class="save-game-btn" aria-label="Save Game">Save Game</button>
+                <button class="resume-btn" aria-label="Resume Game">Resume</button>
+            </div>
         </div>
         <div class="popup" id="quests-popup" style="display:none;">
             <h2>Quests</h2>
@@ -329,9 +533,12 @@
             <div class="time-display">00:00</div>
         </div>
 
-        <div id="tooltip" style="position:absolute; display:none; background:#fff; border:1px solid #000; padding:5px; pointer-events:none; z-index:100;"></div>
+        <div id="tooltip"
+            style="position:absolute; display:none; background:#fff; border:1px solid #000; padding:5px; pointer-events:none; z-index:100;">
+        </div>
     </div>
     <script type="module" src="game.js"></script>
     <script type="module" src="ui.js"></script>
 </body>
+
 </html>

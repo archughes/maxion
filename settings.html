@@ -1,0 +1,159 @@
+<!-- settings.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Settings - Maxion</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: url('parchment-texture-fill.jpg');
+      font-family: 'MedievalSharp', cursive;
+      color: #4B2E2A;
+    }
+    #settings-menu {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      max-width: 800px;
+      padding: 20px;
+      background: url('parchment-texture.png');
+      border: 5px solid #8B4513;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      cursor: auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #settings-tabs button {
+      margin: 5px;
+      padding: 10px;
+      background: #8B4513;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #settings-tabs button:hover {
+      background: #A0522D;
+    }
+    .tab-content {
+      display: none;
+      margin-top: 20px;
+    }
+    label {
+      display: inline-block;
+      width: 200px;
+      margin-bottom: 10px;
+    }
+    input, select {
+      margin-bottom: 10px;
+    }
+    .button-bar {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .button-bar button {
+      margin: 5px;
+      padding: 10px 20px;
+      background: #8B4513;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .button-bar button:hover {
+      background: #A0522D;
+    }
+  </style>
+</head>
+<body>
+  <div id="settings-menu">
+    <h1>Settings</h1>
+    <div id="settings-tabs">
+      <button onclick="showTab('gameplay')">Gameplay</button>
+      <button onclick="showTab('media')">Video & Audio</button>
+      <button onclick="showTab('developer')">Developer</button>
+      <button onclick="showTab('credits')">Credits</button>
+    </div>
+
+    <div id="gameplay" class="tab-content">
+      <h2>Gameplay Settings</h2>
+      <label for="difficulty">Difficulty:</label>
+      <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+      </select>
+      <br>
+      <label for="auto-save">Auto-Save Interval (minutes):</label>
+      <input type="number" id="auto-save" min="1" max="60" value="5">
+    </div>
+
+    <div id="media" class="tab-content">
+      <h2>Video & Audio Settings</h2>
+      <label for="master-volume">Master Volume:</label>
+      <input type="range" id="master-volume" min="0" max="100" value="50">
+      <br>
+      <label for="music-volume">Music Volume:</label>
+      <input type="range" id="music-volume" min="0" max="100" value="30">
+      <br>
+      <label for="sfx-volume">SFX Volume:</label>
+      <input type="range" id="sfx-volume" min="0" max="100" value="70">
+      <br>
+      <label for="shadow-quality">Shadow Quality:</label>
+      <select id="shadow-quality">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+      <br>
+      <label for="anti-aliasing">Anti-Aliasing:</label>
+      <input type="checkbox" id="anti-aliasing" checked>
+    </div>
+
+    <div id="developer" class="tab-content">
+      <h2>Developer Settings</h2>
+      <label for="debug-mode">Debug Mode:</label>
+      <input type="checkbox" id="debug-mode">
+      <br>
+      <label for="show-fps">Show FPS:</label>
+      <input type="checkbox" id="show-fps">
+      <br>
+      <label for="wire-frame">Wireframe Mode:</label>
+      <input type="checkbox" id="wire-frame">
+    </div>
+
+    <div id="credits" class="tab-content">
+      <h2>Credits</h2>
+      <p>Developed by [Your Name]</p>
+      <p>Assets from [Asset Sources]</p>
+      <p>Special thanks to [Contributors]</p>
+    </div>
+
+    <div class="button-bar">
+      <button onclick="saveSettings()">Save Settings</button>
+      <button onclick="loadGame()">Load Game</button>
+      <button onclick="saveGame()">Save Game</button>
+      <button onclick="resumeGame()">Resume</button>
+    </div>
+  </div>
+
+  <script>
+    function showTab(tabId) {
+      const tabs = document.querySelectorAll('.tab-content');
+      tabs.forEach(tab => tab.style.display = 'none');
+      document.getElementById(tabId).style.display = 'block';
+    }
+    // Default to Gameplay tab
+    showTab('gameplay');
+    // Placeholder functions; implement in your main JS
+    function saveSettings() {}
+    function loadGame() {}
+    function saveGame() {}
+    function resumeGame() {}
+  </script>
+</body>
+</html>
