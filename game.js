@@ -196,15 +196,15 @@ function gameOver() {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: url('parchment-texture-fill.jpg');
+        background: url('parchment-texture.png');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         color: white;
         padding: 20px;
         text-align: center;
-        border: 2px solid #8B4513; /* Optional: Give it a scroll look */
-        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+        width: 30%;
+        height: 30%;
     `;
 
     gameOverDiv.innerHTML = `
