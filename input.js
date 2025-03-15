@@ -131,7 +131,7 @@ function setupInput() {
     let mouseMovementSum = 0;
     let dualMouseForwardFlag = false;
     document.addEventListener("mousedown", event => {
-        if (event.target.closest(".inventory-container, .popup, .action-bar, .minimap")) return;
+        if (event.target.closest(".inventory-container, .popup, .action-bar, .minimap, .character-btn")) return;
         if (event.button === 2) {
             isRightClicking = true;
             rightClickStartTime = Date.now();
