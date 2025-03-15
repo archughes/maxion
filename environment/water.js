@@ -4,14 +4,20 @@ import { scene } from './scene.js';
 export class WaterSystem {
     constructor(width, height, level, color) {
         const waterGeometry = new THREE.PlaneGeometry(width, height);
-        const waterMaterial = new THREE.MeshPhongMaterial({
+        this.material = new THREE.MeshStandardMaterial({
             color: color || 0x0077be,
-            shininess: 200, // Increased for more reflectivity
-            specular: 0xffffff, // Bright white highlights
             transparent: true,
-            opacity: 0.8
+            opacity: 0.8,
+            side: THREE.DoubleSide,
+            // Fresnel effect
+            onBeforeCompile: (shader) => {
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <alphatest_fragment>',
+                    '#include <alphatest_fragment>\n    float fresnel = pow(1.0 - dot(normalize(vNormal), normalize(-vViewPosition)), 3.0);\n    gl_FragColor.a *= fresnel;'
+                );
+            }
         });
-        this.mesh = new THREE.Mesh(waterGeometry, waterMaterial);
+        this.mesh = new THREE.Mesh(waterGeometry, this.material);
         this.mesh.rotation.x = -Math.PI / 2;
         this.mesh.position.y = level;
         scene.add(this.mesh);
