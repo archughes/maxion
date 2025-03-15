@@ -2,6 +2,7 @@ import { player } from './entity/player.js';
 import { activeQuests, factions, canStartQuest, completedQuests } from './quests.js';
 import { useItem, craftItem } from './items.js';
 import { useAction } from './input.js';
+import { updateSettings, saveSettings, loadGame, saveGame } from './settings.js';
 
 function updateInventoryUI() {
     const grid = document.querySelector("#inventory-popup .inventory-grid");
@@ -180,6 +181,7 @@ function setupPopups() {
                 else if (target.id === "character-popup") updateCharacterUI();
                 else if (target.id === "stats-popup") updateStatsUI();
                 else if (target.id === "quests-popup") updateQuestUI();
+                else if (target.id === "settings-popup") updateSettings();
             }
         });
     });
@@ -195,6 +197,26 @@ function setupPopups() {
             if (input.closest("#inventory-popup")) updateInventoryUI();
             else if (input.closest("#recipes-popup")) updateRecipesUI();
         });
+    });
+
+    // ui.js (partial update for active tab)
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const tabId = btn.dataset.tab;
+            document.querySelectorAll(".tab-content").forEach(tab => {
+                tab.style.display = tab.id === `${tabId}-tab` ? "block" : "none";
+            });
+            // Set active tab
+            document.querySelectorAll(".tab-btn").forEach(t => t.classList.remove("active"));
+            btn.classList.add("active");
+        });
+    });
+    
+    document.querySelector(".save-settings-btn").addEventListener("click", saveSettings);
+    document.querySelector(".load-game-btn").addEventListener("click", loadGame);
+    document.querySelector(".save-game-btn").addEventListener("click", saveGame);
+    document.querySelector(".resume-btn").addEventListener("click", () => {
+    closeAllPopups();
     });
 
     document.addEventListener("click", (event) => {
