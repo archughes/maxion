@@ -11,6 +11,7 @@ import { loadMap, terrain, doodads, skySystem } from './environment/environment.
 import { SoundManager } from './environment/sound-manager.js';
 import { timeSystem } from './environment/TimeSystem.js';
 import { initializeTerrainCache, setupMinimap } from './environment/map.js';
+import { Movement } from './entity/movement.js';
 
 // Add Mana Bar to UI
 const manaBar = document.createElement("div");
@@ -24,6 +25,8 @@ export const cameraState = {
     pitch: 0
 };
 export const soundManager = new SoundManager();
+
+let movement = null;
 
 // Game Loop
 async function init() {
@@ -42,6 +45,7 @@ async function init() {
     updateQuestUI();
     initializeTerrainCache();
     setupMinimap();
+    movement = new Movement(player, terrain, camera);
     animate();
     update();
 }
@@ -67,7 +71,7 @@ function animate() {
     
     player.updateCooldowns(deltaTime);
     updateKnownMap();
-    updatePlayer(deltaTime);
+    updatePlayer(deltaTime, movement);
     updateNPC(deltaTime);
     handleCollisions();
 

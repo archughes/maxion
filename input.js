@@ -1,7 +1,7 @@
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
 import { player } from './entity/player.js';
 import { enemies } from './entity/npc.js';
-import { interactWithEnvironment } from './environment/environment.js';
+import { interactWithEnvironment, terrain } from './environment/environment.js';
 import { activeQuests, completeQuest } from './quests.js';
 import { camera } from './environment/scene.js';
 import { useItem } from './items.js';
@@ -12,6 +12,8 @@ import { updateMinimap } from './environment/map.js';
 let isRightClicking = false, isLeftClicking = false, cameraDistance = 5, nearbyEnemies = [], currentEnemyIndex = -1, previousTarget = null;
 
 function setupInput() {
+    const gameCanvas = document.querySelector("canvas");
+
     document.addEventListener("keydown", event => {
         console.log(`Key pressed: ${event.code}`);
         switch (event.code) {
@@ -22,7 +24,11 @@ function setupInput() {
             case "KeyQ": player.rotateLeft = true; break;
             case "KeyE": player.rotateRight = true; break;
             case "Space":
-                if (!player.isJumping && !player.isInWater) {
+                const terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z); // Allows jumping if very close to ground and falling
+                console.log((player.object.position.y - terrainHeight - player.heightOffset));
+                if ((!player.isJumping || ((player.object.position.y - terrainHeight - player.heightOffset) < 0.1 && player.jumpVelocity < 0 && player.jumpVelocity > -0.5)) 
+                    && !player.isInWater 
+                    && (player.object.position.y - terrainHeight - player.heightOffset) < 0.5) {
                     player.jumpVelocity = 6;
                     player.isJumping = true;
                     player.firstJump = true;
@@ -259,8 +265,10 @@ function setupInput() {
     });
 
     document.addEventListener("wheel", event => {
-        cameraDistance += event.deltaY * 0.01;
-        cameraDistance = Math.max(5, Math.min(20, cameraDistance));
+        if (event.target === gameCanvas) {
+            cameraDistance += event.deltaY * 0.01;
+            cameraDistance = Math.max(5, Math.min(20, cameraDistance));
+        }
     });
 }
 

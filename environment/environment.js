@@ -204,7 +204,7 @@ function interactWithEnvironment() {
     });
 
     doodads.forEach(doodad => {
-        if (player.object.position.distanceTo(doodad.object.position) < 2) {
+        if (player.object.position.distanceTo(doodad.object.position) < (1 + player.collisionRadius + doodad.collisionRadius)) {
             doodad.interact();
         }
     });

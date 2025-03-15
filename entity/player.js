@@ -8,7 +8,7 @@ import { checkCollectionQuests } from '../quests.js';
 import { items } from '../items.js';
 import { showDrowningMessage, removeDrowningMessage } from '../game.js';
 import { updateMinimap, terrainCache } from '../environment/map.js';
-import { PlayerAnimation, AnimationQueue } from './animation.js';
+import { AnimationQueue, animationSelector } from './animation.js';
 
 const INVENTORY_SIZE = 8;
 
@@ -55,8 +55,14 @@ class Player extends Character {
         this.runTimer = 0;
         this.selectedTarget = null;
         this.animationQueue = new AnimationQueue();
+        this.onLand = (fallVelocity) => {
+            const fallDamage = Math.floor(fallVelocity * 2);
+            this.takeDamage(fallDamage, undefined, 'fall');
+            console.log(`Fall damage taken: ${fallDamage} HP (Velocity: ${fallVelocity.toFixed(2)})`);
+          };
                 
         this.isInWater = false;
+        this.collisionRadius = 0.5;
     }
 
     useSkill(skillName) {
@@ -398,221 +404,34 @@ function updateKnownMap() {
     }
 }
 
-function updatePlayer(deltaTime) {
+function updatePlayer(deltaTime, movement) {
     player.autoAttack(deltaTime);
-    // Determine if player is in water
-    const terrainType = terrain.terrainFunc(player.object.position.x, player.object.position.z, player.object.position.y);
-    // console.log(`terrainType ${terrainType}`);
-    player.isInWater = terrainType === 'water';
-
-    // Frame-rate independent speed
-    let terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
-    let speedMultiplier = player.baseSpeedMultiplier; // Start with base
-    if (player.isRunning) {
-        player.runTimer -= deltaTime;
-        if (player.runTimer <= 0) {
-            player.isRunning = false;
-        } else {
-            speedMultiplier *= 1.5; // Apply sprint multiplier
-        }
-    }
-    player.speedMultiplier = speedMultiplier; // Update the dynamic multiplier
-    const slopeInfo = terrain.getSlopeAt(player.object.position.x, player.object.position.z);
-    const steepThreshold = 1.5;
-    const slopeMultiplier = 1 / (1 + slopeInfo.magnitude); // Speed reduces as slope increases
-    const baseSpeed = player.speed * deltaTime * player.speedMultiplier; // Speed without slope effect
-    const speed = baseSpeed * slopeMultiplier;
+    movement.update(deltaTime);
     
-    let landedFlag = false;
-    if (!player.isInWater && !player.isJumping && slopeInfo.magnitude > steepThreshold) {
-        // Start sliding
-        player.isSliding = true;
-        player.isJumping = false; // Cancel jumping
-        const slideAcceleration = player.gravity * slopeInfo.magnitude * deltaTime;
-        player.slideVelocity.addScaledVector(slopeInfo.direction, slideAcceleration);
-        player.slideVelocity.clampLength(0, player.maxSlideSpeed);
-
-        // Apply slide movement
-        player.object.position.x += player.slideVelocity.x * deltaTime;
-        player.object.position.z += player.slideVelocity.z * deltaTime;
-
-        // Adjust Y to snap to terrain or fall
-        terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
-        if (player.object.position.y > terrainHeight + player.heightOffset) {
-            player.object.position.y -= player.gravity * deltaTime * deltaTime;
-        }
-        if (player.object.position.y < terrainHeight + player.heightOffset) {
-            player.object.position.y = terrainHeight + player.heightOffset;
-            // Check if slope flattened
-            const newSlopeInfo = terrain.getSlopeAt(player.object.position.x, player.object.position.z);
-            if (newSlopeInfo.magnitude <= steepThreshold) {
-                landedFlag = true;
-                player.isSliding = false;
-                player.slideVelocity.set(0, 0, 0);
-            }
-        }
-    } else {
-        player.isSliding = false;
-        player.slideVelocity.set(0, 0, 0);
-    }
-
-    if (player.isInWater) {
-        // Calculate movement direction in water
-        const moveDir = new THREE.Vector3(0, 0, 0);
-        const dir = camera.getWorldDirection(new THREE.Vector3());
-        const leftDir = new THREE.Vector3().crossVectors(camera.up, dir).normalize();
-        const rightDir = new THREE.Vector3().crossVectors(dir, camera.up).normalize();
-    
-        if (player.moveForward) moveDir.add(dir);
-        if (player.moveBackward) moveDir.sub(dir);
-        if (player.moveLeft) moveDir.add(leftDir);
-        if (player.moveRight) moveDir.add(rightDir);
-        
-        // Normalize and scale the movement vector
-        if (moveDir.lengthSq() > 0) {
-            moveDir.normalize().multiplyScalar(baseSpeed);
-        }
-    
-        // Apply movement
-        player.object.position.add(moveDir);
-    
-        // Handle vertical movement separately (unchanged)
-        if (player.moveUp) {
-            const suggestedY = player.object.position.y + player.speed * deltaTime;
-            if (suggestedY < (terrain.waterHeight)) {
-                player.object.position.y = suggestedY;
-            }
-        }
-    }
-
-    const moveDir = new THREE.Vector3(0, 0, 0);
-    const direction = player.object.rotation.y;
-
-    if (player.moveForward) {
-        moveDir.x += Math.sin(direction);
-        moveDir.z += Math.cos(direction);
-    }
-    if (player.moveBackward) {
-        moveDir.x -= Math.sin(direction)/2;
-        moveDir.z -= Math.cos(direction)/2;
-    }
-    if (player.moveLeft) {
-        moveDir.x += Math.cos(direction);
-        moveDir.z -= Math.sin(direction);
-    }
-    if (player.moveRight) {
-        moveDir.x -= Math.cos(direction);
-        moveDir.z += Math.sin(direction);
-    }
-
-    if (moveDir.lengthSq() > 0) {
-        moveDir.normalize().multiplyScalar(speed);
-    }
-
-    const newX = player.object.position.x + moveDir.x;
-    const newZ = player.object.position.z + moveDir.z;
-
-    if (!player.isInWater && (slopeInfo.magnitude <= steepThreshold || player.isJumping)) {
-        player.object.position.x = newX;
-        player.object.position.z = newZ;
-    }
-
     player.isMoving = player.moveForward || player.moveBackward || player.moveLeft || player.moveRight;
     if (player.useComplexModel) {
         player.animationQueue.update(deltaTime);
-
-        if (player.isMoving) {
-            player.animationQueue.enqueue(new PlayerAnimation(
-                "walk",
-                0.5,
-                () => console.log("Start walking animation"),
-                (progress) => {
-                    player.limbAngle = Math.sin(progress * Math.PI * 2) * 0.5;
-                    player.leftArm.rotation.z = player.limbAngle;
-                    player.rightArm.rotation.z = -player.limbAngle;
-                    player.leftLeg.rotation.z = -player.limbAngle;
-                    player.rightLeg.rotation.z = player.limbAngle;
-                },
-                () => console.log("Walking cycle completed")
-            ));
-        }
-    
-        if (player.isJumping) {
-            player.animationQueue.enqueue(new PlayerAnimation(
-                "jump",
-                0.3,
-                () => console.log("Start jump animation"),
-                (progress) => {
-                    player.leftArm.rotation.x = player.jumpVelocity > 0 ? -Math.PI / 4 : Math.PI / 2;
-                    player.rightArm.rotation.x = player.jumpVelocity > 0 ? -Math.PI / 4 : -Math.PI / 2;
-                    player.leftArm.rotation.z = 0;
-                    player.rightArm.rotation.z = 0;
-                },
-                () => console.log("Jump completed")
-            ));
-        }
-    
-        if (player.isInWater) {
-            player.animationQueue.enqueue(new PlayerAnimation(
-                "swim",
-                0.7,
-                () => console.log("Start swimming animation"),
-                (progress) => {
-                    player.limbAngle = Math.sin(progress * Math.PI * 2) * 0.3;
-                    player.leftArm.rotation.z = player.limbAngle * 0.5;
-                    player.rightArm.rotation.z = -player.limbAngle * 0.5;
-                    player.leftLeg.rotation.z = -player.limbAngle * 0.5;
-                    player.rightLeg.rotation.z = player.limbAngle * 0.5;
-                },
-                () => console.log("Swimming cycle completed")
-            ));
-        }
-
-        if (!player.isMoving && !player.isJumping && !player.isInWater) {
-            player.animationQueue.clear();
+        switch (true) {
+            case player.isJumping:
+                player.animationQueue.enqueue(animationSelector("jump", player));
+                break;
+            case player.isInWater:
+                player.animationQueue.enqueue(animationSelector("swim", player));
+                break;
+            case player.isMoving:
+                player.animationQueue.enqueue(animationSelector("walk", player));
+                break;
+            default:
+                player.animationQueue.clear();
+                break;
         }
     }
-
-    if (player.isInWater) {
-        player.isJumping = false;
-        player.object.position.y -= player.baseSpeedMultiplier * player.gravity * deltaTime * deltaTime;
-    }
-
-    if (player.rotateLeft) player.object.rotation.y += 0.5* deltaTime;
-    if (player.rotateRight) player.object.rotation.y -= 0.5* deltaTime;
-
-    if (player.isJumping && !player.isInWater) { // Disable jumping in water
-        player.object.position.y += player.jumpVelocity * deltaTime; // Use deltaTime for frame-rate independence
-        player.jumpVelocity -= player.gravity * deltaTime; // Apply gravity over time
-
-        // Check if player has landed (hit terrain or gone below it)
-        terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
-        if (player.object.position.y <= terrainHeight + player.heightOffset && !player.firstJump) {
-            player.object.position.y = terrainHeight + player.heightOffset; // Snap to terrain
-            player.isJumping = false;
-            player.jumpVelocity = 0; // Reset jump velocity
-            landedFlag = true;
-        }
-    }
-
-    const waterHeight = terrain.waterLevel;
-    terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
-
-    // console.log(`  player water: ${player.isInWater}, jump: ${player.isJumping}, waterHeight: ${waterHeight}`);
-    if (!player.isJumping && player.object.position.y <= terrainHeight + player.heightOffset) {
-        player.object.position.y = terrainHeight + player.heightOffset;
-        landedFlag = true;
-    } 
-    else if (!player.isInWater) {
-        player.isJumping = true;
-    }
-    player.firstJump = false;
 
     player.regenerateMana(0.05);
 
     // Drowning mechanic
     const headY = player.object.position.y + player.heightOffset; // Head at top of 1-unit cube
-    if (headY < waterHeight) {
+    if (headY < terrain.waterLevel) {
         if (player.drowningTimer < player.drowningTime) {
             player.drowningTimer += deltaTime;
             const remaining = Math.ceil(player.drowningTime - player.drowningTimer);
@@ -631,11 +450,6 @@ function updatePlayer(deltaTime) {
         removeDrowningMessage();
     }
 
-    if (player.jumpVelocity < -8 && landedFlag) {
-        const fallDamage = Math.floor(this.jumpVelocity * 2);
-        player.takeDamage(fallDamage, attacker='fall');
-        console.log(`Fall damage taken: ${fallDamage} HP (Velocity: ${this.jumpVelocity.toFixed(2)})`);
-    }
 }
 
 export { player, updatePlayer, updateKnownMap };

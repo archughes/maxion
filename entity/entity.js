@@ -21,8 +21,8 @@ class Entity {
     adjustToTerrain(terrain) {
         const terrainHeight = terrain.getHeightAt(this.object.position.x, this.object.position.z);
         this.object.position.y = terrainHeight + this.heightOffset;
-        const waterHeight = terrain.waterHeight;
-        this.isInWater = this.object.position.y - this.heightOffset < waterHeight; // Check feet position
+        const waterLevel = terrain.waterLevel;
+        this.isInWater = this.object.position.y - this.heightOffset + 0.5 < waterLevel; // Check feet position
         this.baseSpeedMultiplier = this.isInWater ? 0.3 : 1;
         this.speedMultiplier = this.baseSpeedMultiplier;
     }
