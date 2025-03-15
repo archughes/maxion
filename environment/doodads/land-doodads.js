@@ -1,6 +1,7 @@
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
 import { Doodad } from './base-doodad.js';
 import { player } from '../../entity/player.js';
+import { createFlameEffect } from '../../animations/environmental-effects.js';
 
 export class Tree extends Doodad {
     constructor(x, z, variant = 'oak', biome) {
@@ -360,46 +361,28 @@ export class Campfire extends Doodad {
         this.variant = variant;
         this.biome = biome;
         this.baseHeight = 0.15;
-
+        
         // Add particle system for flames
-        this.particleSystem = this.createFlameParticles();
-        this.object.add(this.particleSystem);
-
+        this.flameEffect = createFlameEffect(this.object);
+        
         // Add dynamic lighting
-        this.light = this.addGlow(0xFF4500, 1.5, 5);
+        this.light = new THREE.PointLight(0xFF4500, 1.5, 5);
+        this.light.position.set(0, 0.5, 0);
+        this.object.add(this.light);
+        
+        // Set final position
+        this.object.position.set(x, 0, z);
     }
 
-    createFlameParticles() {
-        const particleCount = 50;
-        const particles = new THREE.Group();
-
-        for (let i = 0; i < particleCount; i++) {
-            const particle = new THREE.Mesh(
-                new THREE.SphereGeometry(0.05, 8, 8),
-                new THREE.MeshBasicMaterial({ color: 0xFF4500 })
-            );
-            particle.position.set(
-                (Math.random() - 0.5) * 0.5,
-                Math.random() * 0.5 + 0.2,
-                (Math.random() - 0.5) * 0.5
-            );
-            particle.userData.velocity = new THREE.Vector3(
-                (Math.random() - 0.5) * 0.01,
-                Math.random() * 0.02 + 0.01,
-                (Math.random() - 0.5) * 0.01
-            );
-            particles.add(particle);
+    destroy() {
+        if (this.flameEffect) {
+            this.flameEffect.destroy();
         }
-        return particles;
-    }
-
-    update(deltaTime) {
-        this.particleSystem.children.forEach(particle => {
-            particle.position.add(particle.userData.velocity.clone().multiplyScalar(deltaTime * 60));
-            if (particle.position.y > 1) {
-                particle.position.y = 0.2;
-            }
-        });
+        if (this.light) {
+            this.object.remove(this.light);
+            this.light.dispose();
+        }
+        super.destroy();
     }
 
     harvest() {

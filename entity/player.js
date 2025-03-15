@@ -9,6 +9,7 @@ import { items } from '../items.js';
 import { showDrowningMessage, removeDrowningMessage } from '../game.js';
 import { updateMinimap, terrainCache } from '../environment/map.js';
 import { AnimationQueue, animationSelector } from './animation.js';
+import { createSparkleEffect } from '../animations/environmental-effects.js';
 
 const INVENTORY_SIZE = 8;
 
@@ -114,43 +115,8 @@ class Player extends Character {
         });
         
         if (isInvisible) {
-            this.sparklesEffect();
+            createSparkleEffect(this.object, 2000); 
         }
-    }
-
-    sparklesEffect() {
-        const particleCount = 50;
-        const positions = new Float32Array(particleCount * 3);
-        
-        for (let i = 0; i < particleCount * 3; i += 3) {
-            positions[i] = (Math.random() - 0.5) * 2;
-            positions[i + 1] = (Math.random() - 0.5) * 2;
-            positions[i + 2] = (Math.random() - 0.5) * 2;
-        }
-
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-        const material = new THREE.PointsMaterial({
-            color: 0x00ffff,
-            size: 0.1,
-            transparent: true,
-            opacity: 0.8
-        });
-
-        const particles = new THREE.Points(geometry, material);
-        this.object.add(particles);
-
-        // Animate particles
-        const animate = () => {
-            if (!this.isInvisible) {
-                this.object.remove(particles);
-                return;
-            }
-            particles.rotation.y += 0.01;
-            requestAnimationFrame(animate);
-        };
-        animate();
     }
 
     toggleVisibility(duration) {

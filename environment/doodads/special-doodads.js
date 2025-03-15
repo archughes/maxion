@@ -4,6 +4,7 @@ import { player } from '../../entity/player.js';
 import { loadMap } from '../environment.js';
 import { showMessage } from '../../game.js';
 import { completedQuests } from '../../quests.js';
+import { createSparkleEffect } from '../../animations/environmental-effects.js';
 
 export class Chest extends Doodad {
     constructor(x, z, contents, variant = 'wood', biome) {
@@ -80,6 +81,7 @@ export class Portal extends Doodad {
         this.glowSprite = this.createGlowSprite(0x800080);
         this.glowSprite.visible = false; // Initially hidden
         this.object.add(this.glowSprite);
+        createSparkleEffect(this.object, -1); // Call the sparkle effect in the constructor
     }
 
     interact() {
