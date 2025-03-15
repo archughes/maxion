@@ -30,6 +30,32 @@
             margin-bottom: 20px;
         }
 
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f0f0f0;
+            border: none;
+            outline: none;
+        }
+
+        .tab-button.active {
+            background-color: #ccc;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .control {
             margin-bottom: 15px;
         }
@@ -80,130 +106,185 @@
             margin-top: 10px;
             border: 1px solid #ccc;
         }
+
+        .matrix .row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .matrix label {
+            width: 120px;
+            font-weight: bold;
+        }
+
+        .matrix button {
+            padding: 5px 10px;
+            margin: 0 5px;
+            cursor: pointer;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            border-radius: 3px;
+        }
+
+        .matrix button:hover {
+            background-color: #007bb5;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <h1>Rain Sound Generator</h1>
-        <div class="control">
-            <label for="windLevel">Wind Level (0-4)</label>
-            <input type="range" id="windLevel" min="0" max="4" step="1" value="2">
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="tab1">Controls</button>
+            <button class="tab-button" data-tab="tab2">Manual Scheduling</button>
         </div>
-        <div class="control">
-            <label for="windTurbidity">Wind Turbidity (0-4)</label>
-            <input type="range" id="windTurbidity" min="0" max="4" step="1" value="1">
+
+        <!-- Tab 1: Controls -->
+        <div id="tab1" class="tab-content active">
+            <div class="control">
+                <label for="windLevel">Wind Level (0-4)</label>
+                <input type="range" id="windLevel" min="0" max="4" step="1" value="2">
+            </div>
+            <div class="control">
+                <label for="windTurbidity">Wind Turbidity (0-4)</label>
+                <input type="range" id="windTurbidity" min="0" max="4" step="1" value="1">
+            </div>
+            <div class="control">
+                <label for="surfaceType">Surface Type</label>
+                <select id="surfaceType">
+                    <option value="metal">Metal</option>
+                    <option value="grass">Grass</option>
+                    <option value="water" selected>Water</option>
+                    <option value="wood">Wood</option>
+                    <option value="concrete">Concrete</option>
+                    <option value="glass">Glass</option>
+                </select>
+            </div>
+            <div class="control">
+                <label for="rainDensity">Rain Density (0-4)</label>
+                <input type="range" id="rainDensity" min="0" max="4" step="1" value="2">
+            </div>
+            <div class="control">
+                <label for="rainSpeed">Rain Speed (0-4)</label>
+                <input type="range" id="rainSpeed" min="0" max="4" step="1" value="2">
+            </div>
+            <div class="control">
+                <label for="raindropSize">Raindrop Size (0-4)</label>
+                <input type="range" id="raindropSize" min="0" max="4" step="1" value="2">
+            </div>
+            <div class="control">
+                <label for="thunderFreq">Thunder Frequency (0-4)</label>
+                <input type="range" id="thunderFreq" min="0" max="4" step="1" value="2">
+            </div>
+            <div class="control">
+                <label for="thunderDistance">Thunder Distance (0-4)</label>
+                <input type="range" id="thunderDistance" min="0" max="4" step="1" value="3">
+            </div>
+            <button id="toggleButton">Start</button>
+            <button id="saveButton">Save as WAV</button>
         </div>
-        <div class="control">
-            <label for="surfaceType">Surface Type</label>
-            <select id="surfaceType">
-                <option value="metal">Metal</option>
-                <option value="grass">Grass</option>
-                <option value="water">Water</option>
-                <option value="wood">Wood</option>
-                <option value="concrete">Concrete</option>
-                <option value="glass">Glass</option>
-            </select>
+
+        <!-- Tab 2: Manual Scheduling -->
+        <div id="tab2" class="tab-content">
+            <h2>Manual Sound Scheduling</h2>
+            <!-- Current Configuration Display -->
+            <div id="currentConfig" style="margin-bottom: 10px; padding: 10px; border: 1px solid #ccc;">
+                <strong>Current Configuration:</strong><br>
+                Wind Level: <span id="currentWindLevel"></span><br>
+                Wind Turbidity: <span id="currentWindTurbidity"></span><br>
+                Rain Density: <span id="currentRainDensity"></span><br>
+                Rain Speed: <span id="currentRainSpeed"></span><br>
+                Raindrop Size: <span id="currentRaindropSize"></span><br>
+                Thunder Frequency: <span id="currentThunderFreq"></span><br>
+                Thunder Distance: <span id="currentThunderDistance"></span><br>
+                Surface Type: <span id="currentSurfaceType"></span><br>
+            </div>
+            <div class="matrix">
+                <div class="row">
+                    <label>Surface Type</label>
+                    <select id="manualSurfaceType" style="margin: 0 5px; padding: 5px;">
+                        <option value="metal">Metal</option>
+                        <option value="grass">Grass</option>
+                        <option value="water" selected>Water</option>
+                        <option value="wood">Wood</option>
+                        <option value="concrete">Concrete</option>
+                        <option value="glass">Glass</option>
+                    </select>
+                </div>
+                <!-- Existing rows for Wind Level, Wind Turbidity, etc. remain unchanged -->
+                <div class="row">
+                    <label>Wind Level</label>
+                    <button class="value-button" data-param="windLevel" data-value="0">0</button>
+                    <button class="value-button" data-param="windLevel" data-value="1">1</button>
+                    <button class="value-button" data-param="windLevel" data-value="2">2</button>
+                    <button class="value-button" data-param="windLevel" data-value="3">3</button>
+                    <button class="value-button" data-param="windLevel" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Wind Turbidity</label>
+                    <button class="value-button" data-param="windTurbidity" data-value="0">0</button>
+                    <button class="value-button" data-param="windTurbidity" data-value="1">1</button>
+                    <button class="value-button" data-param="windTurbidity" data-value="2">2</button>
+                    <button class="value-button" data-param="windTurbidity" data-value="3">3</button>
+                    <button class="value-button" data-param="windTurbidity" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Rain Density</label>
+                    <button class="value-button" data-param="rainDensity" data-value="0">0</button>
+                    <button class="value-button" data-param="rainDensity" data-value="1">1</button>
+                    <button class="value-button" data-param="rainDensity" data-value="2">2</button>
+                    <button class="value-button" data-param="rainDensity" data-value="3">3</button>
+                    <button class="value-button" data-param="rainDensity" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Rain Speed</label>
+                    <button class="value-button" data-param="rainSpeed" data-value="0">0</button>
+                    <button class="value-button" data-param="rainSpeed" data-value="1">1</button>
+                    <button class="value-button" data-param="rainSpeed" data-value="2">2</button>
+                    <button class="value-button" data-param="rainSpeed" data-value="3">3</button>
+                    <button class="value-button" data-param="rainSpeed" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Raindrop Size</label>
+                    <button class="value-button" data-param="raindropSize" data-value="0">0</button>
+                    <button class="value-button" data-param="raindropSize" data-value="1">1</button>
+                    <button class="value-button" data-param="raindropSize" data-value="2">2</button>
+                    <button class="value-button" data-param="raindropSize" data-value="3">3</button>
+                    <button class="value-button" data-param="raindropSize" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Thunder Frequency</label>
+                    <button class="value-button" data-param="thunderFreq" data-value="0">0</button>
+                    <button class="value-button" data-param="thunderFreq" data-value="1">1</button>
+                    <button class="value-button" data-param="thunderFreq" data-value="2">2</button>
+                    <button class="value-button" data-param="thunderFreq" data-value="3">3</button>
+                    <button class="value-button" data-param="thunderFreq" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Thunder Distance</label>
+                    <button class="value-button" data-param="thunderDistance" data-value="0">0</button>
+                    <button class="value-button" data-param="thunderDistance" data-value="1">1</button>
+                    <button class="value-button" data-param="thunderDistance" data-value="2">2</button>
+                    <button class="value-button" data-param="thunderDistance" data-value="3">3</button>
+                    <button class="value-button" data-param="thunderDistance" data-value="4">4</button>
+                </div>
+            </div>
         </div>
-        <div class="control">
-            <label for="rainDensity">Rain Density (0-4)</label>
-            <input type="range" id="rainDensity" min="0" max="4" step="1" value="2">
+
+        <!-- Visualizations -->
+        <div class="visualizations">
+            <canvas id="fftCanvas"></canvas>
+            <canvas id="waveformCanvas"></canvas>
         </div>
-        <div class="control">
-            <label for="rainSpeed">Rain Speed (0-4)</label>
-            <input type="range" id="rainSpeed" min="0" max="4" step="1" value="2">
-        </div>
-        <div class="control">
-            <label for="raindropSize">Raindrop Size (0-4)</label>
-            <input type="range" id="raindropSize" min="0" max="4" step="1" value="2">
-        </div>
-        <div class="control">
-            <label for="thunderFreq">Thunder Frequency (0-4)</label>
-            <input type="range" id="thunderFreq" min="0" max="4" step="1" value="2">
-        </div>
-        <div class="control">
-            <label for="thunderDistance">Thunder Distance (0-4)</label>
-            <input type="range" id="thunderDistance" min="0" max="4" step="1" value="3">
-        </div>
-        <button id="toggleButton">Start</button>
-        <button id="saveButton">Save as WAV</button>
-        <canvas id="fftCanvas"></canvas>
-        <canvas id="waveformCanvas"></canvas>
     </div>
 
-    <script type="module">
-        import { RainSoundGenerator } from './sounds/ambient.js';
-
-        // Wait for DOM to be fully loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM fully loaded, initializing RainSoundGenerator...');
-
-            // Initialize the rain generator
-            const rainGenerator = new RainSoundGenerator({
-                windLevel: 2,
-                windTurbidity: 1,
-                surfaceType: 'metal',
-                rainDensity: 2,
-                rainSpeed: 2,
-                raindropSize: 2,
-                thunderFreq: 2,
-                thunderDistance: 3,
-            });
-
-            // Setup visualizations
-            const fftCanvas = document.getElementById('fftCanvas');
-            const waveformCanvas = document.getElementById('waveformCanvas');
-            if (fftCanvas && waveformCanvas) {
-                console.log('Canvas elements found, setting up visualizations...');
-                rainGenerator.setupVisualizations(fftCanvas, waveformCanvas);
-            } else {
-                console.error('Canvas elements not found:', { fftCanvas, waveformCanvas });
-            }
-
-            // Event listeners for UI controls
-            const toggleButton = document.getElementById('toggleButton');
-            const saveButton = document.getElementById('saveButton');
-
-            toggleButton.addEventListener('click', () => {
-                if (rainGenerator.isPlaying) {
-                    rainGenerator.stop();
-                    toggleButton.textContent = 'Start';
-                } else {
-                    rainGenerator.start();
-                    toggleButton.textContent = 'Stop';
-                }
-            });
-
-            saveButton.addEventListener('click', () => {
-                console.log('WAV saving not implemented. Use a library like audiobuffer-to-wav.');
-            });
-
-            document.getElementById('windLevel').addEventListener('input', (e) => {
-                rainGenerator.updateParams({ windLevel: parseInt(e.target.value) });
-            });
-            document.getElementById('windTurbidity').addEventListener('input', (e) => {
-                rainGenerator.updateParams({ windTurbidity: parseInt(e.target.value) });
-            });
-            document.getElementById('surfaceType').addEventListener('change', (e) => {
-                rainGenerator.updateParams({ surfaceType: e.target.value });
-            });
-            document.getElementById('rainDensity').addEventListener('input', (e) => {
-                rainGenerator.updateParams({ rainDensity: parseInt(e.target.value) });
-            });
-            document.getElementById('rainSpeed').addEventListener('input', (e) => {
-                rainGenerator.updateParams({ rainSpeed: parseInt(e.target.value) });
-            });
-            document.getElementById('raindropSize').addEventListener('input', (e) => {
-                rainGenerator.updateParams({ raindropSize: parseInt(e.target.value) });
-            });
-            document.getElementById('thunderFreq').addEventListener('input', (e) => {
-                rainGenerator.updateParams({ thunderFreq: parseInt(e.target.value) });
-            });
-            document.getElementById('thunderDistance').addEventListener('input', (e) => {
-                rainGenerator.updateParams({ thunderDistance: parseInt(e.target.value) });
-            });
-        });
-    </script>
+    <!-- Load ambientTest.js -->
+    <script type="module" src="./sounds/ambientTest.js"></script>
 </body>
 
 </html>
