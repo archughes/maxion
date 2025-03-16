@@ -1,4 +1,3 @@
-// ambientTest.js
 import { AmbientSoundManager } from './ambient.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,84 +13,373 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Canvas elements not found');
     }
 
-    const currentConfig = {
-        windLevel: 0,
-        windTurbidity: 0,
-        surfaceType: 'grass',
-        rainDensity: 0,
-        rainSpeed: 1,
-        raindropSize: 1,
-        thunderFreq: 0,
-        thunderDistance: 0,
-        waveIntensity: 0,
-        waveFrequency: 1,
-        fireIntensity: 0,
-        fireCrackleRate: 1,
-        birdActivity: 0,
-        birdPitch: 1,
-        birdType: 'Robin',
-        cricketDensity: 0,
-        cricketSpeed: 1,
-        riverFlow: 0,
-        riverDepth: 1,
-        iceIntensity: 0,
-        iceFractureRate: 1,
-        rumbleIntensity: 0,
-        ventActivity: 1
-    };
+    // Sound module definitions - centralized configuration
+    const soundModules = [
+        {
+            name: 'Wind',
+            params: [
+                { id: 'windLevel', label: 'Wind Level', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'windTurbidity', label: 'Wind Turbidity', min: 0, max: 4, step: 1, default: 0 }
+            ],
+            playMethod: 'playWindManual',
+            duration: 2000
+        },
+        {
+            name: 'Rain',
+            params: [
+                { id: 'rainDensity', label: 'Rain Density', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'rainSpeed', label: 'Rain Speed', min: 0, max: 4, step: 1, default: 1 },
+                { id: 'raindropSize', label: 'Raindrop Size', min: 0, max: 4, step: 1, default: 1 }
+            ],
+            selects: [
+                { 
+                    id: 'surfaceType', 
+                    label: 'Surface Type', 
+                    options: [
+                        { value: 'metal', label: 'Metal' },
+                        { value: 'grass', label: 'Grass' },
+                        { value: 'water', label: 'Water', selected: true },
+                        { value: 'wood', label: 'Wood' },
+                        { value: 'concrete', label: 'Concrete' },
+                        { value: 'glass', label: 'Glass' }
+                    ]
+                }
+            ],
+            playMethod: 'playRainManual',
+            duration: 2000
+        },
+        {
+            name: 'Thunder',
+            params: [
+                { id: 'thunderFreq', label: 'Thunder Frequency', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'thunderDistance', label: 'Thunder Distance', min: 0, max: 4, step: 1, default: 0 }
+            ],
+            playMethod: 'playThunderManual',
+            duration: 5000
+        },
+        {
+            name: 'Ocean',
+            params: [
+                { id: 'waveIntensity', label: 'Wave Intensity', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'waveFrequency', label: 'Wave Frequency', min: 0, max: 4, step: 1, default: 1 }
+            ],
+            playMethod: 'playOceanWavesManual',
+            duration: 3000
+        },
+        {
+            name: 'Fire',
+            params: [
+                { id: 'fireIntensity', label: 'Fire Intensity', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'fireCrackleRate', label: 'Fire Crackle Rate', min: 0, max: 4, step: 1, default: 1 }
+            ],
+            playMethod: 'playFireManual',
+            duration: 3000
+        },
+        {
+            name: 'Birds',
+            params: [
+                { id: 'birdActivity', label: 'Bird Activity', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'birdPitch', label: 'Bird Pitch', min: 0, max: 4, step: 1, default: 1 }
+            ],
+            selects: [
+                {
+                    id: 'birdType',
+                    label: 'Bird Type',
+                    options: [
+                        { value: 'robin', label: 'Robin' },
+                        { value: 'warbler', label: 'Warbler' },
+                        { value: 'thrush', label: 'Thrush' },
+                        { value: 'owl', label: 'Owl' },
+                        { value: 'cardinal', label: 'Cardinal' }
+                    ]
+                }
+            ],
+            playMethod: 'playBirdManual',
+            duration: 2000
+        },
+        {
+            name: 'Crickets',
+            params: [
+                { id: 'cricketDensity', label: 'Cricket Density', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'cricketSpeed', label: 'Cricket Speed', min: 0, max: 4, step: 1, default: 1 }
+            ],
+            playMethod: 'playCricketsManual',
+            duration: 3000
+        },
+        {
+            name: 'River',
+            params: [
+                { id: 'riverFlow', label: 'River Flow', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'riverDepth', label: 'River Depth', min: 0, max: 4, step: 1, default: 1 }
+            ],
+            playMethod: 'playRiverManual',
+            duration: 3000
+        },
+        {
+            name: 'Ice',
+            params: [
+                { id: 'iceIntensity', label: 'Ice Intensity', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'iceFractureRate', label: 'Ice Fracture Rate', min: 0, max: 4, step: 1, default: 1 }
+            ],
+            playMethod: 'playIceCrackingManual',
+            duration: 3000
+        },
+        {
+            name: 'Volcanic',
+            params: [
+                { id: 'rumbleIntensity', label: 'Rumble Intensity', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'ventActivity', label: 'Vent Activity', min: 0, max: 4, step: 1, default: 1 }
+            ],
+            playMethod: 'playVolcanicRumbleManual',
+            duration: 5000
+        }
+    ];
 
-    function updateConfigDisplay() {
-        document.getElementById('currentWindLevel').textContent = currentConfig.windLevel;
-        document.getElementById('currentWindTurbidity').textContent = currentConfig.windTurbidity;
-        document.getElementById('currentRainDensity').textContent = currentConfig.rainDensity;
-        document.getElementById('currentRainSpeed').textContent = currentConfig.rainSpeed;
-        document.getElementById('currentRaindropSize').textContent = currentConfig.raindropSize;
-        document.getElementById('currentThunderFreq').textContent = currentConfig.thunderFreq;
-        document.getElementById('currentThunderDistance').textContent = currentConfig.thunderDistance;
-        document.getElementById('currentSurfaceType').textContent = currentConfig.surfaceType;
-        document.getElementById('currentWaveIntensity').textContent = currentConfig.waveIntensity;
-        document.getElementById('currentWaveFrequency').textContent = currentConfig.waveFrequency;
-        document.getElementById('currentFireIntensity').textContent = currentConfig.fireIntensity;
-        document.getElementById('currentFireCrackleRate').textContent = currentConfig.fireCrackleRate;
-        document.getElementById('currentBirdActivity').textContent = currentConfig.birdActivity;
-        document.getElementById('currentBirdPitch').textContent = currentConfig.birdPitch;
-        document.getElementById('currentBirdType').textContent = currentConfig.birdType;
-        document.getElementById('currentCricketDensity').textContent = currentConfig.cricketDensity;
-        document.getElementById('currentCricketSpeed').textContent = currentConfig.cricketSpeed;
-        document.getElementById('currentRiverFlow').textContent = currentConfig.riverFlow;
-        document.getElementById('currentRiverDepth').textContent = currentConfig.riverDepth;
-        document.getElementById('currentIceIntensity').textContent = currentConfig.iceIntensity;
-        document.getElementById('currentIceFractureRate').textContent = currentConfig.iceFractureRate;
-        document.getElementById('currentRumbleIntensity').textContent = currentConfig.rumbleIntensity;
-        document.getElementById('currentVentActivity').textContent = currentConfig.ventActivity;
-    }
-
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabContents = document.querySelectorAll('.tab-content');
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
-            button.classList.add('active');
-            document.getElementById(button.getAttribute('data-tab')).classList.add('active');
+    // Initialize current configuration from module defaults
+    const currentConfig = {};
+    soundModules.forEach(module => {
+        module.params.forEach(param => {
+            currentConfig[param.id] = param.default;
         });
-    });
-
-    const toggleButton = document.getElementById('toggleButton');
-    toggleButton.addEventListener('click', async () => {
-        if (ambientManager.isPlayingContinuous) {
-            ambientManager.stopContinuous();
-            toggleButton.textContent = 'Start';
-        } else {
-            await ambientManager.updateParams(currentConfig); // Apply initial config
-            await ambientManager.startContinuous();
-            toggleButton.textContent = 'Stop';
+        if (module.selects) {
+            module.selects.forEach(select => {
+                const selectedOption = select.options.find(option => option.selected);
+                currentConfig[select.id] = selectedOption ? selectedOption.value : select.options[0].value;
+            });
         }
     });
 
-    document.getElementById('saveButton').addEventListener('click', () => {
-        console.log('WAV saving not implemented. Use a library like audiobuffer-to-wav.');
-    });
+    // Generate the UI for Tab 1 (Controls with collapsible sections)
+    function generateTab1UI() {
+        const tab1Container = document.getElementById('tab1');
+        
+        // Clear existing content except for buttons
+        const toggleButton = document.getElementById('toggleButton');
+        const saveButton = document.getElementById('saveButton');
+        tab1Container.innerHTML = '';
+        
+        // Generate collapsible sections for each sound module
+        soundModules.forEach(module => {
+            const section = document.createElement('div');
+            section.className = 'sound-module-section';
+            
+            const header = document.createElement('div');
+            header.className = 'sound-module-header';
+            header.innerHTML = `
+                <h3>${module.name}</h3>
+                <button class="toggle-section" data-target="${module.name.toLowerCase()}">▼</button>
+            `;
+            
+            const content = document.createElement('div');
+            content.className = 'sound-module-content';
+            content.id = `section-${module.name.toLowerCase()}`;
+            
+            // Add range sliders
+            module.params.forEach(param => {
+                const control = document.createElement('div');
+                control.className = 'control';
+                control.innerHTML = `
+                    <label for="${param.id}">${param.label} (${param.min}-${param.max})</label>
+                    <input type="range" id="${param.id}" min="${param.min}" max="${param.max}" 
+                           step="${param.step}" value="${currentConfig[param.id]}">
+                `;
+                content.appendChild(control);
+            });
+            
+            // Add select dropdowns if they exist
+            if (module.selects) {
+                module.selects.forEach(select => {
+                    const control = document.createElement('div');
+                    control.className = 'control';
+                    
+                    const selectElement = document.createElement('select');
+                    selectElement.id = select.id;
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = select.id;
+                    label.textContent = select.label;
+                    
+                    select.options.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option.value;
+                        optionElement.textContent = option.label;
+                        if (option.selected) {
+                            optionElement.selected = true;
+                        }
+                        selectElement.appendChild(optionElement);
+                    });
+                    
+                    control.appendChild(label);
+                    control.appendChild(selectElement);
+                    content.appendChild(control);
+                });
+            }
+            
+            // Add play button for this module
+            const playButton = document.createElement('button');
+            playButton.className = 'play-module-button';
+            playButton.textContent = `Play ${module.name}`;
+            playButton.dataset.module = module.name;
+            content.appendChild(playButton);
+            
+            section.appendChild(header);
+            section.appendChild(content);
+            tab1Container.appendChild(section);
+        });
+        
+        // Add main control buttons back
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'main-controls';
+        buttonContainer.style.marginTop = '20px';
+        
+        if (toggleButton) buttonContainer.appendChild(toggleButton);
+        if (saveButton) buttonContainer.appendChild(saveButton);
+        
+        tab1Container.appendChild(buttonContainer);
+        
+        // Add toggle functionality for sections
+        document.querySelectorAll('.toggle-section').forEach(button => {
+            button.addEventListener('click', () => {
+                const targetId = `section-${button.dataset.target}`;
+                const targetSection = document.getElementById(targetId);
+                
+                if (targetSection.style.display === 'none') {
+                    targetSection.style.display = 'block';
+                    button.textContent = '▼';
+                } else {
+                    targetSection.style.display = 'none';
+                    button.textContent = '►';
+                }
+            });
+        });
+    }
+
+    // Generate UI for Tab 2 (Manual Sound Scheduling)
+    function generateTab2UI() {
+        // Create sound module selector
+        const moduleSelector = document.createElement('div');
+        moduleSelector.className = 'module-selector';
+        moduleSelector.innerHTML = `
+            <label for="soundModuleSelect">Select Sound Module:</label>
+            <select id="soundModuleSelect"></select>
+        `;
+        
+        const soundModuleSelect = moduleSelector.querySelector('#soundModuleSelect');
+        
+        soundModules.forEach(module => {
+            const option = document.createElement('option');
+            option.value = module.name.toLowerCase();
+            option.textContent = module.name;
+            soundModuleSelect.appendChild(option);
+        });
+        
+        // Create manual controls container
+        const manualControls = document.createElement('div');
+        manualControls.id = 'manualControls';
+        manualControls.className = 'matrix';
+        
+        // Insert at the top of Tab 2, after current config display
+        const tab2 = document.getElementById('tab2');
+        const currentConfigDisplay = document.getElementById('currentConfig');
+        
+        tab2.insertBefore(moduleSelector, currentConfigDisplay.nextSibling);
+        tab2.insertBefore(manualControls, moduleSelector.nextSibling);
+        
+        // Initial population of controls
+        updateManualControls(soundModules[0]);
+        
+        // Add event listener for module selection change
+        soundModuleSelect.addEventListener('change', (e) => {
+            const selectedModule = soundModules.find(
+                module => module.name.toLowerCase() === e.target.value
+            );
+            if (selectedModule) {
+                updateManualControls(selectedModule);
+            }
+        });
+    }
+    
+    // Update manual controls based on selected module
+    function updateManualControls(module) {
+        const manualControls = document.getElementById('manualControls');
+        manualControls.innerHTML = '';
+        
+        // Add selects if they exist
+        if (module.selects) {
+            module.selects.forEach(select => {
+                const row = document.createElement('div');
+                row.className = 'row';
+                
+                const label = document.createElement('label');
+                label.textContent = select.label;
+                
+                const selectElement = document.createElement('select');
+                selectElement.id = `manual${select.id.charAt(0).toUpperCase() + select.id.slice(1)}`;
+                selectElement.style = 'margin: 0 5px; padding: 5px;';
+                
+                select.options.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.value;
+                    optionElement.textContent = option.label;
+                    if (option.selected) {
+                        optionElement.selected = true;
+                    }
+                    selectElement.appendChild(optionElement);
+                });
+                
+                row.appendChild(label);
+                row.appendChild(selectElement);
+                manualControls.appendChild(row);
+            });
+        }
+        
+        // Add parameters
+        module.params.forEach(param => {
+            const row = document.createElement('div');
+            row.className = 'row';
+            
+            const label = document.createElement('label');
+            label.textContent = param.label;
+            
+            row.appendChild(label);
+            
+            // Add buttons for each value
+            for (let i = param.min; i <= param.max; i += param.step) {
+                const button = document.createElement('button');
+                button.className = 'value-button';
+                button.textContent = i;
+                button.dataset.param = param.id;
+                button.dataset.value = i;
+                button.dataset.module = module.name;
+                row.appendChild(button);
+            }
+            
+            manualControls.appendChild(row);
+        });
+        
+        // Add Play Module button
+        const playRow = document.createElement('div');
+        playRow.className = 'row';
+        
+        const playButton = document.createElement('button');
+        playButton.className = 'play-module-manual';
+        playButton.textContent = `Play ${module.name} Sound`;
+        playButton.dataset.module = module.name;
+        playButton.style = 'width: 100%; margin-top: 15px;';
+        
+        playRow.appendChild(playButton);
+        manualControls.appendChild(playRow);
+    }
+    
+    function updateConfigDisplay() {
+        // Update all fields in the current config display
+        Object.keys(currentConfig).forEach(key => {
+            const element = document.getElementById(`current${key.charAt(0).toUpperCase() + key.slice(1)}`);
+            if (element) {
+                element.textContent = currentConfig[key];
+            }
+        });
+    }
 
     async function restartContinuous() {
         if (ambientManager.isPlayingContinuous) {
@@ -102,239 +390,148 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Tab 1: Slider controls
-    document.getElementById('windLevel').addEventListener('input', async (e) => {
-        currentConfig.windLevel = parseInt(e.target.value);
-        await ambientManager.updateParams({ windLevel: currentConfig.windLevel });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('windTurbidity').addEventListener('input', async (e) => {
-        currentConfig.windTurbidity = parseInt(e.target.value);
-        await ambientManager.updateParams({ windTurbidity: currentConfig.windTurbidity });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('surfaceType').addEventListener('change', async (e) => {
-        currentConfig.surfaceType = e.target.value;
-        await ambientManager.updateParams({ surfaceType: currentConfig.surfaceType });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('rainDensity').addEventListener('input', async (e) => {
-        currentConfig.rainDensity = parseInt(e.target.value);
-        await ambientManager.updateParams({ rainDensity: currentConfig.rainDensity });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('rainSpeed').addEventListener('input', async (e) => {
-        currentConfig.rainSpeed = parseInt(e.target.value);
-        await ambientManager.updateParams({ rainSpeed: currentConfig.rainSpeed });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('raindropSize').addEventListener('input', async (e) => {
-        currentConfig.raindropSize = parseInt(e.target.value);
-        await ambientManager.updateParams({ raindropSize: currentConfig.raindropSize });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('thunderFreq').addEventListener('input', async (e) => {
-        currentConfig.thunderFreq = parseInt(e.target.value);
-        await ambientManager.updateParams({ thunderFreq: currentConfig.thunderFreq });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('thunderDistance').addEventListener('input', async (e) => {
-        currentConfig.thunderDistance = parseInt(e.target.value);
-        await ambientManager.updateParams({ thunderDistance: currentConfig.thunderDistance });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('waveIntensity').addEventListener('input', async (e) => {
-        currentConfig.waveIntensity = parseInt(e.target.value);
-        await ambientManager.updateParams({ waveIntensity: currentConfig.waveIntensity });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('waveFrequency').addEventListener('input', async (e) => {
-        currentConfig.waveFrequency = parseInt(e.target.value);
-        await ambientManager.updateParams({ waveFrequency: currentConfig.waveFrequency });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('fireIntensity').addEventListener('input', async (e) => {
-        currentConfig.fireIntensity = parseInt(e.target.value);
-        await ambientManager.updateParams({ fireIntensity: currentConfig.fireIntensity });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('fireCrackleRate').addEventListener('input', async (e) => {
-        currentConfig.fireCrackleRate = parseInt(e.target.value);
-        await ambientManager.updateParams({ fireCrackleRate: currentConfig.fireCrackleRate });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('birdActivity').addEventListener('input', async (e) => {
-        currentConfig.birdActivity = parseInt(e.target.value);
-        await ambientManager.updateParams({ birdActivity: currentConfig.birdActivity });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('birdPitch').addEventListener('input', async (e) => {
-        currentConfig.birdPitch = parseInt(e.target.value);
-        await ambientManager.updateParams({ birdPitch: currentConfig.birdPitch });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('birdType').addEventListener('input', async (e) => {
-        currentConfig.birdType = parseInt(e.target.value);
-        await ambientManager.updateParams({ birdType: currentConfig.birdType });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('cricketDensity').addEventListener('input', async (e) => {
-        currentConfig.cricketDensity = parseInt(e.target.value);
-        await ambientManager.updateParams({ cricketDensity: currentConfig.cricketDensity });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('cricketSpeed').addEventListener('input', async (e) => {
-        currentConfig.cricketSpeed = parseInt(e.target.value);
-        await ambientManager.updateParams({ cricketSpeed: currentConfig.cricketSpeed });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('riverFlow').addEventListener('input', async (e) => {
-        currentConfig.riverFlow = parseInt(e.target.value);
-        await ambientManager.updateParams({ riverFlow: currentConfig.riverFlow });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('riverDepth').addEventListener('input', async (e) => {
-        currentConfig.riverDepth = parseInt(e.target.value);
-        await ambientManager.updateParams({ riverDepth: currentConfig.riverDepth });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('iceIntensity').addEventListener('input', async (e) => {
-        currentConfig.iceIntensity = parseInt(e.target.value);
-        await ambientManager.updateParams({ iceIntensity: currentConfig.iceIntensity });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('iceFractureRate').addEventListener('input', async (e) => {
-        currentConfig.iceFractureRate = parseInt(e.target.value);
-        await ambientManager.updateParams({ iceFractureRate: currentConfig.iceFractureRate });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('rumbleIntensity').addEventListener('input', async (e) => {
-        currentConfig.rumbleIntensity = parseInt(e.target.value);
-        await ambientManager.updateParams({ rumbleIntensity: currentConfig.rumbleIntensity });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-    document.getElementById('ventActivity').addEventListener('input', async (e) => {
-        currentConfig.ventActivity = parseInt(e.target.value);
-        await ambientManager.updateParams({ ventActivity: currentConfig.ventActivity });
-        await restartContinuous();
-        updateConfigDisplay();
-    });
-
-    // Tab 2: Manual scheduling buttons
-    const valueButtons = document.querySelectorAll('.value-button');
-    valueButtons.forEach(button => {
-        button.addEventListener('click', async () => {
-            const param = button.getAttribute('data-param');
-            const value = parseInt(button.getAttribute('data-value'));
+    // Event delegation for all UI interactions
+    document.addEventListener('click', async (e) => {
+        // Handle tab switching
+        if (e.target.classList.contains('tab-button')) {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            e.target.classList.add('active');
+            document.getElementById(e.target.getAttribute('data-tab')).classList.add('active');
+        }
+        
+        // Handle value buttons in manual mode (Tab 2)
+        if (e.target.classList.contains('value-button')) {
+            const param = e.target.getAttribute('data-param');
+            const value = parseInt(e.target.getAttribute('data-value'));
             currentConfig[param] = value;
             updateConfigDisplay();
-            console.log(`Scheduling sound with ${param} = ${value}`);
-
-            await ambientManager.updateParams(currentConfig);
-
-            const soundId = `${param}-${value}-${Date.now()}`;
-            ambientManager.activeManualSounds.add(soundId);
-            ambientManager.startVisualizations();
-
-            if (param === 'windLevel' || param === 'windTurbidity') {
-                await ambientManager.playWindManual();
+            
+            await ambientManager.updateParams({ [param]: value });
+            
+            // Find the corresponding module to determine play method and duration
+            const moduleName = e.target.getAttribute('data-module');
+            const module = soundModules.find(m => m.name === moduleName);
+            
+            if (module && module.playMethod) {
+                const soundId = `${param}-${value}-${Date.now()}`;
+                ambientManager.activeManualSounds.add(soundId);
+                ambientManager.startVisualizations();
+                
+                // Call the appropriate play method
+                if (typeof ambientManager[module.playMethod] === 'function') {
+                    await ambientManager[module.playMethod]();
+                }
+                
                 setTimeout(() => {
                     ambientManager.activeManualSounds.delete(soundId);
                     ambientManager.checkVisualizationState();
-                }, 2000);
-            } else if (param === 'rainDensity' || param === 'rainSpeed' || param === 'raindropSize') {
-                await ambientManager.playRainManual();
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, 2000);
-            } else if (param === 'thunderFreq' || param === 'thunderDistance') {
-                await ambientManager.playThunderManual();
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, 6000);
-            } else if (param === 'waveIntensity' || param === 'waveFrequency') {
-                await ambientManager.playOceanWavesManual();
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, 5000);
-            } else if (param === 'fireIntensity' || param === 'fireCrackleRate') {
-                await ambientManager.playFireManual();
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, 3500);
-            } else if (param === 'birdActivity' || param === 'birdPitch') {
-                await ambientManager.playBirdManual();
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, 3000);
-            } else if (param === 'cricketDensity' || param === 'cricketSpeed') {
-                await ambientManager.playCricketsManual();
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, 3000);
-            } else if (param === 'riverFlow' || param === 'riverDepth') {
-                await ambientManager.playRiverManual();
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, 5000);
-            } else if (param === 'iceIntensity' || param === 'iceFractureRate') {
-                await ambientManager.playIceCrackingManual();
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, 4000);
-            } else if (param === 'rumbleIntensity' || param === 'ventActivity') {
-                await ambientManager.playVolcanicRumbleManual();
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, 5000);
+                }, module.duration);
             }
-        });
+        }
+        
+        // Handle play module buttons in Tab 1
+        if (e.target.classList.contains('play-module-button')) {
+            const moduleName = e.target.dataset.module;
+            const module = soundModules.find(m => m.name === moduleName);
+            
+            if (module && module.playMethod) {
+                // Apply current config before playing
+                await ambientManager.updateParams(currentConfig);
+                
+                const soundId = `${moduleName}-${Date.now()}`;
+                ambientManager.activeManualSounds.add(soundId);
+                ambientManager.startVisualizations();
+                
+                // Call the appropriate play method
+                if (typeof ambientManager[module.playMethod] === 'function') {
+                    await ambientManager[module.playMethod]();
+                }
+                
+                setTimeout(() => {
+                    ambientManager.activeManualSounds.delete(soundId);
+                    ambientManager.checkVisualizationState();
+                }, module.duration);
+            }
+        }
+        
+        // Handle play module button in Tab 2
+        if (e.target.classList.contains('play-module-manual')) {
+            const moduleName = e.target.dataset.module;
+            const module = soundModules.find(m => m.name === moduleName);
+            
+            if (module && module.playMethod) {
+                // Apply current config before playing
+                await ambientManager.updateParams(currentConfig);
+                
+                const soundId = `${moduleName}-manual-${Date.now()}`;
+                ambientManager.activeManualSounds.add(soundId);
+                ambientManager.startVisualizations();
+                
+                // Call the appropriate play method
+                if (typeof ambientManager[module.playMethod] === 'function') {
+                    await ambientManager[module.playMethod]();
+                }
+                
+                setTimeout(() => {
+                    ambientManager.activeManualSounds.delete(soundId);
+                    ambientManager.checkVisualizationState();
+                }, module.duration);
+            }
+        }
+        
+        // Handle start/stop button
+        if (e.target.id === 'toggleButton') {
+            if (ambientManager.isPlayingContinuous) {
+                ambientManager.stopContinuous();
+                e.target.textContent = 'Start';
+            } else {
+                await ambientManager.updateParams(currentConfig);
+                await ambientManager.startContinuous();
+                e.target.textContent = 'Stop';
+            }
+        }
+        
+        // Handle save button
+        if (e.target.id === 'saveButton') {
+            console.log('WAV saving not implemented. Use a library like audiobuffer-to-wav.');
+        }
+    });
+    
+    // Handle change events for all inputs via delegation
+    document.addEventListener('input', async (e) => {
+        // Handle range inputs
+        if (e.target.type === 'range') {
+            const paramId = e.target.id;
+            currentConfig[paramId] = parseInt(e.target.value);
+            await ambientManager.updateParams({ [paramId]: currentConfig[paramId] });
+            await restartContinuous();
+            updateConfigDisplay();
+        }
+    });
+    
+    // Handle select changes
+    document.addEventListener('change', async (e) => {
+        if (e.target.tagName === 'SELECT' && e.target.id !== 'soundModuleSelect') {
+            let paramId = e.target.id;
+            
+            // Handle manual selects (they have 'manual' prefix)
+            if (paramId.startsWith('manual')) {
+                paramId = paramId.charAt(6).toLowerCase() + paramId.slice(7);
+            }
+            
+            currentConfig[paramId] = e.target.value;
+            updateConfigDisplay();
+            await ambientManager.updateParams({ [paramId]: currentConfig[paramId] });
+        }
     });
 
-    document.getElementById('manualSurfaceType').addEventListener('change', async (e) => {
-        currentConfig.surfaceType = e.target.value;
-        updateConfigDisplay();
-        console.log(`Surface type set to ${currentConfig.surfaceType}`);
-        await ambientManager.updateParams({ surfaceType: currentConfig.surfaceType });
-    });
-
-    document.getElementById('manualBirdType').addEventListener('change', async (e) => {
-        currentConfig.birdType = e.target.value;
-        updateConfigDisplay();
-        console.log(`Bird type set to ${currentConfig.birdType}`);
-        await ambientManager.updateParams({ birdType: currentConfig.birdType });
-    });
-
+    // Initialize the UI
+    generateTab1UI();
+    generateTab2UI();
     updateConfigDisplay();
 });
