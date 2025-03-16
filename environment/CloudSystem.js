@@ -429,6 +429,87 @@ export class CloudSystem {
       this.resetClouds = this.resetClouds.bind(this);
     }
   
+    // Method to track rain-wet terrain vertices
+    trackRainWetTerrain(terrainFunc) {
+      // Find the terrain object in the scene
+      let terrain = null;
+      scene.traverse(object => {
+        if (object.userData && object.userData.isTerrain) {
+          terrain = object.userData.terrainRef;
+        }
+      });
+
+      if (!terrain) return;
+
+      // Initialize wetness map if it doesn't exist
+      if (!terrain.wetMap) {
+        const vertexCount = terrain.geometry.attributes.position.count;
+        terrain.wetMap = new Float32Array(vertexCount);
+        terrain.wetTimer = new Float32Array(vertexCount);
+      }
+
+      // Update wetness based on precipitating clouds
+      const positions = terrain.geometry.attributes.position.array;
+      
+      // Process each cloud
+      for (let cloud of this.clouds) {
+        if (cloud.isPrecipitating && cloud.precipType === 'rain') {
+          const cloudPos = cloud.mesh.position;
+          const rainRadius = cloud.sizeValue * 2; // Rain affects area under the cloud
+          const rainIntensity = (cloud.waterWeight - 1.0) / 1.0; // 0 at weight 1.0, 1.0 at weight 2.0
+          
+          if (rainIntensity <= 0) continue;
+          
+          // Check each terrain vertex
+          for (let i = 0; i < positions.length; i += 3) {
+            const x = positions[i];
+            const z = positions[i + 1];
+            const y = positions[i + 2];
+            
+            // Skip water and snow areas
+            const terrainType = terrain.terrainFunc(x, z, y, i/3);
+            if (terrainType === 'river' || terrainType === 'lake' || 
+                terrainType === 'water' || terrainType === 'snow_peak') {
+              continue;
+            }
+            
+            // Check if vertex is under the rain cloud
+            const dx = x - cloudPos.x;
+            const dz = z - cloudPos.z;
+            const distanceSquared = dx * dx + dz * dz;
+            
+            if (distanceSquared <= rainRadius * rainRadius) {
+              // Calculate distance factor (1 at center, 0 at edge)
+              const distanceFactor = 1 - Math.sqrt(distanceSquared) / rainRadius;
+              
+              // Increase wetness based on rain intensity and distance
+              const wetIncrease = rainIntensity * distanceFactor * 0.05; // Gradual increase
+              terrain.wetMap[i/3] = Math.min(1.0, terrain.wetMap[i/3] + wetIncrease);
+              
+              // Reset drying timer when rained on
+              terrain.wetTimer[i/3] = 30; // Seconds until dry
+            }
+          }
+        }
+      }
+      
+      // Process drying (all vertices dry over time)
+      for (let i = 0; i < terrain.wetMap.length; i++) {
+        if (terrain.wetMap[i] > 0) {
+          // Decrease timer
+          if (terrain.wetTimer[i] > 0) {
+            terrain.wetTimer[i] -= 1/60; // Assuming 60 fps
+          } else {
+            // Dry out gradually when timer expires
+            terrain.wetMap[i] = Math.max(0, terrain.wetMap[i] - 0.01);
+          }
+        }
+      }
+      
+      // Update terrain colors to reflect wetness
+      terrain.updateWetColors();
+    }
+
     update(deltaTime, terrainFunc) {
       for (let cloud of this.clouds) {
         cloud.update(deltaTime, terrainFunc, this.clouds);
@@ -478,8 +559,9 @@ export class CloudSystem {
       // Mountain attractor (optional, kept for consistency)
       for (let cloud of this.clouds) {
         const terrainType = terrainFunc(cloud.mesh.position.x, cloud.mesh.position.z, cloud.mesh.position.y, 0);
-        if (terrainType === 'high mountain' || terrainType === 'mountain') {
-          const height = terrainFunc(cloud.mesh.position.x, cloud.mesh.position.z, 0, 0) === 'high mountain' ? 15 : 7; // Proxy height
+        if (terrainType === 'high_mountain' || terrainType === 'mountain' || terrainType === 'snow_peak') {
+          const height = terrainFunc(cloud.mesh.position.x, cloud.mesh.position.z, 0, 0) === 'snow_peak' ? 15 : 
+                         terrainFunc(cloud.mesh.position.x, cloud.mesh.position.z, 0, 0) === 'high_mountain' ? 10 : 7; // Proxy height
           if (cloud.mesh.position.y < height + 20) {
             const target = new THREE.Vector3(cloud.mesh.position.x, height + 20, cloud.mesh.position.z);
             cloud.mesh.position.lerp(target, deltaTime * 0.01 * (height / 10));
@@ -495,6 +577,9 @@ export class CloudSystem {
           }
         }
       }
+
+      // Track rain-wet terrain
+      this.trackRainWetTerrain(terrainFunc);
     }
   
     // Method to spawn a new cloud with a fraction of the total water weight
