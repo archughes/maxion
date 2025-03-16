@@ -1,8 +1,15 @@
 import { WindSound } from './wind.js';
 import { RainSound } from './rain.js';
 import { ThunderSound } from './thunder.js';
+import { OceanWavesSound } from './oceanWaves.js';
+import { FireSound } from './fire.js';
+import { BirdSound } from './bird.js';
+import { CricketsSound } from './crickets.js';
+import { RiverSound } from './river.js';
+import { IceCrackingSound} from './iceCracking.js';
+import { VolcanicRumbleSound } from './volcanicRumble.js';
 
-export class RainSoundManager {
+export class AmbientSoundManager {
     constructor(audioCtx, analyser, params = {}) {
         this.audioCtx = audioCtx;
         this.analyser = analyser;
@@ -15,7 +22,22 @@ export class RainSoundManager {
             rainSpeed: params.rainSpeed || 2,
             raindropSize: params.raindropSize || 2,
             thunderFreq: params.thunderFreq || 2,
-            thunderDistance: params.thunderDistance || 3
+            thunderDistance: params.thunderDistance || 3,
+            waveIntensity: params.waveIntensity || 0,
+            waveFrequency: params.waveFrequency || 0,
+            fireIntensity: params.fireIntensity || 0,
+            fireCrackleRate: params.fireCrackleRate || 0,
+            birdActivity: params.birdActivity || 0,
+            birdPitch: params.birdPitch || 0,
+            birdType: params.birdType || 'Robin',
+            cricketDensity: params.cricketDensity || 0,
+            cricketSpeed: params.cricketSpeed || 0,
+            riverFlow: params.riverFlow || 0,
+            riverDepth: params.riverDepth || 0,
+            iceIntensity: params.iceIntensity || 0,
+            iceFractureRate: params.iceFractureRate || 0,
+            rumbleIntensity: params.rumbleIntensity || 0,
+            ventActivity: params.ventActivity || 0
         };
 
         const bufferSize = 10 * this.audioCtx.sampleRate;
@@ -32,6 +54,13 @@ export class RainSoundManager {
         this.windSound = new WindSound(this.audioCtx, this.masterGain, this.whiteNoiseBuffer, { windLevel: 0, windTurbidity: this.params.windTurbidity });
         this.rainSound = new RainSound(this.audioCtx, this.masterGain, this.whiteNoiseBuffer, this.params);
         this.thunderSound = new ThunderSound(this.audioCtx, this.masterGain, this.whiteNoiseBuffer, this.params);
+        this.oceanWavesSound = new OceanWavesSound(this.audioCtx, this.masterGain, this.whiteNoiseBuffer, this.params);
+        this.fireSound = new FireSound(this.audioCtx, this.masterGain, this.whiteNoiseBuffer, this.params);
+        this.birdSound = new BirdSound(this.audioCtx, this.masterGain, this.params);
+        this.cricketsSound = new CricketsSound(this.audioCtx, this.masterGain, this.params);
+        this.riverSound = new RiverSound(this.audioCtx, this.masterGain, this.whiteNoiseBuffer, this.params);
+        this.iceCrackingSound = new IceCrackingSound(this.audioCtx, this.masterGain, this.whiteNoiseBuffer, this.params);
+        this.volcanicRumbleSound = new VolcanicRumbleSound(this.audioCtx, this.masterGain, this.whiteNoiseBuffer, this.params);
 
         this.isPlayingContinuous = false;
         this.activeManualSounds = new Set();
@@ -50,6 +79,13 @@ export class RainSoundManager {
             this.windSound.start();
             this.rainSound.startContinuous();
             this.thunderSound.startContinuous();
+            this.oceanWavesSound.start();
+            this.fireSound.start();
+            this.birdSound.start();
+            this.cricketsSound.start();
+            this.riverSound.start();
+            this.iceCrackingSound.start();
+            this.volcanicRumbleSound.start();
             this.isPlayingContinuous = true;
             this.startVisualizations();
         }
@@ -61,6 +97,13 @@ export class RainSoundManager {
             this.windSound.stop();
             this.rainSound.stopContinuous();
             this.thunderSound.stopContinuous();
+            this.oceanWavesSound.stop();
+            this.fireSound.stop();
+            this.birdSound.stop();
+            this.cricketsSound.stop();
+            this.riverSound.stop();
+            this.iceCrackingSound.stop();
+            this.volcanicRumbleSound.stop();
             this.isPlayingContinuous = false;
             this.checkVisualizationState();
         }
@@ -84,6 +127,35 @@ export class RainSoundManager {
         this.thunderSound.updateParams({
             thunderFreq: this.params.thunderFreq,
             thunderDistance: this.params.thunderDistance
+        });
+        this.oceanWavesSound.updateParams({
+            waveIntensity: this.params.waveIntensity,
+            waveFrequency: this.params.waveFrequency
+        });
+        this.fireSound.updateParams({
+            fireIntensity: this.params.fireIntensity,
+            fireCrackleRate: this.params.fireCrackleRate
+        });
+        this.birdSound.updateParams({
+            birdActivity: this.params.birdActivity,
+            birdPitch: this.params.birdPitch,
+            birdType: this.params.birdType
+        });
+        this.cricketsSound.updateParams({
+            cricketDensity: this.params.cricketDensity,
+            cricketSpeed: this.params.cricketSpeed
+        });
+        this.riverSound.updateParams({
+            riverFlow: this.params.riverFlow,
+            riverDepth: this.params.riverDepth
+        });
+        this.iceCrackingSound.updateParams({
+            iceIntensity: this.params.iceIntensity,
+            iceFractureRate: this.params.iceFractureRate
+        });
+        this.volcanicRumbleSound.updateParams({
+            rumbleIntensity: this.params.rumbleIntensity,
+            ventActivity: this.params.ventActivity
         });
         this.initialized = true;
     }
@@ -137,6 +209,125 @@ export class RainSoundManager {
             this.activeManualSounds.delete(soundId);
             this.checkVisualizationState();
         }, 5500);
+    }
+
+    async playOceanWavesManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `oceanWaves-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.oceanWavesSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 8000);
+    }
+
+    async playFireManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `fire-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.fireSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 3500);
+    }
+
+    async playBirdManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `bird-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.birdSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 3000);
+    }
+
+    async playCricketsManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `crickets-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.cricketsSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 3000);
+    }
+
+    async playRiverManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `river-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.riverSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 5000);
+    }
+
+    async playIceCrackingManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `iceCracking-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.iceCrackingSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 4000);
+    }
+    
+    async playVolcanicRumbleManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `volcanicRumble-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.volcanicRumbleSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 5000);
     }
 
     // Visualization methods remain unchanged

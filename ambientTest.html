@@ -136,7 +136,7 @@
 
 <body>
     <div class="container">
-        <h1>Rain Sound Generator</h1>
+        <h1>Ambient Sound Generator</h1>
 
         <!-- Tabs -->
         <div class="tabs">
@@ -148,11 +148,11 @@
         <div id="tab1" class="tab-content active">
             <div class="control">
                 <label for="windLevel">Wind Level (0-4)</label>
-                <input type="range" id="windLevel" min="0" max="4" step="1" value="2">
+                <input type="range" id="windLevel" min="0" max="4" step="1" value="0">
             </div>
             <div class="control">
                 <label for="windTurbidity">Wind Turbidity (0-4)</label>
-                <input type="range" id="windTurbidity" min="0" max="4" step="1" value="1">
+                <input type="range" id="windTurbidity" min="0" max="4" step="1" value="0">
             </div>
             <div class="control">
                 <label for="surfaceType">Surface Type</label>
@@ -167,23 +167,89 @@
             </div>
             <div class="control">
                 <label for="rainDensity">Rain Density (0-4)</label>
-                <input type="range" id="rainDensity" min="0" max="4" step="1" value="2">
+                <input type="range" id="rainDensity" min="0" max="4" step="1" value="0">
             </div>
             <div class="control">
                 <label for="rainSpeed">Rain Speed (0-4)</label>
-                <input type="range" id="rainSpeed" min="0" max="4" step="1" value="2">
+                <input type="range" id="rainSpeed" min="0" max="4" step="1" value="1">
             </div>
             <div class="control">
                 <label for="raindropSize">Raindrop Size (0-4)</label>
-                <input type="range" id="raindropSize" min="0" max="4" step="1" value="2">
+                <input type="range" id="raindropSize" min="0" max="4" step="1" value="1">
             </div>
             <div class="control">
                 <label for="thunderFreq">Thunder Frequency (0-4)</label>
-                <input type="range" id="thunderFreq" min="0" max="4" step="1" value="2">
+                <input type="range" id="thunderFreq" min="0" max="4" step="1" value="0">
             </div>
             <div class="control">
                 <label for="thunderDistance">Thunder Distance (0-4)</label>
-                <input type="range" id="thunderDistance" min="0" max="4" step="1" value="3">
+                <input type="range" id="thunderDistance" min="0" max="4" step="1" value="0">
+            </div>
+            <div class="control">
+                <label for="waveIntensity">Wave Intensity (0-4)</label>
+                <input type="range" id="waveIntensity" min="0" max="4" step="1" value="0">
+            </div>
+            <div class="control">
+                <label for="waveFrequency">Wave Frequency (0-4)</label>
+                <input type="range" id="waveFrequency" min="0" max="4" step="1" value="1">
+            </div>
+            <div class="control">
+                <label for="fireIntensity">Fire Intensity (0-4)</label>
+                <input type="range" id="fireIntensity" min="0" max="4" step="1" value="0">
+            </div>
+            <div class="control">
+                <label for="fireCrackleRate">Fire Crackle Rate (0-4)</label>
+                <input type="range" id="fireCrackleRate" min="0" max="4" step="1" value="1">
+            </div>
+            <div class="control">
+                <label for="birdActivity">Bird Activity (0-4)</label>
+                <input type="range" id="birdActivity" min="0" max="4" step="1" value="0">
+            </div>
+            <div class="control">
+                <label for="birdPitch">Bird Pitch (0-4)</label>
+                <input type="range" id="birdPitch" min="0" max="4" step="1" value="1">
+            </div>
+            <div class="control">
+                <label for="birdType">Bird Type</label>
+                <select id="birdType">
+                    <option value="0">Robin</option>
+                    <option value="1">Warbler</option>
+                    <option value="2">Thrush</option>
+                    <option value="3">Owl</option>
+                    <option value="4">Cardinal</option>
+                </select>
+            </div>
+            <div class="control">
+                <label for="cricketDensity">Cricket Density (0-4)</label>
+                <input type="range" id="cricketDensity" min="0" max="4" step="1" value="0">
+            </div>
+            <div class="control">
+                <label for="cricketSpeed">Cricket Speed (0-4)</label>
+                <input type="range" id="cricketSpeed" min="0" max="4" step="1" value="1">
+            </div>
+            <div class="control">
+                <label for="riverFlow">River Flow (0-4)</label>
+                <input type="range" id="riverFlow" min="0" max="4" step="1" value="0">
+            </div>
+            <div class="control">
+                <label for="riverDepth">River Depth (0-4)</label>
+                <input type="range" id="riverDepth" min="0" max="4" step="1" value="1">
+            </div>
+            <div class="control">
+                <label for="iceIntensity">Ice Intensity (0-4)</label>
+                <input type="range" id="iceIntensity" min="0" max="4" step="1" value="0">
+            </div>
+            <div class="control">
+                <label for="iceFractureRate">Ice Fracture Rate (0-4)</label>
+                <input type="range" id="iceFractureRate" min="0" max="4" step="1" value="1">
+            </div>
+            <div class="control">
+                <label for="rumbleIntensity">Rumble Intensity (0-4)</label>
+                <input type="range" id="rumbleIntensity" min="0" max="4" step="1" value="0">
+            </div>
+            <div class="control">
+                <label for="ventActivity">Vent Activity (0-4)</label>
+                <input type="range" id="ventActivity" min="0" max="4" step="1" value="1">
             </div>
             <button id="toggleButton">Start</button>
             <button id="saveButton">Save as WAV</button>
@@ -203,6 +269,21 @@
                 Thunder Frequency: <span id="currentThunderFreq"></span><br>
                 Thunder Distance: <span id="currentThunderDistance"></span><br>
                 Surface Type: <span id="currentSurfaceType"></span><br>
+                Wave Intensity: <span id="currentWaveIntensity"></span><br>
+                Wave Frequency: <span id="currentWaveFrequency"></span><br>
+                Fire Intensity: <span id="currentFireIntensity"></span><br>
+                Fire Crackle Rate: <span id="currentFireCrackleRate"></span><br>
+                Bird Activity: <span id="currentBirdActivity"></span><br>
+                Bird Pitch: <span id="currentBirdPitch"></span><br>
+                Bird Type: <span id="currentBirdType"></span><br>
+                Cricket Density: <span id="currentCricketDensity"></span><br>
+                Cricket Speed: <span id="currentCricketSpeed"></span><br>
+                River Flow: <span id="currentRiverFlow"></span><br>
+                River Depth: <span id="currentRiverDepth"></span><br>
+                Ice Intensity: <span id="currentIceIntensity"></span><br>
+                Ice Fracture Rate: <span id="currentIceFractureRate"></span><br>
+                Rumble Intensity: <span id="currentRumbleIntensity"></span><br>
+                Vent Activity: <span id="currentVentActivity"></span><br>
             </div>
             <div class="matrix">
                 <div class="row">
@@ -216,7 +297,6 @@
                         <option value="glass">Glass</option>
                     </select>
                 </div>
-                <!-- Existing rows for Wind Level, Wind Turbidity, etc. remain unchanged -->
                 <div class="row">
                     <label>Wind Level</label>
                     <button class="value-button" data-param="windLevel" data-value="0">0</button>
@@ -272,6 +352,128 @@
                     <button class="value-button" data-param="thunderDistance" data-value="2">2</button>
                     <button class="value-button" data-param="thunderDistance" data-value="3">3</button>
                     <button class="value-button" data-param="thunderDistance" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Wave Intensity</label>
+                    <button class="value-button" data-param="waveIntensity" data-value="0">0</button>
+                    <button class="value-button" data-param="waveIntensity" data-value="1">1</button>
+                    <button class="value-button" data-param="waveIntensity" data-value="2">2</button>
+                    <button class="value-button" data-param="waveIntensity" data-value="3">3</button>
+                    <button class="value-button" data-param="waveIntensity" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Wave Frequency</label>
+                    <button class="value-button" data-param="waveFrequency" data-value="0">0</button>
+                    <button class="value-button" data-param="waveFrequency" data-value="1">1</button>
+                    <button class="value-button" data-param="waveFrequency" data-value="2">2</button>
+                    <button class="value-button" data-param="waveFrequency" data-value="3">3</button>
+                    <button class="value-button" data-param="waveFrequency" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Fire Intensity</label>
+                    <button class="value-button" data-param="fireIntensity" data-value="0">0</button>
+                    <button class="value-button" data-param="fireIntensity" data-value="1">1</button>
+                    <button class="value-button" data-param="fireIntensity" data-value="2">2</button>
+                    <button class="value-button" data-param="fireIntensity" data-value="3">3</button>
+                    <button class="value-button" data-param="fireIntensity" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Fire Crackle Rate</label>
+                    <button class="value-button" data-param="fireCrackleRate" data-value="0">0</button>
+                    <button class="value-button" data-param="fireCrackleRate" data-value="1">1</button>
+                    <button class="value-button" data-param="fireCrackleRate" data-value="2">2</button>
+                    <button class="value-button" data-param="fireCrackleRate" data-value="3">3</button>
+                    <button class="value-button" data-param="fireCrackleRate" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Bird Activity</label>
+                    <button class="value-button" data-param="birdActivity" data-value="0">0</button>
+                    <button class="value-button" data-param="birdActivity" data-value="1">1</button>
+                    <button class="value-button" data-param="birdActivity" data-value="2">2</button>
+                    <button class="value-button" data-param="birdActivity" data-value="3">3</button>
+                    <button class="value-button" data-param="birdActivity" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Bird Pitch</label>
+                    <button class="value-button" data-param="birdPitch" data-value="0">0</button>
+                    <button class="value-button" data-param="birdPitch" data-value="1">1</button>
+                    <button class="value-button" data-param="birdPitch" data-value="2">2</button>
+                    <button class="value-button" data-param="birdPitch" data-value="3">3</button>
+                    <button class="value-button" data-param="birdPitch" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Bird Type</label>
+                    <select id="manualBirdType" style="margin: 0 5px; padding: 5px;">
+                        <option value="robin">Robin</option>
+                        <option value="warbler">Warbler</option>
+                        <option value="thrush">Thrush</option>
+                        <option value="owl">Owl</option>
+                        <option value="cardinal">Cardinal</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <label>Cricket Density</label>
+                    <button class="value-button" data-param="cricketDensity" data-value="0">0</button>
+                    <button class="value-button" data-param="cricketDensity" data-value="1">1</button>
+                    <button class="value-button" data-param="cricketDensity" data-value="2">2</button>
+                    <button class="value-button" data-param="cricketDensity" data-value="3">3</button>
+                    <button class="value-button" data-param="cricketDensity" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Cricket Speed</label>
+                    <button class="value-button" data-param="cricketSpeed" data-value="0">0</button>
+                    <button class="value-button" data-param="cricketSpeed" data-value="1">1</button>
+                    <button class="value-button" data-param="cricketSpeed" data-value="2">2</button>
+                    <button class="value-button" data-param="cricketSpeed" data-value="3">3</button>
+                    <button class="value-button" data-param="cricketSpeed" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>River Flow</label>
+                    <button class="value-button" data-param="riverFlow" data-value="0">0</button>
+                    <button class="value-button" data-param="riverFlow" data-value="1">1</button>
+                    <button class="value-button" data-param="riverFlow" data-value="2">2</button>
+                    <button class="value-button" data-param="riverFlow" data-value="3">3</button>
+                    <button class="value-button" data-param="riverFlow" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>River Depth</label>
+                    <button class="value-button" data-param="riverDepth" data-value="0">0</button>
+                    <button class="value-button" data-param="riverDepth" data-value="1">1</button>
+                    <button class="value-button" data-param="riverDepth" data-value="2">2</button>
+                    <button class="value-button" data-param="riverDepth" data-value="3">3</button>
+                    <button class="value-button" data-param="riverDepth" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Ice Intensity</label>
+                    <button class="value-button" data-param="iceIntensity" data-value="0">0</button>
+                    <button class="value-button" data-param="iceIntensity" data-value="1">1</button>
+                    <button class="value-button" data-param="iceIntensity" data-value="2">2</button>
+                    <button class="value-button" data-param="iceIntensity" data-value="3">3</button>
+                    <button class="value-button" data-param="iceIntensity" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Ice Fracture Rate</label>
+                    <button class="value-button" data-param="iceFractureRate" data-value="0">0</button>
+                    <button class="value-button" data-param="iceFractureRate" data-value="1">1</button>
+                    <button class="value-button" data-param="iceFractureRate" data-value="2">2</button>
+                    <button class="value-button" data-param="iceFractureRate" data-value="3">3</button>
+                    <button class="value-button" data-param="iceFractureRate" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Volcanic Rumble Intensity</label>
+                    <button class="value-button" data-param="rumbleIntensity" data-value="0">0</button>
+                    <button class="value-button" data-param="rumbleIntensity" data-value="1">1</button>
+                    <button class="value-button" data-param="rumbleIntensity" data-value="2">2</button>
+                    <button class="value-button" data-param="rumbleIntensity" data-value="3">3</button>
+                    <button class="value-button" data-param="rumbleIntensity" data-value="4">4</button>
+                </div>
+                <div class="row">
+                    <label>Volcanic Vent Activity</label>
+                    <button class="value-button" data-param="ventActivity" data-value="0">0</button>
+                    <button class="value-button" data-param="ventActivity" data-value="1">1</button>
+                    <button class="value-button" data-param="ventActivity" data-value="2">2</button>
+                    <button class="value-button" data-param="ventActivity" data-value="3">3</button>
+                    <button class="value-button" data-param="ventActivity" data-value="4">4</button>
                 </div>
             </div>
         </div>
