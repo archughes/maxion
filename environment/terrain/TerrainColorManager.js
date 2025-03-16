@@ -4,17 +4,18 @@ export class TerrainColorManager {
     constructor() {
         this.colorPalette = {
             // Base colors
-            path: 0xD2B48C,
-            river: 0x4682B4,
-            lake: 0x4169E1,
-            water: 0xF4EBC3,
-            cliff: 0x5A4D41,
-            mountain: 0x8B4513,
-            high_mountain: 0x6E3A10,
-            snow_peak: 0xFFFFFF,
-            ridge: 0x7A3B10,
-            bridge: 0x964B00,
-            grass: [0x228B22, 0x32CD32],
+            path: '#D2B48C',
+            river: '#4682B4',
+            lake: '#4169E1',
+            water: '#F4EBC3',
+            beach_sand: '#F5F5DC',
+            cliff: '#5A4D41',
+            mountain: '#8B4513',
+            high_mountain: '#6E3A10',
+            snow_peak: '#FFFFFF',
+            ridge: '#7A3B10',
+            bridge: '#964B00',
+            grass: ['#228B22', '#5C715E'],
 
             // Wet color modifiers (multipliers)
             wetModifiers: {
@@ -24,29 +25,29 @@ export class TerrainColorManager {
                 high_mountain: 0.8,
                 ridge: 0.8,
                 bridge: 0.8,
-                grass: 0.7
+                grass: 0.7,
+                beach_sand: 0.85
             }
         };
     }
 
-    // Helper method to interpolate between two hex colors
+    // Helper method to interpolate between two colors (accepts both hex numbers and strings)
     interpolateColor(color1, color2, factor) {
-        const r1 = parseInt(color1.slice(1, 3), 16);
-        const g1 = parseInt(color1.slice(3, 5), 16);
-        const b1 = parseInt(color1.slice(5, 7), 16);
-        const r2 = parseInt(color2.slice(1, 3), 16);
-        const g2 = parseInt(color2.slice(3, 5), 16);
-        const b2 = parseInt(color2.slice(5, 7), 16);
-        const r = Math.round(r1 + (r2 - r1) * factor);
-        const g = Math.round(g1 + (g2 - g1) * factor);
-        const b = Math.round(b1 + (b2 - b1) * factor);
-        return `rgb(${r}, ${g}, ${b})`;
+        // Convert colors to THREE.Color objects
+        const c1 = new THREE.Color(color1);
+        const c2 = new THREE.Color(color2);
+        
+        // Interpolate between the colors
+        const result = c1.clone().lerp(c2, factor);
+        
+        // Return as CSS color string
+        return `rgb(${Math.round(result.r * 255)}, ${Math.round(result.g * 255)}, ${Math.round(result.b * 255)})`;
     }
 
     getColor(terrainType, wetness = 0, noiseValue = 0) {
         let baseColor;
 
-        // Handle grass separately for blending
+        // Handle grass and beach sand separately for blending
         if (terrainType === 'grass') {
             const [color1, color2] = this.colorPalette.grass;
             baseColor = new THREE.Color(color1).lerp(new THREE.Color(color2), noiseValue);

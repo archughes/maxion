@@ -96,38 +96,38 @@ class Terrain {
                 // Assign colors based on terrain type
                 switch (type) {
                     case 'path':
-                        color = '#D2B48C'; // Sandy tan
+                        color = this.colorManager.colorPalette.path; // Sandy tan
                         break;
                     case 'river':
-                        color = '#4682B4'; // Steel blue
+                        color = this.colorManager.colorPalette.river; // Steel blue
                         break;
                     case 'lake':
-                        color = '#4169E1'; // Royal blue
+                        color = this.colorManager.colorPalette.lake; // Royal blue
                         break;
                     case 'water':
-                        color = '#4682C1'; // Sand near water
+                        color = this.colorManager.colorPalette.water; // Sand near water
                         break;
                     case 'cliff':
-                        color = '#5A4D41'; // Dark brown
+                        color = this.colorManager.colorPalette.cliff; // Dark brown
                         break;
                     case 'mountain':
-                        color = '#8B4513'; // Medium mountain - brown
+                        color = this.colorManager.colorPalette.mountain; // Medium mountain - brown
                         break;
                     case 'high_mountain':
-                        color = '#6E3A10'; // High mountain - darker brown
+                        color = this.colorManager.colorPalette.high_mountain; // High mountain - darker brown
                         break;
                     case 'snow_peak':
-                        color = '#FFFFFF'; // Snow-covered peak - white
+                        color = this.colorManager.colorPalette.snow_peak; // Snow-covered peak - white
                         break;
                     case 'ridge':
-                        color = '#7A3B10'; // Ridge lines - reddish brown
+                        color = this.colorManager.colorPalette.ridge; // Ridge lines - reddish brown
                         break;
                     case 'bridge':
-                        color = '#964B00'; // Brown bridge color
+                        color = this.colorManager.colorPalette.bridge; // Brown bridge color
                         break;
                     default: // Grass with noise-based variation
                         const blend = (this.noise2D(vx * 0.1, vz * 0.1) + 1) / 2;
-                        color = this.colorManager.interpolateColor('#228B22', '#32CD32', blend); // Forest green to light green
+                        color = this.colorManager.interpolateColor(this.colorManager.colorPalette.grass[0], this.colorManager.colorPalette.grass[1], blend); // Forest green to light green
                 }
 
                 ctx.fillStyle = color;
@@ -188,6 +188,27 @@ class Terrain {
                 const dz = gridZ - point.z;
                 if (Math.sqrt(dx*dx + dz*dz) <= 1) { // Tighter radius for lake edge
                     return 'lake';
+                }
+            }
+        }
+
+        // Check for beach areas near water
+        if (y > this.waterLevel && y < this.waterLevel + 2) {
+            // Check if adjacent to water
+            const neighbors = [
+                [gridX - 1, gridZ],
+                [gridX + 1, gridZ],
+                [gridX, gridZ - 1],
+                [gridX, gridZ + 1]
+            ];
+
+            for (const [nx, nz] of neighbors) {
+                if (nx >= 0 && nx < this.geometry.parameters.widthSegments &&
+                    nz >= 0 && nz < this.geometry.parameters.heightSegments) {
+                    const neighborY = this.geometry.attributes.position.array[(nz * (this.geometry.parameters.widthSegments + 1) + nx) * 3 + 2];
+                    if (neighborY <= this.waterLevel) {
+                        return 'beach_sand';
+                    }
                 }
             }
         }
