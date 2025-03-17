@@ -8,6 +8,15 @@ import { CricketsSound } from './crickets.js';
 import { RiverSound } from './river.js';
 import { IceCrackingSound} from './iceCracking.js';
 import { VolcanicRumbleSound } from './volcanicRumble.js';
+import { AchievementSound } from './achievement.js';
+import { BerryPickSound } from './berry-pick.js';
+import { BowSound } from './bow.js';
+import { ChestSound } from './chest.js';
+import { FootstepsSound } from './footsteps.js';
+import { HumanIdleSounds } from './idle.js';
+import { SpellSound } from './spell.js';
+import { SwordSound } from './sword.js';
+import { TreeChopSound } from './tree-chop.js';
 
 export class AmbientSoundManager {
     constructor(audioCtx, analyser, params = {}) {
@@ -37,7 +46,35 @@ export class AmbientSoundManager {
             iceIntensity: params.iceIntensity || 0,
             iceFractureRate: params.iceFractureRate || 0,
             rumbleIntensity: params.rumbleIntensity || 0,
-            ventActivity: params.ventActivity || 0
+            ventActivity: params.ventActivity || 0,
+            achievementType: params.achievementType || 'levelUp',
+            achievementImportance: params.achievementImportance || 2,
+            achievementStyle: params.achievementStyle || 'fantasy',
+            berryType: params.berryType || 2,
+            berryRipeness: params.berryRipeness || 2,
+            berryQuantity: params.berryQuantity || 2,
+            bowType: params.bowType || 'standard',
+            drawStrength: params.drawStrength || 2,
+            arrowType: params.arrowType || 'wooden',
+            chestSize: params.chestSize || 2,
+            chestMaterialType: params.chestMaterialType || 2,
+            chestCondition: params.chestCondition || 2,
+            chestTreasureValue: params.chestTreasureValue || 2,
+            footstepsEnvironment: params.footstepsEnvironment || 'stone', // 'water', 'mud', 'sand', 'stone', 'metal'
+            footstepsIntensity: params.footstepsIntensity || 2,           // 0-4 (sneaking to running)
+            footstepsWetness: params.footstepsWetness || 2,
+            humanIdleSoundType: params.humanIdleSoundType || 'breathing', // 'hmm', 'haaa', 'yawn', 'breathing', 'rambling'
+            humanIdleIntensity: params.humanIdleIntensity || 2,           // 0-4 (soft to loud)
+            humanIdleVoiceType: params.humanIdleVoiceType || 2,
+            spellPower: params.spellPower || 0, // Spell strength (0-4)
+            spellElement: params.spellElement || 'fire', // 'fire', 'water', 'air', 'earth', 'arcane'
+            spellCastTime: params.spellCastTime || 0,
+            swordIntensity: params.swordIntensity || 0, // Force of swing/hit (0-4)
+            swordMetalType: params.swordMetalType || 0, // Material quality (0-4: dull to sharp/bright)
+            swordActionType: params.swordActionType || 'swing',
+            chopTreeSize: params.chopTreeSize || 2,       // Size of tree (0-4): sapling to massive
+            chopTool: params.chopTool || 2,       // Type of tool (0-4): stone axe to chainsaw
+            chopIntensity: params.chopIntensity || 2
         };
 
         const bufferSize = 10 * this.audioCtx.sampleRate;
@@ -61,6 +98,15 @@ export class AmbientSoundManager {
         this.riverSound = new RiverSound(this.audioCtx, this.masterGain, this.whiteNoiseBuffer, this.params);
         this.iceCrackingSound = new IceCrackingSound(this.audioCtx, this.masterGain, this.whiteNoiseBuffer, this.params);
         this.volcanicRumbleSound = new VolcanicRumbleSound(this.audioCtx, this.masterGain, this.whiteNoiseBuffer, this.params);
+        this.achievementSound = new AchievementSound(this.audioCtx, this.masterGain, this.params);
+        this.berrySound = new BerryPickSound(this.audioCtx, this.masterGain, this.params);
+        this.bowSound = new BowSound(this.audioCtx, this.masterGain, this.params);
+        this.chestSound = new ChestSound(this.audioCtx, this.masterGain, this.params);
+        this.footstepsSound = new FootstepsSound(this.audioCtx, this.masterGain, this.params);
+        this.humanIdleSound = new HumanIdleSounds(this.audioCtx, this.masterGain, this.params);
+        this.spellSound = new SpellSound(this.audioCtx, this.masterGain, this.params);
+        this.swordSound = new SwordSound(this.audioCtx, this.masterGain, this.params);
+        this.treeChopSound = new TreeChopSound(this.audioCtx, this.masterGain, this.params);
 
         this.isPlayingContinuous = false;
         this.activeManualSounds = new Set();
@@ -86,6 +132,15 @@ export class AmbientSoundManager {
             this.riverSound.start();
             this.iceCrackingSound.start();
             this.volcanicRumbleSound.start();
+            this.achievementSound.start();
+            this.berrySound.start();
+            this.bowSound.start();
+            this.chestSound.start();
+            this.footstepsSound.start();
+            this.humanIdleSound.start();
+            this.spellSound.start();
+            this.swordSound.start();
+            this.treeChopSound.start();
             this.isPlayingContinuous = true;
             this.startVisualizations();
         }
@@ -104,6 +159,15 @@ export class AmbientSoundManager {
             this.riverSound.stop();
             this.iceCrackingSound.stop();
             this.volcanicRumbleSound.stop();
+            this.achievementSound.stop();
+            this.berrySound.stop();
+            this.bowSound.stop();
+            this.chestSound.stop();
+            this.footstepsSound.stop();
+            this.humanIdleSound.stop();
+            this.spellSound.stop();
+            this.swordSound.stop();
+            this.treeChopSound.stop();
             this.isPlayingContinuous = false;
             this.checkVisualizationState();
         }
@@ -156,6 +220,52 @@ export class AmbientSoundManager {
         this.volcanicRumbleSound.updateParams({
             rumbleIntensity: this.params.rumbleIntensity,
             ventActivity: this.params.ventActivity
+        });
+        this.achievementSound.updateParams({
+            achievementType: this.params.achievementType,
+            achievementImportance: this.params.achievementImportance,
+            achievementStyle: this.params.achievementStyle
+        });
+        this.berrySound.updateParams({
+            berryBushType: this.params.berryBushType,
+            berryRipeness: this.params.berryRipeness,
+            berryQuantity: this.params.berryQuantity
+        });
+        this.bowSound.updateParams({
+            bowType: this.params.bowType,
+            drawStrength: this.params.drawStrength,
+            arrowType: this.params.arrowType
+        });
+        this.chestSound.updateParams({
+            chestSize: this.params.chestSize,
+            chestMaterialType: this.params.chestMaterialType,
+            chestCondition: this.params.chestCondition,
+            chestTreasureValue: this.params.chestTreasureValue
+        });
+        this.footstepsSound.updateParams({
+            footstepsEnvironment: this.params.footstepsEnvironment,
+            footstepsIntensity: this.params.footstepsIntensity,
+            footstepsWetness: this.params.footstepsWetness
+        });
+        this.humanIdleSound.updateParams({
+            humanIdleSoundType: this.params.humanIdleSoundType,
+            humanIdleIntensity: this.params.humanIdleIntensity,
+            humanIdleVoiceType: this.params.humanIdleVoiceType
+        });
+        this.spellSound.updateParams({
+            spellPower: this.params.spellPower,
+            spellElement: this.params.spellElement,
+            spellCastTime: this.params.spellCastTime
+        });
+        this.swordSound.updateParams({
+            swordIntensity: this.params.swordIntensity,
+            swordMetalType: this.params.swordMetalType,
+            swordActionType: this.params.swordActionType
+        });
+        this.treeChopSound.updateParams({
+            chopTreeSize: this.params.chopTreeSize,
+            chopTool: this.params.chopTool,
+            chopIntensity: this.params.chopIntensity
         });
         this.initialized = true;
     }
@@ -328,6 +438,159 @@ export class AmbientSoundManager {
             this.activeManualSounds.delete(soundId);
             this.checkVisualizationState();
         }, 5000);
+    }
+
+    async playAchievementManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `achievement-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.achievementSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 2000);
+    }
+
+    async playBerryManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `berry-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.berrySound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 2000);
+    }
+
+    async playBowManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `bow-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.bowSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 2000);
+    }
+
+    async playChestManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `chest-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.chestSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 2000);
+    }
+
+    async playFootstepsManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `footsteps-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.footstepsSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 2000);
+    }
+
+    async playIdleManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `idle-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.humanIdleSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 2000);
+    }
+
+    async playSpellManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `spell-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.spellSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 2000);
+    }
+
+    async playSwordManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `sword-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.swordSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 2000);
+    }
+
+    async playChopManual() {
+        if (this.audioCtx.state === 'suspended') {
+            await this.audioCtx.resume();
+        }
+        if (!this.initialized) {
+            await this.updateParams(this.params);
+        }
+        const soundId = `treeChop-${Date.now()}`;
+        this.activeManualSounds.add(soundId);
+        this.startVisualizations();
+        this.treeChopSound.playBurst();
+        setTimeout(() => {
+            this.activeManualSounds.delete(soundId);
+            this.checkVisualizationState();
+        }, 2000);
     }
 
     // Visualization methods remain unchanged

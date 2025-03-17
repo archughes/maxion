@@ -1,12 +1,11 @@
-
 export class ThunderSound {
     constructor(audioCtx, masterGain, whiteNoiseBuffer, params) {
         this.audioCtx = audioCtx;
         this.masterGain = masterGain;
         this.whiteNoiseBuffer = whiteNoiseBuffer;
         this.params = {
-            thunderFreq: params.thunderFreq || 0,
-            thunderDistance: params.thunderDistance || 0
+            thunderFreq: params.thunderFreq || 2,
+            thunderDistance: params.thunderDistance || 3
         };
         this.thunderTimeout = null;
         this.activeSources = new Set();

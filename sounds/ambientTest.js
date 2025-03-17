@@ -132,6 +132,183 @@ document.addEventListener('DOMContentLoaded', () => {
             ],
             playMethod: 'playVolcanicRumbleManual',
             duration: 5000
+        },
+        {
+            name: 'Achievement',
+            params: [
+                { id: 'achievementImportance', label: 'Achievement Importance', min: 0, max: 4, step: 1, default: 2 },
+            ],
+            selects: [
+                {
+                    id: 'achievementType',
+                    label: 'Achievement Type',
+                    options: [
+                        { value: 'levelUp', label: 'Level Up', selected: true },
+                        { value: 'minorQuest', label: 'Minor Quest' },
+                        { value: 'majorQuest', label: 'Major Quest' }
+                    ]
+                },
+                {
+                    id: 'achievementStyle',
+                    label: 'Achievement Style',
+                    options: [
+                        { value: 'fantasy', label: 'Fantasy', selected: true },
+                        { value: 'sci-fi', label: 'Sci-Fi' },
+                        { value: 'minimal', label: 'Minimal' }
+                    ]
+                }
+            ],
+            playMethod: 'playAchievementManual',
+            duration: 2000
+        },
+        {
+            name: 'Berry',
+            params: [
+                { id: 'berryType', label: 'Berry Type', min: 0, max: 4, step: 1, default: 2 },
+                { id: 'berryRipeness', label: 'Berry Ripeness', min: 0, max: 4, step: 1, default: 2 },
+                { id: 'berryQuantity', label: 'Berry Quantity', min: 0, max: 4, step: 1, default: 2 }
+            ],
+            playMethod: 'playBerryManual',
+            duration: 2000
+        },
+        {
+            name: 'Bow',
+            params: [
+                { id: 'drawStrength', label: 'Draw Strength', min: 0, max: 4, step: 1, default: 2 }
+            ],
+            selects: [
+                {
+                    id: 'bowType',
+                    label: 'Bow Type',
+                    options: [
+                        { value: 'standard', label: 'Standard', selected: true },
+                        { value: 'longbow', label: 'Longbow' },
+                        { value: 'shortbow', label: 'Shortbow' },
+                        { value: 'crossbow', label: 'Crossbow' }
+                    ]
+                },
+                {
+                    id: 'arrowType',
+                    label: 'Arrow Type',
+                    options: [
+                        { value: 'wooden', label: 'Wooden', selected: true },
+                        { value: 'metal', label: 'Metal' },
+                        { value: 'flaming', label: 'Flaming' },
+                        { value: 'magical', label: 'Magical' }
+                    ]
+                }
+            ],
+            playMethod: 'playBowManual',
+            duration: 2000
+        },
+        {
+            name: 'Chest',
+            params: [
+                { id: 'chestSize', label: 'Chest Size', min: 0, max: 4, step: 1, default: 2 },
+                { id: 'chestMaterialType', label: 'Chest Material Type', min: 0, max: 4, step: 1, default: 2 },
+                { id: 'chestCondition', label: 'Chest Condition', min: 0, max: 4, step: 1, default: 2 },
+                { id: 'chestTreasureValue', label: 'Chest Treasure Value', min: 0, max: 4, step: 1, default: 2 }
+            ],
+            playMethod: 'playChestManual',
+            duration: 2000
+        },
+        {
+            name: 'Footsteps',
+            params: [
+                { id: 'footstepsIntensity', label: 'Footsteps Intensity', min: 0, max: 4, step: 1, default: 2 },
+                { id: 'footstepsWetness', label: 'Footsteps Wetness', min: 0, max: 4, step: 1, default: 2 }
+            ],
+            selects: [
+                {
+                    id: 'footstepsEnvironment',
+                    label: 'Footsteps Environment',
+                    options: [
+                        { value: 'stone', label: 'Stone', selected: true },
+                        { value: 'water', label: 'Water' },
+                        { value: 'mud', label: 'Mud' },
+                        { value: 'sand', label: 'Sand' },
+                        { value: 'metal', label: 'Metal' }
+                    ]
+                }
+            ],
+            playMethod: 'playFootstepsManual',
+            duration: 2000
+        },
+        {
+            name: 'HumanIdle',
+            params: [
+                { id: 'humanIdleIntensity', label: 'Human Idle Intensity', min: 0, max: 4, step: 1, default: 2 },
+                { id: 'humanIdleVoiceType', label: 'Human Idle Voice Type', min: 0, max: 4, step: 1, default: 2 }
+            ],
+            selects: [
+                {
+                    id: 'humanIdleSoundType',
+                    label: 'Human Idle Sound Type',
+                    options: [
+                        { value: 'breathing', label: 'Breathing', selected: true },
+                        { value: 'hmm', label: 'Hmm' },
+                        { value: 'haaa', label: 'Haaa' },
+                        { value: 'yawn', label: 'Yawn' },
+                        { value: 'rambling', label: 'Rambling' }
+                    ]
+                }
+            ],
+            playMethod: 'playHumanIdleManual',
+            duration: 2000
+        },
+        {
+            name: 'Spell',
+            params: [
+                { id: 'spellPower', label: 'Spell Power', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'spellCastTime', label: 'Spell Cast Time', min: 0, max: 4, step: 1, default: 0 }
+            ],
+            selects: [
+                {
+                    id: 'spellElement',
+                    label: 'Spell Element',
+                    options: [
+                        { value: 'fire', label: 'Fire', selected: true },
+                        { value: 'water', label: 'Water' },
+                        { value: 'air', label: 'Air' },
+                        { value: 'earth', label: 'Earth' },
+                        { value: 'arcane', label: 'Arcane' }
+                    ]
+                }
+            ],
+            playMethod: 'playSpellManual',
+            duration: 2000
+        },
+        {
+            name: 'Sword',
+            params: [
+                { id: 'swordIntensity', label: 'Sword Intensity', min: 0, max: 4, step: 1, default: 0 },
+                { id: 'swordMetalType', label: 'Sword Metal Type', min: 0, max: 4, step: 1, default: 0 }
+            ],
+            selects: [
+                {
+                    id: 'swordActionType',
+                    label: 'Sword Action Type',
+                    options: [
+                        { value: 'swing', label: 'Swing', selected: true },
+                        { value: 'grind', label: 'Grind' },
+                        { value: 'clash', label: 'Clash' },
+                        { value: 'stab', label: 'Stab' },
+                        { value: 'block', label: 'Block' }
+                    ]
+                }
+            ],
+            playMethod: 'playSwordManual',
+            duration: 2000
+        },
+        {
+            name: 'Chop',
+            params: [
+                { id: 'chopTreeSize', label: 'Chop Tree Size', min: 0, max: 4, step: 1, default: 2 },
+                { id: 'chopTool', label: 'Chop Tool', min: 0, max: 4, step: 1, default: 2 },
+                { id: 'chopIntensity', label: 'Chop Intensity', min: 0, max: 4, step: 1, default: 2 }
+            ],
+            playMethod: 'playChopManual',
+            duration: 2000
         }
     ];
 
