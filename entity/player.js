@@ -465,7 +465,8 @@ function updatePlayer(deltaTime, movement) {
 
     // Drowning mechanic
     const headY = player.object.position.y + player.heightOffset; // Head at top of 1-unit cube
-    if (headY < terrain.waterLevel) {
+    const level = terrain.getWaterLevel(player.object.position.x, player.object.position.z);
+    if (headY < level) {
         if (player.drowningTimer < player.drowningTime) {
             player.drowningTimer += deltaTime;
             const remaining = Math.ceil(player.drowningTime - player.drowningTimer);

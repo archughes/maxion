@@ -93,7 +93,7 @@ function animate() {
         camera.position.y = player.object.position.y + 2 + cameraDistance * Math.sin(cameraState.pitch);
     }
     // Clamp camera based on player's head position
-    const waterHeight = terrain.waterLevel;
+    const waterHeight = terrain.getWaterLevel(camera.position.x, camera.position.z);
     const headY = player.object.position.y + player.heightOffset;
     const terrainHeight = terrain.getHeightAt(camera.position.x, camera.position.z);
     if (headY > waterHeight) {

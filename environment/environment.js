@@ -53,8 +53,7 @@ async function loadMap(mapName) {
         const waterWidth = mapData.water?.width || mapWidth;
         const waterHeight = mapData.water?.height || mapHeight;
         const waterColor = mapData.water?.color || 0x0077be;
-        waterSystem = new WaterSystem(waterWidth, waterHeight, waterLevel, waterColor);
-        terrain.waterLevel = waterLevel; // Set the water level in Terrain
+        waterSystem = new WaterSystem(waterWidth, waterHeight, waterLevel, waterColor, terrain); // Pass terrain
     } else {
         terrain.waterLevel = -Infinity; // No water
     }
@@ -63,7 +62,7 @@ async function loadMap(mapName) {
     terrain.setupMaterial();
     terrain.mesh = new THREE.Mesh(terrain.geometry, terrain.material);
     terrain.mesh.rotation.x = -Math.PI / 2;
-    terrain.renderTerrainMap();
+    terrain.renderTerrainMap(mapData);
     scene.add(terrain.mesh);
 
     const directionalLight = new THREE.DirectionalLight(parseInt(mapData.lighting.directional.color), mapData.lighting.directional.intensity);

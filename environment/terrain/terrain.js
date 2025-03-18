@@ -36,6 +36,7 @@ class Terrain {
         this.riverPoints = features.riverPoints;
         this.lakePoints = features.lakePoints;
         this.bridgePoints = features.bridgePoints;
+        this.waterHeights = features.waterHeights;
         
         // this.waterLevel = -Infinity;
         this.terrainFunc = this.terrainFunc.bind(this);
@@ -72,7 +73,7 @@ class Terrain {
         this.colorManager.updateTerrainColors(this);
     }
 
-    renderTerrainMap() {
+    renderTerrainMap(mapData) {
         const canvas = document.createElement('canvas');
         canvas.width = 512;  // Matches typical world map size for clarity
         canvas.height = 512;
@@ -94,6 +95,7 @@ class Terrain {
                 // Use terrain.terrainFunc to determine the terrain type
                 const type = this.terrainFunc(vx, vz, vy, vertexIndex);
                 let color;
+                const waterColor = mapData.water?.color || '#0077be';
 
                 // Assign colors based on terrain type
                 switch (type) {
@@ -101,13 +103,13 @@ class Terrain {
                         color = this.colorManager.colorPalette.path; // Sandy tan
                         break;
                     case 'river':
-                        color = this.colorManager.colorPalette.river; // Steel blue
+                        color = waterColor; // Steel blue
                         break;
                     case 'lake':
-                        color = this.colorManager.colorPalette.lake; // Royal blue
+                        color = waterColor; // Royal blue
                         break;
                     case 'water':
-                        color = this.colorManager.colorPalette.water; // Sand near water
+                        color = waterColor; // Sand near water
                         break;
                     case 'cliff':
                         color = this.colorManager.colorPalette.cliff; // Dark brown
@@ -126,6 +128,9 @@ class Terrain {
                         break;
                     case 'bridge':
                         color = this.colorManager.colorPalette.bridge; // Brown bridge color
+                        break;
+                    case 'beach_sand':
+                        color = this.colorManager.colorPalette.beach_sand; // Sandy beach
                         break;
                     default: // Grass with noise-based variation
                         const blend = (this.noise2D(vx * 0.1, vz * 0.1) + 1) / 2;
@@ -194,7 +199,7 @@ class Terrain {
             }
         }
 
-        // Check for beach areas near water
+        // Check for beach areas near ocean water
         if (y > this.waterLevel && y < this.waterLevel + 2) {
             // Check if adjacent to water
             const neighbors = [
@@ -238,36 +243,27 @@ class Terrain {
         const widthSegments = this.geometry.parameters.widthSegments;
         const heightSegments = this.geometry.parameters.heightSegments;
         
-        // Convert flat index to grid coordinates
-        const gridX = (vertexIndex / 3) % (widthSegments + 1);
-        const gridZ = Math.floor((vertexIndex / 3) / (widthSegments + 1));
-
-        // Initialize neighbor heights
+        const gridX = vertexIndex % (widthSegments + 1);
+        const gridZ = Math.floor(vertexIndex / (widthSegments + 1));
+    
         let left = 0, right = 0, front = 0, back = 0;
-
-        // Get neighbor heights if they exist
+    
         if (gridX > 0) {
-            const leftIndex = vertexIndex - 3;
-            left = positions[leftIndex + 2];
+            left = positions[(vertexIndex - 1) * 3 + 2];
         }
         if (gridX < widthSegments) {
-            const rightIndex = vertexIndex + 3;
-            right = positions[rightIndex + 2];
+            right = positions[(vertexIndex + 1) * 3 + 2];
         }
         if (gridZ > 0) {
-            const backIndex = vertexIndex - (widthSegments + 1) * 3;
-            back = positions[backIndex + 2];
+            back = positions[(vertexIndex - (widthSegments + 1)) * 3 + 2];
         }
         if (gridZ < heightSegments) {
-            const frontIndex = vertexIndex + (widthSegments + 1) * 3;
-            front = positions[frontIndex + 2];
+            front = positions[(vertexIndex + (widthSegments + 1)) * 3 + 2];
         }
-
-        // Calculate gradients using central differences
-        const dx = (right - left) / (2 * this.width / widthSegments);
-        const dz = (front - back) / (2 * this.height / heightSegments);
+    
+        const dx = (right - left) / 2;
+        const dz = (front - back) / 2;
         
-        // Return slope magnitude
         return Math.sqrt(dx * dx + dz * dz);
     }
 
@@ -283,12 +279,33 @@ class Terrain {
         return { magnitude, direction };
     }
 
+    getWaterLevel(x, z, preRotationFlag=true) {
+        const halfWidth = this.width / 2;
+        const halfHeight = this.height / 2;
+        
+        if (x < -halfWidth || x > halfWidth || z < -halfHeight || z > halfHeight) {
+            return this.waterLevel; // Default to ocean level outside bounds
+        }
+        
+        const gridX = Math.floor((x + halfWidth) / this.width * (this.geometry.parameters.widthSegments));
+        let gridZ = Math.floor((z + halfHeight) / this.height * (this.geometry.parameters.heightSegments));
+        if (preRotationFlag) gridZ = this.geometry.parameters.heightSegments - gridZ;
+        const key = `${gridX},${gridZ}`;
+        
+        if (this.waterHeights.has(key)) {
+            return Math.max(this.waterHeights.get(key), this.waterLevel); // Use river/lake height, but not below ocean level
+        }
+        
+        return this.waterLevel; // Default to ocean level
+    }
+
     calculateAutoWaterLevel() {
         const heights = Array.from(this.geometry.attributes.position.array)
             .filter((_, i) => i % 3 === 2)
             .sort((a, b) => a - b);
         const percentileIndex = Math.floor(heights.length * 0.3); // 30th percentile
-        return heights[percentileIndex] || 0; // Return 0 if array is empty
+        this.waterLevel = heights[percentileIndex] || 0; // Return 0 if array is empty
+        return this.waterLevel;
     }
 
     getHeightAt(x, z) {
@@ -314,20 +331,6 @@ class Terrain {
         }
         
         return 0;
-    }
-
-    create() {
-        this.setupMaterial();
-        this.renderTerrainMap();
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
-        
-        // Add userData to identify this as terrain for CloudSystem
-        this.mesh.userData = {
-            isTerrain: true,
-            terrainRef: this
-        };
-        
-        return this.mesh;
     }
 }
 

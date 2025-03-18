@@ -17,8 +17,9 @@ export class Movement {
         const baseSpeed = this.owner.speed * deltaTime * this.owner.baseSpeedMultiplier * (this.owner.isRunning ? 1.5 : 1);
         let moveDir = new THREE.Vector3();
         
-        const waterLevel = this.terrain.waterLevel;
-        this.owner.isInWater = this.owner.object.position.y - this.owner.heightOffset + 0.5 < waterLevel; // Check feet position
+        const waterLevel = this.terrain.getWaterLevel(pos.x, pos.z);
+        this.owner.isInWater = this.owner.object.position.y - this.owner.heightOffset + 0.5 < waterLevel;
+        console.log(this.owner.isInWater, waterLevel, this.owner.object.position.y - this.owner.heightOffset); // Check feet position
         if (this.owner.isInWater) {
             // Water movement: use camera directions
             const camDir = this.camera.getWorldDirection(new THREE.Vector3());
@@ -33,7 +34,7 @@ export class Movement {
             }
 
             const headY = pos.y + this.owner.heightOffset; // Current head position
-            const waterHeight = this.terrain.waterLevel;
+            const waterHeight = this.terrain.getWaterLevel(pos.x, pos.z);
             const headNearSurface = Math.abs(headY - waterHeight) < 0.3;
             const headAboveSurface = headY - waterHeight > 0.0;
             if (moveDir.lengthSq() > 0) {

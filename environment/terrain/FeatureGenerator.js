@@ -15,6 +15,7 @@ class FeatureGenerator {
         this.riverPoints = [];
         this.lakePoints = [];
         this.bridgePoints = []; // New feature: bridges
+        this.waterHeights = new Map();
     }
 
     // Helper method to check if a point is in water
@@ -98,9 +99,9 @@ class FeatureGenerator {
         return this.pathPoints;
     }
 
-    // Create a river and potentially a lake
     createRiverAndLake() {
         const vertices = this.geometry.attributes.position.array;
+        const vertices0 = vertices.slice();
         const widthSegments = this.geometry.parameters.widthSegments;
         const heightSegments = this.geometry.parameters.heightSegments;
         const segmentWidth = this.width / widthSegments;
@@ -119,47 +120,51 @@ class FeatureGenerator {
             
             const index = (gridZ * (widthSegments + 1) + gridX) * 3 + 2;
             const height = vertices[index];
-            const depthScale = 5;
+            const depthScale = 3;
             const isMountain = height > 10;
             
-            // Check if this would cross a path
             const isPath = this.pathPoints.some(p => 
                 Math.sqrt(Math.pow(p.x - gridX, 2) + Math.pow(p.z - gridZ, 2)) <= 3
             );
-            
+
             if (!isMountain && !isPath && (height > this.terrain.waterLevel)) {
                 rawRiverPoints.push({x: gridX, z: heightSegments - gridZ}); // 90 degrees mesh correction
                 
-                // Create a lake with some probability
+                // Set water height 1 unit below terrain height for river
+                const waterHeight = height - 0.25;
+                this.waterHeights.set(`${gridX},${heightSegments - gridZ}`, waterHeight);
+                
                 if (!lakeCreated && Math.random() < lakeChance && currentZ < this.height / 4) {
                     this.createLake(gridX, gridZ, vertices);
                     lakeCreated = true;
                 }
+                const isLake = lakeCreated && this.lakePoints.some(p => 
+                    Math.sqrt(Math.pow(p.x - gridX, 2) + Math.pow(p.z - (heightSegments - gridZ), 2)) <= 0.1
+                )
                 
-                // Create a bridge if river crosses near a path
                 const nearPath = this.pathPoints.some(p => 
-                    Math.sqrt(Math.pow(p.x - gridX, 2) + Math.pow(p.z - gridZ, 2)) <= 6 &&
-                    Math.sqrt(Math.pow(p.x - gridX, 2) + Math.pow(p.z - gridZ, 2)) > 3
+                    Math.sqrt(Math.pow(p.x - gridX, 2) + Math.pow(p.z - (heightSegments - gridZ), 2)) <= 6 &&
+                    Math.sqrt(Math.pow(p.x - gridX, 2) + Math.pow(p.z - (heightSegments - gridZ), 2)) > 3
                 );
                 
                 if (nearPath && !this.bridgePoints.some(b => 
-                    Math.sqrt(Math.pow(b.x - gridX, 2) + Math.pow(b.z - gridZ, 2)) <= 10)) {
+                    Math.sqrt(Math.pow(b.x - gridX, 2) + Math.pow(b.z - (heightSegments - gridZ), 2)) <= 10)) {
                     this.createBridge(gridX, gridZ, vertices);
                 }
-                
+
                 // Carve river bed with gentler slopes
-                for (let i = -3; i <= 3; i++) { // Wider river
-                    for (let j = -3; j <= 3; j++) {
+                for (let i = -4; i <= 4; i++) { // Wider river
+                    for (let j = -4; j <= 4; j++) {
                         const gx = gridX + i;
                         const gz = gridZ + j;
                         if (gx >= 0 && gx <= widthSegments && gz >= 0 && gz <= heightSegments) {
                             const rIndex = (gz * (widthSegments + 1) + gx) * 3 + 2;
                             const distance = Math.sqrt(i * i + j * j);
-                            if (distance <= 2) {
-                                // Create a more gradual slope at the edges
-                                const edgeFactor = distance < 1 ? 1 : Math.pow((2 - distance) / 1, 2);
+                            this.waterHeights.set(`${gx},${heightSegments - gz}`, Math.max(this.waterHeights.get(`${gx},${heightSegments - gz}`) || -Infinity, vertices0[rIndex] - .25)); // overfill
+                            if (distance <= 3) {
+                                const edgeFactor = Math.pow((3 - distance)/3, 1.0);
                                 const depthAdjustment = depthScale * edgeFactor;
-                                vertices[rIndex] = Math.max(-depthScale, vertices[rIndex] - depthAdjustment);
+                                if (!isLake) vertices[rIndex] = vertices[rIndex] - depthAdjustment;
                             }
                         }
                     }
@@ -167,21 +172,19 @@ class FeatureGenerator {
             }
             
             currentZ -= segmentHeight;
-            // Smoother river path
             currentX += (this.noise2D(currentZ * 0.05, 1) * 1.5 - 0.75) * segmentWidth;
             currentX = Math.max(-this.width / 2, Math.min(this.width / 2, currentX));
             
             if (isMountain || isPath) break;
         }
         
-        // Apply river smoothing
         this.riverPoints = this.smoothPath(rawRiverPoints, 2);
         
         return this.riverPoints;
     }
     
-    // Create a lake
     createLake(centerX, centerZ, vertices) {
+        const vertices0 = vertices.slice();
         const lakeSize = this.mapData.biome === 'spring' ? 30 : 20; // Larger in spring
         const depthScale = 10;
         const lakePoints = [];
@@ -203,12 +206,13 @@ class FeatureGenerator {
                         );
                         
                         if (!isMountain && !isPath) {
+                            this.waterHeights.set(`${gx},${heightSegments - gz}`, Math.max(this.waterHeights.get(`${gx},${heightSegments - gz}`) || -Infinity, vertices0[index] - .25)); // overfill
                             if (distance <= (lakeSize-1)) { // Only color the bottom
                                 lakePoints.push({x: gx, z: heightSegments - gz}); // 90 degrees mesh correction
+                                // Create shallow depression for lake with smoother edges
+                                const edgeFactor = Math.pow((lakeSize - distance) / lakeSize, 1.0);
+                                vertices[index] = height - depthScale * edgeFactor;
                             }
-                            // Create shallow depression for lake with smoother edges
-                            const edgeFactor = Math.pow((lakeSize - distance) / lakeSize, 1.5);
-                            vertices[index] = height - depthScale * edgeFactor;
                         }
                     }
                 }
@@ -274,22 +278,18 @@ class FeatureGenerator {
     generateFeatures() {
         const vertices = this.geometry.attributes.position.array;
         
-        // First create the path
         this.createPath();
-        
-        // Then create river and lake
         this.createRiverAndLake();
         
-        // Update geometry
         this.geometry.attributes.position.needsUpdate = true;
         this.geometry.computeVertexNormals();
         
-        // Return all feature points for the terrain to use
         return {
             pathPoints: this.pathPoints,
             riverPoints: this.riverPoints,
             lakePoints: this.lakePoints,
-            bridgePoints: this.bridgePoints
+            bridgePoints: this.bridgePoints,
+            waterHeights: this.waterHeights
         };
     }
 }

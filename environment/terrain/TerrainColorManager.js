@@ -5,8 +5,8 @@ export class TerrainColorManager {
         this.colorPalette = {
             // Base colors
             path: '#D2B48C',
-            river: '#4682B4',
-            lake: '#4169E1',
+            river: '#7A6F5E',
+            lake: '#7A6F5E',
             water: '#F4EBC3',
             beach_sand: '#F5F5DC',
             cliff: '#5A4D41',
