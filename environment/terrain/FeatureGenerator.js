@@ -79,56 +79,22 @@ class FeatureGenerator {
             const gridZ = Math.floor((currentZ + this.height/2) / segmentHeight);
             
             // Add point to path
-            rawPathPoints.push({x: gridX, z: gridZ});
-
-            // Move forward with smoother randomness
-            currentZ += segmentHeight;
-            // Use a smaller factor for randomness to make path smoother
-            currentX += (this.noise2D(currentZ * 0.05, 0) * 1.5 - 0.75) * segmentWidth;
-            currentX = Math.max(-this.width/2, Math.min(this.width/2, currentX));
+            const index = (gridZ * (widthSegments + 1) + gridX) * 3 + 2;
+            const height = vertices[index];
+            if (height > this.terrain.waterLevel) {
+                rawPathPoints.push({x: gridX, z: heightSegments - gridZ}); // 90 degrees mesh correction
+                // Move forward with smoother randomness
+                currentZ += segmentHeight;
+                // Use a smaller factor for randomness to make path smoother
+                currentX += (this.noise2D(currentZ * 0.05, 0) * 1.5 - 0.75) * segmentWidth;
+                currentX = Math.max(-this.width/2, Math.min(this.width/2, currentX));
+            } else {
+                currentZ += segmentHeight;
+            }
         }
 
         // Apply path smoothing
         this.pathPoints = this.smoothPath(rawPathPoints, 3);
-
-        // Smooth path and surrounding area
-        for (let point of this.pathPoints) {
-            for (let i = -widthScale; i <= widthScale; i++) {
-                for (let j = -widthScale; j <= widthScale; j++) {
-                    const gx = Math.floor(point.x + i);
-                    const gz = Math.floor(point.z + j);
-                    if (gx >= 0 && gx <= widthSegments && gz >= 0 && gz <= heightSegments) {
-                        // Skip if this point is in water
-                        if (this.isWaterPoint(gx, gz)) {
-                            continue;
-                        }
-                        
-                        const index = (gz * (widthSegments + 1) + gx) * 3 + 2;
-                        const distance = Math.sqrt(i*i + j*j);
-                        if (distance <= 2) {
-                            // Smooth by averaging with neighbors
-                            let avgHeight = 0;
-                            let count = 0;
-                            for (let ni = -2; ni <= 2; ni++) { // Increased smoothing radius
-                                for (let nj = -2; nj <= 2; nj++) {
-                                    const ngx = gx + ni;
-                                    const ngz = gz + nj;
-                                    if (ngx >= 0 && ngx <= widthSegments && ngz >= 0 && ngz <= heightSegments) {
-                                        const nIndex = (ngz * (widthSegments + 1) + ngx) * 3 + 2;
-                                        avgHeight += vertices[nIndex];
-                                        count++;
-                                    }
-                                }
-                            }
-                            // Slightly flatten the path for better walkability
-                            const flattenFactor = 1 - Math.max(0, (2 - distance) / 2);
-                            vertices[index] = avgHeight / count * flattenFactor;
-                        }
-                    }
-                }
-            }
-        }
-
         return this.pathPoints;
     }
 
@@ -161,8 +127,8 @@ class FeatureGenerator {
                 Math.sqrt(Math.pow(p.x - gridX, 2) + Math.pow(p.z - gridZ, 2)) <= 3
             );
             
-            if (!isMountain && !isPath) {
-                rawRiverPoints.push({x: gridX, z: gridZ});
+            if (!isMountain && !isPath && (height > this.terrain.waterLevel)) {
+                rawRiverPoints.push({x: gridX, z: heightSegments - gridZ}); // 90 degrees mesh correction
                 
                 // Create a lake with some probability
                 if (!lakeCreated && Math.random() < lakeChance && currentZ < this.height / 4) {
@@ -182,8 +148,8 @@ class FeatureGenerator {
                 }
                 
                 // Carve river bed with gentler slopes
-                for (let i = -2; i <= 2; i++) { // Wider river
-                    for (let j = -2; j <= 2; j++) {
+                for (let i = -3; i <= 3; i++) { // Wider river
+                    for (let j = -3; j <= 3; j++) {
                         const gx = gridX + i;
                         const gz = gridZ + j;
                         if (gx >= 0 && gx <= widthSegments && gz >= 0 && gz <= heightSegments) {
@@ -216,7 +182,7 @@ class FeatureGenerator {
     
     // Create a lake
     createLake(centerX, centerZ, vertices) {
-        const lakeSize = this.mapData.biome === 'spring' ? 15 : 10; // Larger in spring
+        const lakeSize = this.mapData.biome === 'spring' ? 30 : 20; // Larger in spring
         const depthScale = 10;
         const lakePoints = [];
         const widthSegments = this.geometry.parameters.widthSegments;
@@ -237,12 +203,12 @@ class FeatureGenerator {
                         );
                         
                         if (!isMountain && !isPath) {
-                            lakePoints.push({x: gx, z: gz});
+                            if (distance <= (lakeSize-1)) { // Only color the bottom
+                                lakePoints.push({x: gx, z: heightSegments - gz}); // 90 degrees mesh correction
+                            }
                             // Create shallow depression for lake with smoother edges
-                            const edgeFactor = distance > lakeSize * 0.8 ? 
-                                Math.pow((lakeSize - distance) / (lakeSize * 0.2), 2) : 1;
-                            const depth = Math.max(-depthScale, -depthScale * edgeFactor);
-                            vertices[index] = Math.max(depth, vertices[index] - depthScale * edgeFactor);
+                            const edgeFactor = Math.pow((lakeSize - distance) / lakeSize, 1.5);
+                            vertices[index] = height - depthScale * edgeFactor;
                         }
                     }
                 }
@@ -291,7 +257,7 @@ class FeatureGenerator {
                 const gz = centerZ + (isHorizontal ? j : i);
                 
                 if (gx >= 0 && gx <= widthSegments && gz >= 0 && gz <= heightSegments) {
-                    bridgePoints.push({x: gx, z: gz});
+                    bridgePoints.push({x: gx, z: heightSegments - gz}); // 90 degrees mesh correction
                     
                     // Elevate terrain to create bridge
                     const index = (gz * (widthSegments + 1) + gx) * 3 + 2;
@@ -300,7 +266,7 @@ class FeatureGenerator {
             }
         }
         
-        this.bridgePoints.push({x: centerX, z: centerZ, points: bridgePoints});
+        this.bridgePoints.push({x: centerX, z: heightSegments - centerZ, points: bridgePoints});
         return bridgePoints;
     }
 

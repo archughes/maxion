@@ -24,6 +24,8 @@ class Terrain {
         // Generate heightmap using the new generator
         const heightmapGenerator = new HeightmapGenerator(this.geometry, this.mapData, this.noise2D);
         heightmapGenerator.generate();
+
+        this.waterLevel = mapData.water?.level || mapData.waterLevel || this.calculateAutoWaterLevel();
         
         // Generate terrain features using the new generator
         const featureGenerator = new FeatureGenerator(this);
@@ -35,7 +37,7 @@ class Terrain {
         this.lakePoints = features.lakePoints;
         this.bridgePoints = features.bridgePoints;
         
-        this.waterLevel = -Infinity;
+        // this.waterLevel = -Infinity;
         this.terrainFunc = this.terrainFunc.bind(this);
     }
 

@@ -49,7 +49,7 @@ async function loadMap(mapName) {
     const shouldCreateWater = mapData.water || allowedBiomes.includes(biome);
 
     if (shouldCreateWater) {
-        const waterLevel = mapData.water?.level || mapData.waterLevel || terrain.calculateAutoWaterLevel();
+        const waterLevel = terrain.waterLevel;
         const waterWidth = mapData.water?.width || mapWidth;
         const waterHeight = mapData.water?.height || mapHeight;
         const waterColor = mapData.water?.color || 0x0077be;

@@ -113,14 +113,15 @@ function animate() {
     }
 
     // Underwater visual effects
+    const defaultFogNear = 150, defaultFogFar = 250;
     if (!scene.fog) {
-        scene.fog = new THREE.Fog(0xcccccc, 100, 200); // Reinitialize if null
+        scene.fog = new THREE.Fog(0xcccccc, defaultFogNear, defaultFogFar); // Reinitialize if null
     }
     if (camera.position.y > waterHeight && headY > waterHeight) {
-        scene.fog.near = 50; // Default fog
-        scene.fog.far = 100;
+        scene.fog.near = defaultFogNear; // Default fog
+        scene.fog.far = defaultFogFar;
         scene.fog.color.set(0xcccccc);
-    } else {
+    } else { // water fog
         scene.fog.near = 10; // Dense fog
         scene.fog.far = 50;
         scene.fog.color.set(0x0077be); // Bluish tint
