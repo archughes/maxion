@@ -14,7 +14,7 @@ class Entity {
     }
     
     takeDamage(amount, attacker = '') {
-        this.health = Math.max(0, this.health - amount);
+        this.health = Math.max(0, this.health - Math.abs(amount)); // ensure damage always reduces health with abs.
         if (this.health <= 0) this.whoKill = attacker;
     }
 
