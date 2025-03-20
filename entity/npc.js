@@ -275,6 +275,7 @@ function updateNPC(deltaTime) {
         if (enemy.health <= 0) {
             scene.remove(enemy.object);
             scene.remove(enemy.healthBar);
+            scene.remove(enemy.selectionDisc);
             enemies.splice(enemies.indexOf(enemy), 1);
             if (enemy.whoKill === 'player') player.gainXP(50);
             activeQuests.forEach(quest => {
