@@ -149,9 +149,12 @@ export function saveSettings() {
 }
 
 function applySettings() {
-  // Placeholder: Apply settings to game (e.g., audio volume, rendering options)
   console.log('Applying settings:', settings);
-  // Example: Update audio manager or renderer (implement in respective modules)
+  
+  const fpsDisplay = document.getElementById('fps-display');
+  if (fpsDisplay) {
+    fpsDisplay.style.display = settings.showFPS ? 'block' : 'none';
+  }
 }
 
 export function loadGame() {

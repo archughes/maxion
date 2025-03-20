@@ -12,6 +12,7 @@ import { SoundManager } from './environment/sound-manager.js';
 import { timeSystem } from './environment/TimeSystem.js';
 import { initializeTerrainCache, setupMinimap } from './environment/map.js';
 import { Movement } from './entity/movement.js';
+import { settings } from './settings.js';
 
 // Add Mana Bar to UI
 const manaBar = document.createElement("div");
@@ -74,6 +75,15 @@ function animate() {
     updatePlayer(deltaTime, movement);
     updateNPC(deltaTime);
     handleCollisions();
+
+    const fps = Math.round(1 / deltaTime);
+    if (settings.showFPS) {
+        const fpsDisplay = document.getElementById('fps-display');
+        if (fpsDisplay) {
+            fpsDisplay.querySelector('.time-display').textContent = `FPS: ${fps}`;
+        }
+        console.log(`FPS: ${fps}`); // Console print when enabled
+    }
 
     // Update Camera
     const headDirection = new THREE.Vector3();

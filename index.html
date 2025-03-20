@@ -273,6 +273,24 @@
             height: 500px;
         }
 
+        .fps-frame {
+            position: absolute;
+            top: 10px; /* Distance from the top of the screen */
+            left: 50%; /* Start at the horizontal midpoint */
+            transform: translateX(-50%); /* Shift it left by half its width to center it */
+            width: 60px;
+            background: url('parchment-texture-fill.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 2px solid #8B4513;
+            padding: 2px 8px;
+            border-radius: 4px;
+            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            z-index: 15;
+        }
+
         .time-frame {
             position: absolute;
             width: 60px;
@@ -411,6 +429,9 @@
         </div>
         <div class="xp-bar">
             <div class="xp-fill" style="width: 0%;"></div>
+        </div>
+        <div id="fps-display" class="fps-frame" style="display: none;">
+            <div class="time-display">FPS: 0</div>
         </div>
 
         <div class="bottom-row">
