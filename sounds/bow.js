@@ -1,17 +1,30 @@
 // bowArrow.js
-export class BowSound {
-    constructor(audioCtx, masterGain, params) {
-        this.audioCtx = audioCtx;
-        this.masterGain = masterGain;
-        this.params = {
+import { SoundGenerator } from './SoundGenerator.js';
+
+export class BowSound extends SoundGenerator {
+    /**
+     * Constructor for the BowSound generator
+     * @param {AudioContext} audioCtx - The Web Audio API AudioContext
+     * @param {GainNode} masterGain - The master gain node to connect sounds to
+     * @param {Object} params - Configuration parameters for the bow sound
+     */
+    constructor(audioCtx, masterGain, params = {}) {
+        // Initialize default params to pass to parent constructor
+        const defaultParams = {
             bowType: params.bowType || 'standard', // 'standard', 'longbow', 'shortbow', 'crossbow'
             drawStrength: params.drawStrength || 2, // Draw strength (0-4)
             arrowType: params.arrowType || 'wooden'  // 'wooden', 'metal', 'flaming', 'magical'
         };
-        this.activeSounds = new Set();
+        
+        // Call parent constructor with audioCtx, masterGain, and combined params
+        super(audioCtx, masterGain, defaultParams);
+        
         this.isPlaying = false;
     }
 
+    /**
+     * Starts the bow and arrow sound sequence
+     */
     start() {
         if (this.isPlaying) return;
         this.isPlaying = true;
@@ -28,19 +41,27 @@ export class BowSound {
         this.createImpactSound(currentTime + 0.5 + (this.params.drawStrength * 0.1));
     }
     
+    /**
+     * Stops all active sounds and cleans up resources
+     * Overrides parent method with additional cleanup
+     */
     stop() {
         this.isPlaying = false;
-        this.activeSounds.forEach(source => {
-            if (source.stop) source.stop();
-        });
-        this.activeSounds.clear();
+        // Call parent stop method to handle common cleanup
+        super.stop();
     }
     
+    /**
+     * Plays a single burst or a rapid sequence of arrows
+     * Overrides parent method to implement burst behavior
+     */
     playBurst() {
-        // For bow and arrow, a burst is essentially the same as a single play
-        // but we can add multiple arrows in rapid succession for special cases
+        // For bow and arrow, a burst is essentially multiple arrows in rapid succession
         const burstCount = this.params.bowType === 'crossbow' ? 3 : 1;
         const delayBetween = this.params.bowType === 'crossbow' ? 0.15 : 0.3;
+        
+        // Calculate total duration for timeout cleanup
+        const totalDuration = (burstCount * delayBetween) + 1; // Add 1 second for the sound to complete
         
         for (let i = 0; i < burstCount; i++) {
             setTimeout(() => {
@@ -50,12 +71,29 @@ export class BowSound {
                 this.createImpactSound(currentTime + 0.5 + (this.params.drawStrength * 0.1));
             }, i * delayBetween * 1000);
         }
+        
+        // Set a timeout to clean up after all sounds have likely completed
+        this.timeout = setTimeout(() => {
+            // Only clear active nodes, don't reset isPlaying as this is a one-shot
+            this.activeNodes.forEach(node => {
+                if (typeof node.stop === 'function') {
+                    try {
+                        node.stop();
+                    } catch (e) {
+                        // Ignore if node is already stopped
+                    }
+                }
+                node.disconnect();
+            });
+            this.activeNodes.clear();
+            this.timeout = null;
+        }, totalDuration * 1000);
     }
     
-    updateParams(newParams) {
-        this.params = { ...this.params, ...newParams };
-    }
-    
+    /**
+     * Creates the bow string twang sound
+     * @param {number} startTime - The audio context time to start the sound
+     */
     createBowStringSound(startTime) {
         // String twang sound - mostly a short, dampened sine wave
         const stringOsc = this.audioCtx.createOscillator();
@@ -113,24 +151,31 @@ export class BowSound {
             clickFilter.Q.value = 5;
             
             clickNoise.connect(clickFilter).connect(clickGain).connect(this.masterGain);
-            this.activeSounds.add(clickNoise);
+            // Add to active nodes for proper tracking
+            this.addActiveNode(clickNoise);
         }
         
         stringOsc.connect(waveshaper).connect(stringGain).connect(this.masterGain);
         stringOsc.start(startTime);
         stringOsc.stop(startTime + decayTime);
         
-        this.activeSounds.add(stringOsc);
-        stringOsc.onended = () => this.activeSounds.delete(stringOsc);
+        // Add to active nodes using the parent class method
+        this.addActiveNode(stringOsc);
     }
     
+    /**
+     * Creates the arrow flight sound
+     * @param {number} startTime - The audio context time to start the sound
+     */
     createArrowFlightSound(startTime) {
         // Arrow whoosh sound - noise filtered to give a swooshing quality
         const drawFactor = this.params.drawStrength / 4; // 0-1 normalized
         const duration = 0.3 + (drawFactor * 0.4); // 0.3-0.7s depending on draw strength
         
-        // Create noise source
-        const noise = this.createNoiseNode(duration + 0.1); // Add slight buffer
+        // Create noise source using parent's noise buffer creation method
+        const noiseBuffer = this.createNoiseBuffer(duration + 0.1);
+        const noise = this.audioCtx.createBufferSource();
+        noise.buffer = noiseBuffer;
         
         // Create bandpass filter for whoosh effect
         const filter = this.audioCtx.createBiquadFilter();
@@ -151,8 +196,8 @@ export class BowSound {
         whooshGain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
         
         noise.connect(filter).connect(whooshGain).connect(this.masterGain);
-        this.activeSounds.add(noise);
-        noise.onended = () => this.activeSounds.delete(noise);
+        this.addActiveNode(noise);
+        noise.start(startTime);
         
         // Add specific characteristics based on arrow type
         if (this.params.arrowType === 'metal') {
@@ -164,9 +209,17 @@ export class BowSound {
         }
     }
     
+    /**
+     * Adds metal arrow sound effects
+     * @param {number} startTime - The audio context time to start the sound
+     * @param {number} duration - Duration of the sound effect
+     */
     addMetalArrowSound(startTime, duration) {
         // Metal arrows have a higher pitched, more cutting sound
-        const metalNoise = this.createNoiseNode(duration);
+        const noiseBuffer = this.createNoiseBuffer(duration);
+        const metalNoise = this.audioCtx.createBufferSource();
+        metalNoise.buffer = noiseBuffer;
+        
         const metalFilter = this.audioCtx.createBiquadFilter();
         metalFilter.type = "highpass";
         metalFilter.frequency.value = 5000;
@@ -177,13 +230,20 @@ export class BowSound {
         metalGain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
         
         metalNoise.connect(metalFilter).connect(metalGain).connect(this.masterGain);
-        this.activeSounds.add(metalNoise);
-        metalNoise.onended = () => this.activeSounds.delete(metalNoise);
+        this.addActiveNode(metalNoise);
+        metalNoise.start(startTime);
     }
     
+    /**
+     * Adds flaming arrow sound effects
+     * @param {number} startTime - The audio context time to start the sound
+     * @param {number} duration - Duration of the sound effect
+     */
     addFlamingSoundEffect(startTime, duration) {
         // Crackling fire sounds with filtered noise and random amplitude modulation
-        const fireNoise = this.createNoiseNode(duration + 0.5);
+        const fireNoiseBuffer = this.createNoiseBuffer(duration + 0.5);
+        const fireNoise = this.audioCtx.createBufferSource();
+        fireNoise.buffer = fireNoiseBuffer;
         
         // Bandpass filter for fire sound
         const fireFilter = this.audioCtx.createBiquadFilter();
@@ -210,7 +270,10 @@ export class BowSound {
         fireGain.gain.exponentialRampToValueAtTime(0.001, startTime + duration + 0.5);
         
         // Additional highpass filtered noise for sizzling
-        const sizzleNoise = this.createNoiseNode(duration + 0.5);
+        const sizzleNoiseBuffer = this.createNoiseBuffer(duration + 0.5);
+        const sizzleNoise = this.audioCtx.createBufferSource();
+        sizzleNoise.buffer = sizzleNoiseBuffer;
+        
         const sizzleFilter = this.audioCtx.createBiquadFilter();
         sizzleFilter.type = "highpass";
         sizzleFilter.frequency.value = 6000;
@@ -223,12 +286,18 @@ export class BowSound {
         fireNoise.connect(fireFilter).connect(fireGain).connect(this.masterGain);
         sizzleNoise.connect(sizzleFilter).connect(sizzleGain).connect(this.masterGain);
         
-        this.activeSounds.add(fireNoise);
-        this.activeSounds.add(sizzleNoise);
-        fireNoise.onended = () => this.activeSounds.delete(fireNoise);
-        sizzleNoise.onended = () => this.activeSounds.delete(sizzleNoise);
+        this.addActiveNode(fireNoise);
+        this.addActiveNode(sizzleNoise);
+        
+        fireNoise.start(startTime);
+        sizzleNoise.start(startTime);
     }
     
+    /**
+     * Adds magical arrow sound effects
+     * @param {number} startTime - The audio context time to start the sound
+     * @param {number} duration - Duration of the sound effect
+     */
     addMagicalSoundEffect(startTime, duration) {
         // Magical shimmer/sparkle effects with high frequency oscillators
         const numSparkles = 15 + Math.floor(this.params.drawStrength * 5); // 15-35 sparkles
@@ -259,10 +328,8 @@ export class BowSound {
         baseOsc.start(startTime);
         baseOsc.stop(startTime + duration + 0.3);
         
-        this.activeSounds.add(lfo);
-        this.activeSounds.add(baseOsc);
-        lfo.onended = () => this.activeSounds.delete(lfo);
-        baseOsc.onended = () => this.activeSounds.delete(baseOsc);
+        this.addActiveNode(lfo);
+        this.addActiveNode(baseOsc);
         
         // Add random sparkle sounds
         for (let i = 0; i < numSparkles; i++) {
@@ -284,18 +351,23 @@ export class BowSound {
             sparkleOsc.start(sparkleTime);
             sparkleOsc.stop(sparkleTime + 0.1);
             
-            this.activeSounds.add(sparkleOsc);
-            sparkleOsc.onended = () => this.activeSounds.delete(sparkleOsc);
+            this.addActiveNode(sparkleOsc);
         }
     }
     
+    /**
+     * Creates the impact sound when the arrow hits a target
+     * @param {number} startTime - The audio context time to start the sound
+     */
     createImpactSound(startTime) {
         // Base impact parameters
         const impactDuration = 0.2;
         const impactVolume = 0.1 + (this.params.drawStrength * 0.05); // 0.1-0.3
         
         // Create a short thud sound with filtered noise
-        const impactNoise = this.createNoiseNode(impactDuration);
+        const impactNoiseBuffer = this.createNoiseBuffer(impactDuration);
+        const impactNoise = this.audioCtx.createBufferSource();
+        impactNoise.buffer = impactNoiseBuffer;
         
         // Filter for impact sound
         const impactFilter = this.audioCtx.createBiquadFilter();
@@ -310,8 +382,8 @@ export class BowSound {
         impactGain.gain.exponentialRampToValueAtTime(0.001, startTime + impactDuration);
         
         impactNoise.connect(impactFilter).connect(impactGain).connect(this.masterGain);
-        this.activeSounds.add(impactNoise);
-        impactNoise.onended = () => this.activeSounds.delete(impactNoise);
+        this.addActiveNode(impactNoise);
+        impactNoise.start(startTime);
         
         // Add specific impact characteristics based on arrow type
         switch(this.params.arrowType) {
@@ -327,6 +399,10 @@ export class BowSound {
         }
     }
     
+    /**
+     * Creates a metal impact sound
+     * @param {number} startTime - The audio context time to start the sound
+     */
     createMetalImpactSound(startTime) {
         const metalImpactOsc = this.audioCtx.createOscillator();
         metalImpactOsc.type = "triangle";
@@ -356,15 +432,19 @@ export class BowSound {
         ringingOsc.start(startTime + 0.01);
         ringingOsc.stop(startTime + 0.3);
         
-        this.activeSounds.add(metalImpactOsc);
-        this.activeSounds.add(ringingOsc);
-        metalImpactOsc.onended = () => this.activeSounds.delete(metalImpactOsc);
-        ringingOsc.onended = () => this.activeSounds.delete(ringingOsc);
+        this.addActiveNode(metalImpactOsc);
+        this.addActiveNode(ringingOsc);
     }
     
+    /**
+     * Creates a flaming impact sound
+     * @param {number} startTime - The audio context time to start the sound
+     */
     createFlamingImpactSound(startTime) {
         // Fire burst effect
-        const burstNoise = this.createNoiseNode(0.5);
+        const burstNoiseBuffer = this.createNoiseBuffer(0.5);
+        const burstNoise = this.audioCtx.createBufferSource();
+        burstNoise.buffer = burstNoiseBuffer;
         
         const burstFilter = this.audioCtx.createBiquadFilter();
         burstFilter.type = "bandpass";
@@ -377,13 +457,15 @@ export class BowSound {
         burstGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
         
         burstNoise.connect(burstFilter).connect(burstGain).connect(this.masterGain);
-        this.activeSounds.add(burstNoise);
-        burstNoise.onended = () => this.activeSounds.delete(burstNoise);
+        this.addActiveNode(burstNoise);
+        burstNoise.start(startTime);
         
         // Add some fire crackles after impact
         for (let i = 0; i < 10; i++) {
             const crackleTime = startTime + 0.1 + (Math.random() * 0.4);
-            const crackleNoise = this.createNoiseNode(0.1);
+            const crackleNoiseBuffer = this.createNoiseBuffer(0.1);
+            const crackleNoise = this.audioCtx.createBufferSource();
+            crackleNoise.buffer = crackleNoiseBuffer;
             
             const crackleFilter = this.audioCtx.createBiquadFilter();
             crackleFilter.type = "bandpass";
@@ -396,11 +478,15 @@ export class BowSound {
             crackleGain.gain.exponentialRampToValueAtTime(0.001, crackleTime + 0.1);
             
             crackleNoise.connect(crackleFilter).connect(crackleGain).connect(this.masterGain);
-            this.activeSounds.add(crackleNoise);
-            crackleNoise.onended = () => this.activeSounds.delete(crackleNoise);
+            this.addActiveNode(crackleNoise);
+            crackleNoise.start(crackleTime);
         }
     }
     
+    /**
+     * Creates a magical impact sound
+     * @param {number} startTime - The audio context time to start the sound
+     */
     createMagicalImpactSound(startTime) {
         // Magical explosion
         const magicExplosionOsc = this.audioCtx.createOscillator();
@@ -438,29 +524,23 @@ export class BowSound {
             chimeOsc.start(chimeTime);
             chimeOsc.stop(chimeTime + 0.3);
             
-            this.activeSounds.add(chimeOsc);
-            chimeOsc.onended = () => this.activeSounds.delete(chimeOsc);
+            this.addActiveNode(chimeOsc);
         }
         
         magicExplosionOsc.connect(explosionGain).connect(this.masterGain);
         magicExplosionOsc.start(startTime);
         magicExplosionOsc.stop(startTime + 0.3);
         
-        this.activeSounds.add(magicExplosionOsc);
-        magicExplosionOsc.onended = () => this.activeSounds.delete(magicExplosionOsc);
+        this.addActiveNode(magicExplosionOsc);
     }
     
-    // Utility function to create basic white noise
+    /**
+     * Creates a noise source node
+     * @param {number} duration - Duration of the noise in seconds
+     * @returns {AudioBufferSourceNode} - The noise source node
+     */
     createNoiseNode(duration) {
-        const bufferSize = this.audioCtx.sampleRate * duration;
-        const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        
-        // Fill with white noise
-        for (let i = 0; i < bufferSize; i++) {
-            data[i] = Math.random() * 2 - 1;
-        }
-        
+        const buffer = this.createNoiseBuffer(duration);
         const noise = this.audioCtx.createBufferSource();
         noise.buffer = buffer;
         noise.start(this.audioCtx.currentTime);
@@ -468,6 +548,11 @@ export class BowSound {
         return noise;
     }
     
+    /**
+     * Creates a distortion curve for the waveshaper
+     * @param {number} amount - Amount of distortion
+     * @returns {Float32Array} - The distortion curve
+     */
     createDistortionCurve(amount) {
         const samples = 44100;
         const curve = new Float32Array(samples);
@@ -481,6 +566,12 @@ export class BowSound {
         return curve;
     }
     
+    /**
+     * Creates a simple reverb convolver node
+     * @param {number} duration - Duration of the impulse response
+     * @param {number} decay - Decay rate of the impulse response
+     * @returns {ConvolverNode} - The convolver node with the impulse response
+     */
     createSimpleReverb(duration, decay) {
         // Create a simple reverb using a convolver node
         const sampleRate = this.audioCtx.sampleRate;

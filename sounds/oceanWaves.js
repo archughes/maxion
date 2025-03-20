@@ -1,21 +1,31 @@
-export class OceanWavesSound {
-    constructor(audioCtx, masterGain, whiteNoiseBuffer, params) {
-        this.audioCtx = audioCtx;
-        this.masterGain = masterGain;
-        this.whiteNoiseBuffer = whiteNoiseBuffer;
-        this.params = {
+// oceanWaves.js
+import { SoundGenerator } from './SoundGenerator.js';
+
+export class OceanWavesSound extends SoundGenerator {
+    /**
+     * Constructor for ocean waves sound effect generator
+     * @param {AudioContext} audioCtx - The Web Audio API AudioContext
+     * @param {GainNode} masterGain - The master gain node to connect sounds to
+     * @param {AudioBuffer} whiteNoiseBuffer - Pre-created white noise buffer
+     * @param {Object} params - Configuration parameters for wave sounds
+     */
+    constructor(audioCtx, masterGain, whiteNoiseBuffer, params = {}) {
+        // Initialize parent with base properties
+        super(audioCtx, masterGain, {
             waveIntensity: params.waveIntensity || 0,
             waveFrequency: params.waveFrequency || 0
-        };
+        });
+        
+        this.whiteNoiseBuffer = whiteNoiseBuffer;
         this.waveSource = null;
         this.waveGain = null;
         this.filter = null;
         this.isPlaying = false;
-        this.cycleTimeout = null;
     }
 
     start() {
         if (this.params.waveIntensity <= 0 || this.isPlaying) return;
+        
         this.waveSource = this.audioCtx.createBufferSource();
         this.waveSource.buffer = this.whiteNoiseBuffer;
         this.waveSource.loop = true;
@@ -29,22 +39,23 @@ export class OceanWavesSound {
 
         this.waveSource.connect(this.filter).connect(this.waveGain).connect(this.masterGain);
         this.waveSource.start();
+        
+        // Add all active nodes to the tracking system
+        this.addActiveNode(this.waveSource);
+        this.addActiveNode(this.filter);
+        this.addActiveNode(this.waveGain);
+        
         this.isPlaying = true;
         this.scheduleWaveCycle();
     }
 
     stop() {
-        if (this.waveSource) {
-            this.waveSource.stop();
-            this.waveSource = null;
-            this.filter = null;
-            this.waveGain = null;
-            this.isPlaying = false;
-        }
-        if (this.cycleTimeout) {
-            clearTimeout(this.cycleTimeout);
-            this.cycleTimeout = null;
-        }
+        // Use the parent's stop method which handles node disconnection
+        super.stop();
+        this.isPlaying = false;
+        this.waveSource = null;
+        this.filter = null;
+        this.waveGain = null;
     }
 
     scheduleWaveCycle() {
@@ -100,16 +111,19 @@ export class OceanWavesSound {
             this.filter.frequency.linearRampToValueAtTime(lowFreq, t2);
             this.waveGain.gain.setValueAtTime(0, tEnd);
         }
+        
         const delay = (now + period - this.audioCtx.currentTime) * 1000;
-        this.cycleTimeout = setTimeout(() => this.scheduleWaveCycle(), delay);
+        // Use the parent's timeout tracking
+        this.timeout = setTimeout(() => this.scheduleWaveCycle(), delay);
     }
 
+    // Use parent's updateParams with additional logic
     updateParams(newParams) {
-        this.params = { ...this.params, ...newParams };
+        super.updateParams(newParams);
         if (this.isPlaying) {
             if (this.params.waveIntensity <= 0) {
                 this.stop();
-            } else {
+            } else if (this.filter && this.waveGain) {
                 this.filter.frequency.value = 200 + this.params.waveFrequency * 50;
                 this.waveGain.gain.value = 0;
             }
@@ -119,7 +133,9 @@ export class OceanWavesSound {
     }
 
     playBurst() {
+        // Start with a wave cycle that will play for 5 seconds
         this.start();
-        setTimeout(() => this.stop(), 5000);
+        // Set timeout to stop after one complete wave cycle (approx. 8-12s)
+        this.timeout = setTimeout(() => this.stop(), 10000); // Use average wave cycle time
     }
 }

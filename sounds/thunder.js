@@ -1,18 +1,30 @@
-export class ThunderSound {
-    constructor(audioCtx, masterGain, whiteNoiseBuffer, params) {
-        this.audioCtx = audioCtx;
-        this.masterGain = masterGain;
-        this.whiteNoiseBuffer = whiteNoiseBuffer;
-        this.params = {
+import { SoundGenerator } from './SoundGenerator.js';
+
+export class ThunderSound extends SoundGenerator {
+    /**
+     * Constructor for ThunderSound, extending SoundGenerator.
+     * @param {AudioContext} audioCtx - The Web Audio API AudioContext for sound generation.
+     * @param {GainNode} masterGain - The master gain node to connect sounds to.
+     * @param {AudioBuffer} whiteNoiseBuffer - Pre-generated white noise buffer.
+     * @param {Object} params - Configuration parameters specific to thunder sounds.
+     */
+    constructor(audioCtx, masterGain, whiteNoiseBuffer, params = {}) {
+        // Pass common parameters to parent class
+        super(audioCtx, masterGain, {
             thunderFreq: params.thunderFreq || 2,
             thunderDistance: params.thunderDistance || 3
-        };
-        this.thunderTimeout = null;
-        this.activeSources = new Set();
+        });
+        
+        // Store thunder-specific properties
+        this.whiteNoiseBuffer = whiteNoiseBuffer;
     }
 
-    startContinuous() {
-        if (this.params.thunderFreq <= 0 || this.thunderTimeout) return;
+    /**
+     * Starts continuous thunder sounds at random intervals.
+     * Overrides the parent's start method.
+     */
+    start() {
+        if (this.params.thunderFreq <= 0 || this.timeout) return;
 
         const scheduleAheadTime = 10;
         let lastScheduledTime = this.audioCtx.currentTime;
@@ -24,22 +36,45 @@ export class ThunderSound {
                 lastScheduledTime += deltaT;
                 this.scheduleThunder(lastScheduledTime);
             }
-            this.thunderTimeout = setTimeout(scheduler, 30000);
+            this.timeout = setTimeout(scheduler, 30000);
         };
         scheduler();
     }
 
-    stopContinuous() {
-        if (this.thunderTimeout) {
-            clearTimeout(this.thunderTimeout);
-            this.thunderTimeout = null;
-        }
-        this.activeSources.forEach(source => source.stop());
-        this.activeSources.clear();
+    /**
+     * Stops continuous thunder sounds.
+     * Uses parent's stop method to clean up resources.
+     */
+    stop() {
+        super.stop(); // Call parent's stop method to clear timeout and disconnect nodes
     }
 
-    updateParams(newParams) {
-        this.params = { ...this.params, ...newParams };
+    /**
+     * Plays a single instance of thunder.
+     * Overrides the parent's playBurst method.
+     */
+    playBurst() {
+        if (this.params.thunderFreq <= 0) return;
+        const startTime = this.audioCtx.currentTime;
+        this.scheduleThunder(startTime);
+        
+        // Set a reasonable timeout to clean up resources after the sound finishes
+        // Thunder with echoes can last up to ~5-6 seconds
+        const burstDuration = 6000; // 6 seconds in milliseconds
+        this.timeout = setTimeout(() => {
+            // Only clear active nodes, not the timeout itself
+            this.activeNodes.forEach(node => {
+                if (typeof node.stop === 'function') {
+                    try {
+                        node.stop();
+                    } catch (e) {
+                        // Ignore if node is already stopped
+                    }
+                }
+                node.disconnect();
+            });
+            this.activeNodes.clear();
+        }, burstDuration);
     }
 
     /**
@@ -51,6 +86,7 @@ export class ThunderSound {
         // Create a common gain node for all thunder components
         const thunderGain = this.audioCtx.createGain();
         thunderGain.connect(this.masterGain);
+        this.addActiveNode(thunderGain);
 
         this.scheduleThunderIsolated(startTime, thunderGain);
         this.fractalThunder(startTime, thunderGain);
@@ -86,8 +122,9 @@ export class ThunderSound {
         rumbleGainNode.gain.exponentialRampToValueAtTime(0.001, startTime + rumbleDuration);
 
         rumbleSource.start(startTime, Math.random() * this.whiteNoiseBuffer.duration, rumbleDuration);
-        this.activeSources.add(rumbleSource);
-        rumbleSource.onended = () => this.activeSources.delete(rumbleSource);
+        this.addActiveNode(rumbleSource);
+        this.addActiveNode(rumbleFilter);
+        this.addActiveNode(rumbleGainNode);
 
         // Crack for close thunder (distance < 1)
         if (this.params.thunderDistance < 1) {
@@ -106,8 +143,9 @@ export class ThunderSound {
             crackGainNode.gain.exponentialRampToValueAtTime(0.001, startTime + crackDuration);
 
             crackSource.start(startTime, Math.random() * this.whiteNoiseBuffer.duration, crackDuration);
-            this.activeSources.add(crackSource);
-            crackSource.onended = () => this.activeSources.delete(crackSource);
+            this.addActiveNode(crackSource);
+            this.addActiveNode(crackFilter);
+            this.addActiveNode(crackGainNode);
         }
     }
 
@@ -144,8 +182,9 @@ export class ThunderSound {
             fractalCrackGainNode.gain.exponentialRampToValueAtTime(0.001, crackStart + fractalCrackDuration);
 
             fractalCrackSource.start(crackStart, Math.random() * this.whiteNoiseBuffer.duration, fractalCrackDuration);
-            this.activeSources.add(fractalCrackSource);
-            fractalCrackSource.onended = () => this.activeSources.delete(fractalCrackSource);
+            this.addActiveNode(fractalCrackSource);
+            this.addActiveNode(fractalCrackFilter);
+            this.addActiveNode(fractalCrackGainNode);
 
             // Rumbling body for fractal crack
             const crackRumbleSource = this.audioCtx.createBufferSource();
@@ -162,8 +201,9 @@ export class ThunderSound {
             crackRumbleGainNode.gain.exponentialRampToValueAtTime(0.001, crackStart + crackRumbleDuration);
 
             crackRumbleSource.start(crackStart, Math.random() * this.whiteNoiseBuffer.duration, crackRumbleDuration);
-            this.activeSources.add(crackRumbleSource);
-            crackRumbleSource.onended = () => this.activeSources.delete(crackRumbleSource);
+            this.addActiveNode(crackRumbleSource);
+            this.addActiveNode(crackRumbleFilter);
+            this.addActiveNode(crackRumbleGainNode);
         }
     }
 
@@ -199,12 +239,11 @@ export class ThunderSound {
             echoFilter.connect(echoDelay);
             echoDelay.connect(echoGainNode);
             echoGainNode.connect(this.masterGain);
+            
+            // Track active nodes for cleanup
+            this.addActiveNode(echoFilter);
+            this.addActiveNode(echoDelay);
+            this.addActiveNode(echoGainNode);
         }
-    }
-
-    playBurst() {
-        if (this.params.thunderFreq <= 0) return;
-        const startTime = this.audioCtx.currentTime;
-        this.scheduleThunder(startTime);
     }
 }

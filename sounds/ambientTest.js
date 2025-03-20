@@ -110,7 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
             name: 'River',
             params: [
                 { id: 'riverFlow', label: 'River Flow', min: 0, max: 4, step: 1, default: 0 },
-                { id: 'riverDepth', label: 'River Depth', min: 0, max: 4, step: 1, default: 1 }
+                { id: 'riverDepth', label: 'River Depth', min: 0, max: 4, step: 1, default: 1 },
+                { id: 'riverSpeed', label: 'River Speed', min: 0, max: 4, step: 1, default: 1 }
             ],
             playMethod: 'playRiverManual',
             duration: 3000
@@ -164,9 +165,21 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             name: 'Berry',
             params: [
-                { id: 'berryType', label: 'Berry Type', min: 0, max: 4, step: 1, default: 2 },
                 { id: 'berryRipeness', label: 'Berry Ripeness', min: 0, max: 4, step: 1, default: 2 },
                 { id: 'berryQuantity', label: 'Berry Quantity', min: 0, max: 4, step: 1, default: 2 }
+            ],
+            selects: [
+                {
+                    id: 'berryType',
+                    label: 'Berry Type',
+                    options: [
+                        { value: 'bush', label: 'Bush', selected: true },
+                        { value: 'tree', label: 'Tree' },
+                        { value: 'vine', label: 'Vine' },
+                        { value: 'cactus', label: 'Cactus' },
+                        { value: 'shrub', label: 'Shrub' }
+                    ]
+                }
             ],
             playMethod: 'playBerryManual',
             duration: 2000
@@ -587,27 +600,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const value = parseInt(e.target.getAttribute('data-value'));
             currentConfig[param] = value;
             updateConfigDisplay();
-            
+        
             await ambientManager.updateParams({ [param]: value });
-            
-            // Find the corresponding module to determine play method and duration
+        
             const moduleName = e.target.getAttribute('data-module');
             const module = soundModules.find(m => m.name === moduleName);
-            
+        
             if (module && module.playMethod) {
-                const soundId = `${param}-${value}-${Date.now()}`;
-                ambientManager.activeManualSounds.add(soundId);
-                ambientManager.startVisualizations();
-                
-                // Call the appropriate play method
-                if (typeof ambientManager[module.playMethod] === 'function') {
-                    await ambientManager[module.playMethod]();
-                }
-                
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, module.duration);
+                await ambientManager.playManualByType(module.playMethod);
             }
         }
         
@@ -620,19 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Apply current config before playing
                 await ambientManager.updateParams(currentConfig);
                 
-                const soundId = `${moduleName}-${Date.now()}`;
-                ambientManager.activeManualSounds.add(soundId);
-                ambientManager.startVisualizations();
-                
-                // Call the appropriate play method
-                if (typeof ambientManager[module.playMethod] === 'function') {
-                    await ambientManager[module.playMethod]();
-                }
-                
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, module.duration);
+                await ambientManager.playManualByType(module.playMethod);
             }
         }
         
@@ -645,19 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Apply current config before playing
                 await ambientManager.updateParams(currentConfig);
                 
-                const soundId = `${moduleName}-manual-${Date.now()}`;
-                ambientManager.activeManualSounds.add(soundId);
-                ambientManager.startVisualizations();
-                
-                // Call the appropriate play method
-                if (typeof ambientManager[module.playMethod] === 'function') {
-                    await ambientManager[module.playMethod]();
-                }
-                
-                setTimeout(() => {
-                    ambientManager.activeManualSounds.delete(soundId);
-                    ambientManager.checkVisualizationState();
-                }, module.duration);
+                await ambientManager.playManualByType(module.playMethod);
             }
         }
         

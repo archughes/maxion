@@ -1,370 +1,244 @@
-// treeChoppingSound.js
-export class TreeChopSound {
-    constructor(audioCtx, masterGain, params) {
-        this.audioCtx = audioCtx;
-        this.masterGain = masterGain;
-        this.params = {
-            chopTreeSize: params.chopTreeSize || 2,       // Size of tree (0-4): sapling to massive
-            chopTool: params.chopTool || 2,       // Type of tool (0-4): stone axe to chainsaw
-            chopIntensity: params.chopIntensity || 2  // Force of chop (0-4): gentle to powerful
-        };
-        this.activeNodes = new Set();
-        this.isChopping = false;
+import { SoundGenerator } from './SoundGenerator.js';
+
+export class TreeChopSound extends SoundGenerator {
+    constructor(audioCtx, masterGain, params = {}) {
+        super(audioCtx, masterGain, {
+            chopIntensity: params.chopIntensity || 2, // 0-4 scale for force of chop
+            chopTool: params.chopTool || 'axe',       // 'axe', 'hatchet', 'saw'
+            woodType: params.woodType || 'oak'        // 'oak', 'pine', 'birch'
+        });
+        this.isPlaying = false;
         this.chopInterval = null;
-        this.chainsawNodes = null;
     }
 
     start() {
-        if (this.isChopping) return;
-        
-        this.isChopping = true;
-        
-        // Calculate chop interval based on tool type and chop intensity
-        const interval = 1000 + (4 - this.params.chopIntensity) * 500 - this.params.chopTool * 100;
-        
-        // For chainsaw, start the motor sound
-        if (Math.round(this.params.chopTool) === 4) {
-            this._startChainsawSound();
-        }
-        
+        if (this.isPlaying) return;
+        this.isPlaying = true;
+
+        // Base interval decreases with intensity (faster chopping)
+        const intervalTime = 1.5 - (this.params.chopIntensity * 0.25);
+
         const scheduleChop = () => {
-            this.playBurst();
-            this.chopInterval = setTimeout(scheduleChop, interval);
+            this.playChop();
+            this.chopInterval = setTimeout(scheduleChop, intervalTime * 1000);
         };
-        
+
         scheduleChop();
     }
-    
+
     stop() {
+        if (!this.isPlaying) return;
+        this.isPlaying = false;
+
         if (this.chopInterval) {
             clearTimeout(this.chopInterval);
             this.chopInterval = null;
         }
-        
-        this.isChopping = false;
-        
-        // Stop chainsaw sound if running
-        if (this.chainsawNodes) {
-            this.chainsawNodes.forEach(node => {
-                if (node.stop) node.stop();
-            });
-            this.chainsawNodes = null;
-        }
-        
-        this.activeNodes.forEach(node => {
-            if (node.stop) node.stop();
-        });
-        this.activeNodes.clear();
+
+        super.stop(); // Inherited cleanup of active nodes
     }
-    
+
     playBurst() {
+        const chopCount = 2 + Math.floor(this.params.chopIntensity * 0.5); // 2-4 chops
         const currentTime = this.audioCtx.currentTime;
-        console.log(`Chopping tree with ${this.params.chopTreeSize} size, ${this.params.chopTool} tool, and ${this.params.chopIntensity} intensity.`);
-        
-        // Initial impact sound
-        this._createImpactSound(currentTime);
-        
-        // Tree resonance
-        this._createResonanceSound(currentTime + 0.01);
-        
-        // Add wood splintering for high intensity chops
-        if (this.params.chopIntensity > 2) {
-            this._createSplinterSound(currentTime + 0.05);
+        const baseInterval = 0.8 - (this.params.chopIntensity * 0.15); // Faster with intensity
+
+        for (let i = 0; i < chopCount; i++) {
+            const chopTime = currentTime + (i * baseInterval);
+            this.playChop(chopTime);
         }
-        
-        // Leaf rustling for larger trees
-        if (this.params.chopTreeSize > 1) {
-            this._createLeafRustleSound(currentTime + 0.1);
+        // Timeout based on last chop + max sound duration (saw with resonance: ~1.2s)
+        this.timeout = setTimeout(() => this.stop(), (chopCount * baseInterval + 1.2) * 1000);
+    }
+
+    playChop(startTime = this.audioCtx.currentTime) {
+        switch (this.params.chopTool) {
+            case 'axe':
+                this.createAxeChop(startTime);
+                break;
+            case 'hatchet':
+                this.createHatchetChop(startTime);
+                break;
+            case 'saw':
+                this.createSawChop(startTime);
+                break;
+            default:
+                this.createAxeChop(startTime);
         }
     }
-    
-    _createImpactSound(startTime) {
-        // Impact noise burst 
-        const noiseBuffer = this._createNoiseBuffer(0.1);
-        const noise = this.audioCtx.createBufferSource();
-        noise.buffer = noiseBuffer;
-        
-        // Impact envelope - sharper attack for higher intensity chops
+
+    createAxeChop(startTime) {
+        // Impact sound (blade hitting wood)
+        const impact = this.audioCtx.createOscillator();
+        impact.type = 'triangle';
+        impact.frequency.value = 100 + (this.params.chopIntensity * 20);
+
         const impactGain = this.audioCtx.createGain();
+        const impactVolume = 0.2 + (this.params.chopIntensity * 0.1);
         impactGain.gain.setValueAtTime(0, startTime);
-        impactGain.gain.linearRampToValueAtTime(0.2 + this.params.chopIntensity * 0.15, startTime + 0.005);
-        impactGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.05 + this.params.chopIntensity * 0.02);
+        impactGain.gain.linearRampToValueAtTime(impactVolume, startTime + 0.01);
+        impactGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.15);
+
+        impact.connect(impactGain).connect(this.masterGain);
+        impact.start(startTime);
+        impact.stop(startTime + 0.15);
+        this.addActiveNode(impact);
+
+        // Wood cracking noise
+        const crackNoise = this.audioCtx.createBufferSource();
+        crackNoise.buffer = this.createNoiseBuffer(0.3);
         
-        // Tool-specific filtering
-        const impactFilter = this.audioCtx.createBiquadFilter();
-        impactFilter.type = 'bandpass';
-        
-        // Different tools have different spectral characteristics
-        switch(Math.round(this.params.chopTool)) {
-            case 0: // Stone axe - duller sound
-                impactFilter.frequency.value = 500;
-                impactFilter.Q.value = 0.5;
-                break;
-            case 1: // Basic axe
-                impactFilter.frequency.value = 800;
-                impactFilter.Q.value = 0.7;
-                break;
-            case 2: // Steel axe
-                impactFilter.frequency.value = 1200;
-                impactFilter.Q.value = 1;
-                break;
-            case 3: // Sharp axe
-                impactFilter.frequency.value = 1500;
-                impactFilter.Q.value = 1.5;
-                break;
-            case 4: // Chainsaw/power tool - higher frequencies
-                impactFilter.frequency.value = 2000;
-                impactFilter.Q.value = 2;
-                break;
-        }
-        
-        noise.connect(impactFilter).connect(impactGain).connect(this.masterGain);
-        noise.start(startTime);
-        noise.stop(startTime + 0.1);
-        this.activeNodes.add(noise);
-        noise.onended = () => this.activeNodes.delete(noise);
-        
-        // Metallic "clang" for metal tools (toolType > 1)
-        if (this.params.chopTool > 1) {
-            const clang = this.audioCtx.createOscillator();
-            clang.type = 'triangle';
-            clang.frequency.setValueAtTime(2000 + this.params.chopTool * 500, startTime);
-            clang.frequency.exponentialRampToValueAtTime(1000, startTime + 0.05);
-            
-            const clangGain = this.audioCtx.createGain();
-            clangGain.gain.setValueAtTime(0, startTime);
-            clangGain.gain.linearRampToValueAtTime(0.05 + this.params.chopTool * 0.02, startTime + 0.002);
-            clangGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.05);
-            
-            clang.connect(clangGain).connect(this.masterGain);
-            clang.start(startTime);
-            clang.stop(startTime + 0.05);
-            this.activeNodes.add(clang);
-            clang.onended = () => this.activeNodes.delete(clang);
-        }
+        const crackFilter = this.audioCtx.createBiquadFilter();
+        crackFilter.type = 'bandpass';
+        crackFilter.frequency.value = this.getWoodFrequency() * 2;
+        crackFilter.Q.value = 5;
+
+        const crackGain = this.audioCtx.createGain();
+        const crackVolume = 0.1 + (this.params.chopIntensity * 0.05);
+        crackGain.gain.setValueAtTime(0, startTime + 0.02);
+        crackGain.gain.linearRampToValueAtTime(crackVolume, startTime + 0.05);
+        crackGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+
+        crackNoise.connect(crackFilter).connect(crackGain).connect(this.masterGain);
+        crackNoise.start(startTime + 0.02);
+        crackNoise.stop(startTime + 0.3);
+        this.addActiveNode(crackNoise);
+
+        // Resonance based on wood type
+        const resonance = this.audioCtx.createOscillator();
+        resonance.type = 'sine';
+        resonance.frequency.value = this.getWoodFrequency();
+
+        const resonanceGain = this.audioCtx.createGain();
+        const resonanceVolume = 0.05 + (this.params.chopIntensity * 0.03);
+        resonanceGain.gain.setValueAtTime(0, startTime + 0.05);
+        resonanceGain.gain.linearRampToValueAtTime(resonanceVolume, startTime + 0.1);
+        resonanceGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.4);
+
+        resonance.connect(resonanceGain).connect(this.masterGain);
+        resonance.start(startTime + 0.05);
+        resonance.stop(startTime + 0.4);
+        this.addActiveNode(resonance);
     }
-    
-    _createResonanceSound(startTime) {
-        // Tree "thunk" resonance depends on tree size
-        const thunk = this.audioCtx.createOscillator();
-        thunk.type = 'sine';
-        
-        // Larger trees have lower resonant frequencies
-        const baseFreq = 200 - this.params.chopTreeSize * 30;
-        thunk.frequency.value = baseFreq;
-        
-        // Resonance envelope
-        const thunkGain = this.audioCtx.createGain();
-        thunkGain.gain.setValueAtTime(0, startTime);
-        thunkGain.gain.linearRampToValueAtTime(0.15 + this.params.chopTreeSize * 0.1, startTime + 0.01);
-        
-        // Larger trees resonate longer
-        const decayTime = 0.1 + this.params.chopTreeSize * 0.1;
-        thunkGain.gain.exponentialRampToValueAtTime(0.001, startTime + decayTime);
-        
-        thunk.connect(thunkGain).connect(this.masterGain);
-        thunk.start(startTime);
-        thunk.stop(startTime + decayTime);
-        this.activeNodes.add(thunk);
-        thunk.onended = () => this.activeNodes.delete(thunk);
-        
-        // Additional lower resonances for larger trees
-        if (this.params.chopTreeSize > 2) {
-            const lowThunk = this.audioCtx.createOscillator();
-            lowThunk.type = 'sine';
-            lowThunk.frequency.value = baseFreq * 0.5;
-            
-            const lowGain = this.audioCtx.createGain();
-            lowGain.gain.setValueAtTime(0, startTime);
-            lowGain.gain.linearRampToValueAtTime(0.1, startTime + 0.02);
-            lowGain.gain.exponentialRampToValueAtTime(0.001, startTime + decayTime * 1.5);
-            
-            lowThunk.connect(lowGain).connect(this.masterGain);
-            lowThunk.start(startTime);
-            lowThunk.stop(startTime + decayTime * 1.5);
-            this.activeNodes.add(lowThunk);
-            lowThunk.onended = () => this.activeNodes.delete(lowThunk);
-        }
+
+    createHatchetChop(startTime) {
+        // Lighter impact sound (smaller blade)
+        const impact = this.audioCtx.createOscillator();
+        impact.type = 'triangle';
+        impact.frequency.value = 120 + (this.params.chopIntensity * 25);
+
+        const impactGain = this.audioCtx.createGain();
+        const impactVolume = 0.15 + (this.params.chopIntensity * 0.08);
+        impactGain.gain.setValueAtTime(0, startTime);
+        impactGain.gain.linearRampToValueAtTime(impactVolume, startTime + 0.008);
+        impactGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.12);
+
+        impact.connect(impactGain).connect(this.masterGain);
+        impact.start(startTime);
+        impact.stop(startTime + 0.12);
+        this.addActiveNode(impact);
+
+        // Sharper crack noise
+        const crackNoise = this.audioCtx.createBufferSource();
+        crackNoise.buffer = this.createNoiseBuffer(0.25);
+
+        const crackFilter = this.audioCtx.createBiquadFilter();
+        crackFilter.type = 'bandpass';
+        crackFilter.frequency.value = this.getWoodFrequency() * 2.5;
+        crackFilter.Q.value = 8;
+
+        const crackGain = this.audioCtx.createGain();
+        const crackVolume = 0.12 + (this.params.chopIntensity * 0.06);
+        crackGain.gain.setValueAtTime(0, startTime + 0.01);
+        crackGain.gain.linearRampToValueAtTime(crackVolume, startTime + 0.04);
+        crackGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.25);
+
+        crackNoise.connect(crackFilter).connect(crackGain).connect(this.masterGain);
+        crackNoise.start(startTime + 0.01);
+        crackNoise.stop(startTime + 0.25);
+        this.addActiveNode(crackNoise);
+
+        // Subtle resonance
+        const resonance = this.audioCtx.createOscillator();
+        resonance.type = 'sine';
+        resonance.frequency.value = this.getWoodFrequency() * 1.2;
+
+        const resonanceGain = this.audioCtx.createGain();
+        const resonanceVolume = 0.04 + (this.params.chopIntensity * 0.02);
+        resonanceGain.gain.setValueAtTime(0, startTime + 0.03);
+        resonanceGain.gain.linearRampToValueAtTime(resonanceVolume, startTime + 0.08);
+        resonanceGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+
+        resonance.connect(resonanceGain).connect(this.masterGain);
+        resonance.start(startTime + 0.03);
+        resonance.stop(startTime + 0.3);
+        this.addActiveNode(resonance);
     }
-    
-    _createSplinterSound(startTime) {
-        // Wood splintering - series of short cracks
-        const numCracks = 1 + Math.floor(this.params.chopIntensity);
-        
-        for (let i = 0; i < numCracks; i++) {
-            const crackTime = startTime + i * 0.03 * Math.random();
-            const crackDuration = 0.02 + Math.random() * 0.03;
-            
-            // White noise filtered to sound like wood cracking
-            const noiseBuffer = this._createNoiseBuffer(crackDuration);
-            const noise = this.audioCtx.createBufferSource();
-            noise.buffer = noiseBuffer;
-            
-            const filter = this.audioCtx.createBiquadFilter();
-            filter.type = 'bandpass';
-            filter.frequency.value = 2000 + Math.random() * 2000;
-            filter.Q.value = 5 + Math.random() * 5;
-            
-            const crackGain = this.audioCtx.createGain();
-            crackGain.gain.setValueAtTime(0, crackTime);
-            crackGain.gain.linearRampToValueAtTime(0.05 + Math.random() * 0.1, crackTime + 0.005);
-            crackGain.gain.exponentialRampToValueAtTime(0.001, crackTime + crackDuration);
-            
-            noise.connect(filter).connect(crackGain).connect(this.masterGain);
-            noise.start(crackTime);
-            noise.stop(crackTime + crackDuration);
-            this.activeNodes.add(noise);
-            noise.onended = () => this.activeNodes.delete(noise);
-        }
+
+    createSawChop(startTime) {
+        // Sawing sound (continuous grating)
+        const sawNoise = this.audioCtx.createBufferSource();
+        sawNoise.buffer = this.createNoiseBuffer(0.8);
+
+        const sawFilter = this.audioCtx.createBiquadFilter();
+        sawFilter.type = 'bandpass';
+        sawFilter.frequency.value = this.getWoodFrequency() * 3;
+        sawFilter.Q.value = 10;
+
+        const sawGain = this.audioCtx.createGain();
+        const sawVolume = 0.1 + (this.params.chopIntensity * 0.07);
+        sawGain.gain.setValueAtTime(0, startTime);
+        sawGain.gain.linearRampToValueAtTime(sawVolume, startTime + 0.1);
+        sawGain.gain.linearRampToValueAtTime(sawVolume * 0.8, startTime + 0.6);
+        sawGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8);
+
+        sawNoise.connect(sawFilter).connect(sawGain).connect(this.masterGain);
+        sawNoise.start(startTime);
+        sawNoise.stop(startTime + 0.8);
+        this.addActiveNode(sawNoise);
+
+        // Saw blade resonance
+        const blade = this.audioCtx.createOscillator();
+        blade.type = 'sawtooth';
+        blade.frequency.value = 800 + (this.params.chopIntensity * 200);
+
+        const bladeGain = this.audioCtx.createGain();
+        const bladeVolume = 0.05 + (this.params.chopIntensity * 0.03);
+        bladeGain.gain.setValueAtTime(0, startTime);
+        bladeGain.gain.linearRampToValueAtTime(bladeVolume, startTime + 0.05);
+        bladeGain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.0);
+
+        blade.connect(bladeGain).connect(this.masterGain);
+        blade.start(startTime);
+        blade.stop(startTime + 1.0);
+        this.addActiveNode(blade);
+
+        // Wood stress sound
+        const stress = this.audioCtx.createOscillator();
+        stress.type = 'sine';
+        stress.frequency.value = this.getWoodFrequency();
+
+        const stressGain = this.audioCtx.createGain();
+        const stressVolume = 0.06 + (this.params.chopIntensity * 0.04);
+        stressGain.gain.setValueAtTime(0, startTime + 0.2);
+        stressGain.gain.linearRampToValueAtTime(stressVolume, startTime + 0.4);
+        stressGain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.2);
+
+        stress.connect(stressGain).connect(this.masterGain);
+        stress.start(startTime + 0.2);
+        stress.stop(startTime + 1.2);
+        this.addActiveNode(stress);
     }
-    
-    _createLeafRustleSound(startTime) {
-        // Implementation of leaf rustling for larger trees
-        // Uses filtered noise with gentle envelope
-        // Intensity and duration scale with tree size
-        
-        const rustleDuration = 0.3 + this.params.chopTreeSize * 0.1;
-        const rustleIntensity = 0.01 + this.params.chopTreeSize * 0.01; // Subtle sound
-        
-        // Create noise for rustling
-        const noiseBuffer = this._createNoiseBuffer(rustleDuration);
-        const noise = this.audioCtx.createBufferSource();
-        noise.buffer = noiseBuffer;
-        
-        // Highpass filter to focus on higher frequencies (leaves are light)
-        const highpassFilter = this.audioCtx.createBiquadFilter();
-        highpassFilter.type = 'highpass';
-        highpassFilter.frequency.value = 3000;
-        
-        // Bandpass filter to shape the leaf sound
-        const bandpassFilter = this.audioCtx.createBiquadFilter();
-        bandpassFilter.type = 'bandpass';
-        bandpassFilter.frequency.value = 5000 + Math.random() * 2000;
-        bandpassFilter.Q.value = 1;
-        
-        // Envelope for gentle rustling
-        const rustleGain = this.audioCtx.createGain();
-        rustleGain.gain.setValueAtTime(0, startTime);
-        rustleGain.gain.linearRampToValueAtTime(rustleIntensity, startTime + 0.05);
-        rustleGain.gain.exponentialRampToValueAtTime(0.001, startTime + rustleDuration);
-        
-        // Connect the audio graph
-        noise.connect(highpassFilter)
-             .connect(bandpassFilter)
-             .connect(rustleGain)
-             .connect(this.masterGain);
-        
-        noise.start(startTime);
-        noise.stop(startTime + rustleDuration);
-        this.activeNodes.add(noise);
-        noise.onended = () => this.activeNodes.delete(noise);
-        
-        // Create multiple rustling sounds for larger trees
-        if (this.params.chopTreeSize > 2) {
-            const numRustles = Math.floor(this.params.chopTreeSize) - 1;
-            
-            for (let i = 0; i < numRustles; i++) {
-                const rustleTime = startTime + Math.random() * 0.2;
-                const rustleDur = 0.2 + Math.random() * 0.3;
-                
-                const rustleNoise = this.audioCtx.createBufferSource();
-                rustleNoise.buffer = this._createNoiseBuffer(rustleDur);
-                
-                const rustleFilter = this.audioCtx.createBiquadFilter();
-                rustleFilter.type = 'bandpass';
-                rustleFilter.frequency.value = 4000 + Math.random() * 3000;
-                rustleFilter.Q.value = 1 + Math.random();
-                
-                const additionalGain = this.audioCtx.createGain();
-                additionalGain.gain.setValueAtTime(0, rustleTime);
-                additionalGain.gain.linearRampToValueAtTime(rustleIntensity * 0.7, rustleTime + 0.05);
-                additionalGain.gain.exponentialRampToValueAtTime(0.001, rustleTime + rustleDur);
-                
-                rustleNoise.connect(rustleFilter).connect(additionalGain).connect(this.masterGain);
-                rustleNoise.start(rustleTime);
-                rustleNoise.stop(rustleTime + rustleDur);
-                this.activeNodes.add(rustleNoise);
-                rustleNoise.onended = () => this.activeNodes.delete(rustleNoise);
-            }
-        }
-    }
-    
-    _startChainsawSound() {
-        if (this.chainsawNodes) return;
-        
-        this.chainsawNodes = new Set();
-        const currentTime = this.audioCtx.currentTime;
-        
-        // Basic motor noise - continuous
-        const motorNoiseBuffer = this._createNoiseBuffer(2.0); // 2-second buffer that will loop
-        const motorNoise = this.audioCtx.createBufferSource();
-        motorNoise.buffer = motorNoiseBuffer;
-        motorNoise.loop = true;
-        
-        // Motor body resonance - filtered noise
-        const motorFilter = this.audioCtx.createBiquadFilter();
-        motorFilter.type = 'bandpass';
-        motorFilter.frequency.value = 250;
-        motorFilter.Q.value = 5;
-        
-        // Engine revving effect using LFO
-        const revLFO = this.audioCtx.createOscillator();
-        revLFO.type = 'sawtooth';
-        revLFO.frequency.value = 0.8 + this.params.chopIntensity * 0.2; // Faster revving with higher intensity
-        
-        const revGain = this.audioCtx.createGain();
-        revGain.gain.value = 50; // LFO intensity
-        
-        // Secondary filter for high-frequency chainsaw sound
-        const bladeFilter = this.audioCtx.createBiquadFilter();
-        bladeFilter.type = 'bandpass';
-        bladeFilter.frequency.value = 2500;
-        bladeFilter.Q.value = 8;
-        
-        // Modulate the blade filter frequency with the LFO
-        revLFO.connect(revGain);
-        revGain.connect(bladeFilter.frequency);
-        
-        // Main motor gain
-        const motorGain = this.audioCtx.createGain();
-        motorGain.gain.value = 0.1 + this.params.chopIntensity * 0.03;
-        
-        // Connect the motor noise
-        motorNoise.connect(motorFilter).connect(motorGain).connect(this.masterGain);
-        motorNoise.connect(bladeFilter).connect(motorGain).connect(this.masterGain);
-        
-        // Start all the nodes
-        motorNoise.start(currentTime);
-        revLFO.start(currentTime);
-        
-        // Add to the chainsaw nodes set for later cleanup
-        this.chainsawNodes.add(motorNoise);
-        this.chainsawNodes.add(revLFO);
-    }
-    
-    _createNoiseBuffer(duration) {
-        const bufferSize = this.audioCtx.sampleRate * duration;
-        const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
-        const output = buffer.getChannelData(0);
-        
-        for (let i = 0; i < bufferSize; i++) {
-            output[i] = Math.random() * 2 - 1;
-        }
-        
-        return buffer;
-    }
-    
-    updateParams(newParams) {
-        const oldToolType = Math.round(this.params.chopTool);
-        this.params = { ...this.params, ...newParams };
-        const newToolType = Math.round(this.params.chopTool);
-        
-        // If we're switching to or from chainsaw and already chopping,
-        // restart to apply the chainsaw sound correctly
-        if (this.isChopping && ((oldToolType === 4 && newToolType !== 4) || 
-                               (oldToolType !== 4 && newToolType === 4))) {
-            this.stop();
-            this.start();
-        }
+
+    getWoodFrequency() {
+        // Base frequency varies by wood type
+        const woodFreqs = {
+            'oak': 200,   // Dense, low resonance
+            'pine': 300,  // Softer, higher pitch
+            'birch': 250  // Medium density
+        };
+        const baseFreq = woodFreqs[this.params.woodType] || 200;
+        const variation = 0.95 + (Math.random() * 0.1);
+        return baseFreq * variation;
     }
 }

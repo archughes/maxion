@@ -1,21 +1,33 @@
-export class RainSound {
-    constructor(audioCtx, masterGain, whiteNoiseBuffer, params) {
-        this.audioCtx = audioCtx;
-        this.masterGain = masterGain;
-        this.whiteNoiseBuffer = whiteNoiseBuffer;
-        this.params = {
+// rain.js
+import { SoundGenerator } from './SoundGenerator.js';
+
+export class RainSound extends SoundGenerator {
+    /**
+     * Constructor for rain sound generator
+     * @param {AudioContext} audioCtx - The Web Audio API AudioContext
+     * @param {GainNode} masterGain - The master gain node
+     * @param {AudioBuffer} whiteNoiseBuffer - Pre-created white noise buffer
+     * @param {Object} params - Sound configuration parameters
+     */
+    constructor(audioCtx, masterGain, whiteNoiseBuffer, params = {}) {
+        // Pass common parameters to parent class
+        super(audioCtx, masterGain, {
             rainDensity: params.rainDensity || 0,
             rainSpeed: params.rainSpeed || 0,
             raindropSize: params.raindropSize || 0,
             surfaceType: params.surfaceType || 'metal'
-        };
-        this.rainTimeout = null;
-        this.activeSources = new Set();
+        });
+        
+        this.whiteNoiseBuffer = whiteNoiseBuffer;
         this.waterNodes = new Set();
     }
 
-    startContinuous() {
-        if (this.params.rainDensity <= 0 || this.params.rainSpeed <= 0 || this.params.raindropSize <= 0 || this.rainTimeout) return;
+    /**
+     * Starts the continuous rain sound
+     */
+    start() {
+        if (this.params.rainDensity <= 0 || this.params.rainSpeed <= 0 || 
+            this.params.raindropSize <= 0 || this.timeout) return;
 
         const scheduleInterval = 2000;
         const burstDuration = 2;
@@ -27,29 +39,30 @@ export class RainSound {
                 const dropTime = currentTime + Math.random() * burstDuration;
                 this.scheduleRaindrop(dropTime);
             }
-            this.rainTimeout = setTimeout(scheduler, scheduleInterval);
+            this.timeout = setTimeout(scheduler, scheduleInterval);
         };
         scheduler();
     }
 
-    stopContinuous() {
-        if (this.rainTimeout) {
-            clearTimeout(this.rainTimeout);
-            this.rainTimeout = null;
-        }
-        this.activeSources.forEach(source => source.stop());
+    /**
+     * Stops the rain sound and cleans up resources
+     */
+    stop() {
+        // Stop parent class audio nodes
+        super.stop();
+        
+        // Clean up water nodes
         this.waterNodes.forEach(node => {
             if (node instanceof GainNode) node.gain.setValueAtTime(0, this.audioCtx.currentTime);
             node.disconnect();
         });
-        this.activeSources.clear();
         this.waterNodes.clear();
     }
 
-    updateParams(newParams) {
-        this.params = { ...this.params, ...newParams };
-    }
-
+    /**
+     * Schedules a single raindrop sound
+     * @param {number} startTime - When to start the raindrop sound
+     */
     scheduleRaindrop(startTime) {
         const source = this.audioCtx.createBufferSource();
         source.buffer = this.whiteNoiseBuffer;
@@ -93,11 +106,15 @@ export class RainSound {
                 wetGain.connect(this.masterGain);
                 gain.connect(this.masterGain);
 
+                // Add water effect nodes to waterNodes set
                 this.waterNodes.add(delay);
                 this.waterNodes.add(feedback);
                 this.waterNodes.add(wetGain);
+                
+                // Add source to activeNodes for tracking
+                this.addActiveNode(source);
                 source.onended = () => {
-                    this.activeSources.delete(source);
+                    this.activeNodes.delete(source);
                     this.waterNodes.delete(delay);
                     this.waterNodes.delete(feedback);
                     this.waterNodes.delete(wetGain);
@@ -128,26 +145,56 @@ export class RainSound {
                 decayTime = 0.02;
         }
 
+        // Adjust decay time based on rain speed
         decayTime *= (1 - (this.params.rainSpeed / 4) * 0.5);
-        source.connect(filter).connect(gain).connect(this.masterGain);
+        
+        // Standard connection for most surface types
+        if (this.params.surfaceType !== 'water') {
+            source.connect(filter).connect(gain).connect(this.masterGain);
+        }
+        
         const attackTime = 0.005;
         gain.gain.setValueAtTime(0, startTime);
         gain.gain.linearRampToValueAtTime(amplitude, startTime + attackTime);
         gain.gain.exponentialRampToValueAtTime(0.001, startTime + decayTime);
         const offset = Math.random() * this.whiteNoiseBuffer.duration;
         source.start(startTime, offset, decayTime);
-        this.activeSources.add(source);
-        source.onended = () => this.activeSources.delete(source);
+        
+        // Add to activeNodes for tracking (if not water type, which is handled separately)
+        if (this.params.surfaceType !== 'water') {
+            this.addActiveNode(source);
+        }
     }
 
+    /**
+     * Updates parameters with new values
+     * @param {Object} newParams - New parameters to apply
+     */
+    updateParams(newParams) {
+        // Use parent class method for updating parameters
+        super.updateParams(newParams);
+    }
+
+    /**
+     * Plays a short burst of rain drops
+     */
     playBurst() {
         if (this.params.rainDensity <= 0 || this.params.rainSpeed <= 0 || this.params.raindropSize <= 0) return;
+        
         const burstDuration = 2;
         const currentTime = this.audioCtx.currentTime;
         const numDrops = Math.floor(this.params.rainDensity * 10);
+        
         for (let i = 0; i < numDrops; i++) {
             const dropTime = currentTime + Math.random() * burstDuration;
             this.scheduleRaindrop(dropTime);
         }
+        
+        // Set timeout for cleanup after the burst duration plus some margin
+        // for the last raindrop sounds to finish
+        this.timeout = setTimeout(() => {
+            // Clear timeout but don't stop active sounds - let them play out naturally
+            this.timeout = null;
+        }, (burstDuration + 1) * 1000);
     }
 }

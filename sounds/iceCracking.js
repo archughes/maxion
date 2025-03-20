@@ -1,19 +1,26 @@
 // iceCracking.js
-export class IceCrackingSound {
-    constructor(audioCtx, masterGain, whiteNoiseBuffer, params) {
-        this.audioCtx = audioCtx;
-        this.masterGain = masterGain;
-        this.whiteNoiseBuffer = whiteNoiseBuffer;
-        this.params = {
+import { SoundGenerator } from './SoundGenerator.js';
+
+export class IceCrackingSound extends SoundGenerator {
+    /**
+     * Constructor for ice cracking sound effect generator
+     * @param {AudioContext} audioCtx - The Web Audio API AudioContext
+     * @param {GainNode} masterGain - The master gain node to connect sounds to
+     * @param {AudioBuffer} whiteNoiseBuffer - Pre-created white noise buffer
+     * @param {Object} params - Configuration parameters for ice sounds
+     */
+    constructor(audioCtx, masterGain, whiteNoiseBuffer, params = {}) {
+        // Initialize parent with base properties
+        super(audioCtx, masterGain, {
             iceIntensity: params.iceIntensity || 0,     // Volume and density (0-4)
             iceFractureRate: params.iceFractureRate || 0 // Frequency of cracks (0-4)
-        };
-        this.activeSources = new Set();
-        this.crackTimeout = null;
+        });
+        
+        this.whiteNoiseBuffer = whiteNoiseBuffer;
     }
 
     start() {
-        if (this.params.iceIntensity <= 0 || this.crackTimeout) return;
+        if (this.params.iceIntensity <= 0 || this.timeout) return;
 
         const scheduleCrack = () => {
             const currentTime = this.audioCtx.currentTime;
@@ -21,20 +28,13 @@ export class IceCrackingSound {
             const nextCrackTime = currentTime + crackInterval * (0.5 + Math.random());
 
             this.scheduleFractalCrack(nextCrackTime);
-            this.crackTimeout = setTimeout(scheduleCrack, crackInterval * 1000);
+            this.timeout = setTimeout(scheduleCrack, crackInterval * 1000);
         };
 
         scheduleCrack();
     }
 
-    stop() {
-        if (this.crackTimeout) {
-            clearTimeout(this.crackTimeout);
-            this.crackTimeout = null;
-        }
-        this.activeSources.forEach(source => source.stop());
-        this.activeSources.clear();
-    }
+    // Using parent's stop() method which now handles clearTimeout and node disconnection
 
     scheduleFractalCrack(startTime) {
         // Primary crack
@@ -51,8 +51,7 @@ export class IceCrackingSound {
 
         primarySource.connect(primaryFilter).connect(primaryGain).connect(this.masterGain);
         primarySource.start(startTime, Math.random() * this.whiteNoiseBuffer.duration, 0.25);
-        this.activeSources.add(primarySource);
-        primarySource.onended = () => this.activeSources.delete(primarySource);
+        this.addActiveNode(primarySource);
 
         // Fractal secondary cracks (60% chance if intensity > 2)
         if (Math.random() < 0.6 && this.params.iceIntensity > 2) {
@@ -70,8 +69,7 @@ export class IceCrackingSound {
 
             secondarySource.connect(secondaryFilter).connect(secondaryGain).connect(this.masterGain);
             secondarySource.start(startTime + secondaryDelay, Math.random() * this.whiteNoiseBuffer.duration, 0.2);
-            this.activeSources.add(secondarySource);
-            secondarySource.onended = () => this.activeSources.delete(secondarySource);
+            this.addActiveNode(secondarySource);
 
             // Fractal tertiary cracks (40% chance of secondary if intensity > 2)
             if (Math.random() < 0.4 && this.params.iceIntensity > 2) {
@@ -89,15 +87,15 @@ export class IceCrackingSound {
 
                 tertiarySource.connect(tertiaryFilter).connect(tertiaryGain).connect(this.masterGain);
                 tertiarySource.start(startTime + tertiaryDelay, Math.random() * this.whiteNoiseBuffer.duration, 0.15);
-                this.activeSources.add(tertiarySource);
-                tertiarySource.onended = () => this.activeSources.delete(tertiarySource);
+                this.addActiveNode(tertiarySource);
             }
         }
     }
 
+    // Using parent's updateParams method with additional logic
     updateParams(newParams) {
-        this.params = { ...this.params, ...newParams };
-        if (this.crackTimeout) {
+        super.updateParams(newParams);
+        if (this.timeout) {
             if (this.params.iceIntensity <= 0) {
                 this.stop();
             }
@@ -114,5 +112,10 @@ export class IceCrackingSound {
             const crackTime = currentTime + Math.random() * burstDuration;
             this.scheduleFractalCrack(crackTime);
         }
+        
+        // Set timeout to clean up after the burst finishes (max duration + buffer)
+        this.timeout = setTimeout(() => {
+            this.stop();
+        }, burstDuration * 1000 + 500); // Add 500ms buffer for any delayed cracks
     }
 }

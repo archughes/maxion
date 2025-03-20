@@ -1,17 +1,23 @@
 // achievementSound.js
-export class AchievementSound {
-    constructor(audioCtx, masterGain, params) {
-        this.audioCtx = audioCtx;
-        this.masterGain = masterGain;
-        this.params = {
+import { SoundGenerator } from './SoundGenerator.js';
+
+export class AchievementSound extends SoundGenerator {
+    constructor(audioCtx, masterGain, params = {}) {
+        // Initialize with default params
+        const achievementParams = {
             achievementType: params.achievementType || 'levelUp', // 'levelUp', 'minorQuest', 'majorQuest'
             achievementImportance: params.achievementImportance || 2, // Significance level (0-4)
-            achievementStyle: params.achievementStyle || 'fantasy' // 'fantasy', 'sci-fi', 'minimal'
+            achievementStyle: params.achievementStyle || 'fantasy', // 'fantasy', 'sci-fi', 'minimal'
+            ...params // Include any other params passed in
         };
-        this.oscillators = [];
-        this.activeSounds = new Set();
+        
+        // Call parent constructor
+        super(audioCtx, masterGain, achievementParams);
+        
+        // No need to store oscillators separately as we'll use activeNodes from parent
     }
 
+    // Override start() from parent
     start() {
         const currentTime = this.audioCtx.currentTime;
         
@@ -25,7 +31,32 @@ export class AchievementSound {
             case 'majorQuest':
                 this.createMajorQuestSound(currentTime);
                 break;
+            default:
+                console.log(`Unknown achievement type: ${this.params.achievementType}`);
         }
+    }
+    
+    // Override playBurst() from parent
+    playBurst() {
+        this.start();
+        
+        // Set timeout based on achievement type and importance for automatic cleanup
+        let duration = 1000; // Default duration in ms
+        
+        switch(this.params.achievementType) {
+            case 'levelUp':
+                duration = 1000 + (this.params.achievementImportance * 300);
+                break;
+            case 'minorQuest':
+                duration = 800 + (this.params.achievementImportance * 200);
+                break;
+            case 'majorQuest':
+                duration = 2000 + (this.params.achievementImportance * 500);
+                break;
+        }
+        
+        // Set a timeout to automatically stop after the sound should be complete
+        this.timeout = setTimeout(() => this.stop(), duration);
     }
     
     createLevelUpSound(startTime) {
@@ -64,9 +95,10 @@ export class AchievementSound {
             osc.connect(gain).connect(this.masterGain);
             osc.start(noteTime);
             osc.stop(noteTime + noteDuration);
-            this.oscillators.push(osc);
-            this.activeSounds.add(osc);
-            osc.onended = () => this.activeSounds.delete(osc);
+            
+            // Use parent class method to track active nodes
+            this.addActiveNode(osc);
+            this.addActiveNode(gain);
             
             // Add harmonics for fantasy style
             if (this.params.achievementStyle === 'fantasy' && this.params.achievementImportance > 2) {
@@ -126,11 +158,11 @@ export class AchievementSound {
         osc2.start(startTime + duration * 0.5);
         osc2.stop(startTime + duration * 1.3);
         
-        this.oscillators.push(osc1, osc2);
-        this.activeSounds.add(osc1);
-        this.activeSounds.add(osc2);
-        osc1.onended = () => this.activeSounds.delete(osc1);
-        osc2.onended = () => this.activeSounds.delete(osc2);
+        // Use parent class method to track active nodes
+        this.addActiveNode(osc1);
+        this.addActiveNode(osc2);
+        this.addActiveNode(gain1);
+        this.addActiveNode(gain2);
         
         // Add a subtle background shimmer for higher importance
         if (this.params.achievementImportance >= 2) {
@@ -174,9 +206,10 @@ export class AchievementSound {
             osc.connect(gain).connect(this.masterGain);
             osc.start(noteTime);
             osc.stop(noteTime + noteDuration);
-            this.oscillators.push(osc);
-            this.activeSounds.add(osc);
-            osc.onended = () => this.activeSounds.delete(osc);
+            
+            // Use parent class method to track active nodes
+            this.addActiveNode(osc);
+            this.addActiveNode(gain);
             
             // Add harmonics for richer sound
             this.addHarmonics(noteTime, freq, noteDuration);
@@ -224,11 +257,11 @@ export class AchievementSound {
         harmonic2.start(startTime);
         harmonic2.stop(startTime + duration);
         
-        this.oscillators.push(harmonic1, harmonic2);
-        this.activeSounds.add(harmonic1);
-        this.activeSounds.add(harmonic2);
-        harmonic1.onended = () => this.activeSounds.delete(harmonic1);
-        harmonic2.onended = () => this.activeSounds.delete(harmonic2);
+        // Use parent class method to track active nodes
+        this.addActiveNode(harmonic1);
+        this.addActiveNode(harmonic2);
+        this.addActiveNode(gain1);
+        this.addActiveNode(gain2);
     }
     
     addFinalNoteShimmer(startTime, freq, duration) {
@@ -255,9 +288,9 @@ export class AchievementSound {
             shimmerOsc.start(shimmerTime);
             shimmerOsc.stop(shimmerTime + shimmerDuration);
             
-            this.oscillators.push(shimmerOsc);
-            this.activeSounds.add(shimmerOsc);
-            shimmerOsc.onended = () => this.activeSounds.delete(shimmerOsc);
+            // Use parent class method to track active nodes
+            this.addActiveNode(shimmerOsc);
+            this.addActiveNode(shimmerGain);
         }
     }
     
@@ -284,9 +317,10 @@ export class AchievementSound {
             osc.connect(gain).connect(this.masterGain);
             osc.start(startTime);
             osc.stop(startTime + duration);
-            this.oscillators.push(osc);
-            this.activeSounds.add(osc);
-            osc.onended = () => this.activeSounds.delete(osc);
+            
+            // Use parent class method to track active nodes
+            this.addActiveNode(osc);
+            this.addActiveNode(gain);
             
             // Add vibrato for extended notes
             if (this.params.achievementImportance >= 3) {
@@ -325,9 +359,9 @@ export class AchievementSound {
             shimmerOsc.start(shimmerTime);
             shimmerOsc.stop(shimmerTime + shimmerDuration);
             
-            this.oscillators.push(shimmerOsc);
-            this.activeSounds.add(shimmerOsc);
-            shimmerOsc.onended = () => this.activeSounds.delete(shimmerOsc);
+            // Use parent class method to track active nodes
+            this.addActiveNode(shimmerOsc);
+            this.addActiveNode(shimmerGain);
         }
     }
     
@@ -351,9 +385,9 @@ export class AchievementSound {
         sweepOsc.start(startTime);
         sweepOsc.stop(startTime + riseDuration);
         
-        this.oscillators.push(sweepOsc);
-        this.activeSounds.add(sweepOsc);
-        sweepOsc.onended = () => this.activeSounds.delete(sweepOsc);
+        // Use parent class method to track active nodes
+        this.addActiveNode(sweepOsc);
+        this.addActiveNode(sweepGain);
         
         // Add supporting notes during the rise
         if (this.params.achievementImportance >= 2) {
@@ -378,9 +412,9 @@ export class AchievementSound {
                 noteOsc.start(noteTime);
                 noteOsc.stop(noteTime + noteInterval);
                 
-                this.oscillators.push(noteOsc);
-                this.activeSounds.add(noteOsc);
-                noteOsc.onended = () => this.activeSounds.delete(noteOsc);
+                // Use parent class method to track active nodes
+                this.addActiveNode(noteOsc);
+                this.addActiveNode(noteGain);
             }
         }
     }
@@ -405,45 +439,11 @@ export class AchievementSound {
         lfo.start(startTime);
         lfo.stop(startTime + duration);
         
-        this.oscillators.push(lfo);
-        this.activeSounds.add(lfo);
-        lfo.onended = () => this.activeSounds.delete(lfo);
+        // Use parent class method to track active nodes
+        this.addActiveNode(lfo);
+        this.addActiveNode(lfoGain);
         
         // Reset frequency after vibrato ends to avoid issues
         oscillator.frequency.setValueAtTime(originalFreq, startTime + duration);
-    }
-    
-    stop() {
-        // Clean up oscillators
-        this.oscillators.forEach(osc => {
-            try {
-                osc.stop();
-                osc.disconnect();
-            } catch (e) {
-                // Ignore if already stopped
-            }
-        });
-        this.activeSounds.forEach(sound => {
-            try {
-                sound.stop();
-                sound.disconnect();
-            } catch (e) {
-                // Ignore if already stopped
-            }
-        });
-        this.oscillators = [];
-        this.activeSounds.clear();
-    }
-    
-    playBurst() {
-        // For achievement sounds, playBurst is essentially the same as play
-        // since these are one-shot sounds already
-        console.log(this.params);
-        this.start();
-    }
-    
-    updateParams(newParams) {
-        // Update parameters
-        this.params = { ...this.params, ...newParams };
     }
 }

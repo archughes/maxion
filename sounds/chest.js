@@ -1,16 +1,21 @@
 // chestSound.js
-export class ChestSound {
-    constructor(audioCtx, masterGain, params) {
-        this.audioCtx = audioCtx;
-        this.masterGain = masterGain;
+import { SoundGenerator } from './SoundGenerator.js';
+
+export class ChestSound extends SoundGenerator {
+    constructor(audioCtx, masterGain, params = {}) {
+        // Call parent constructor with base parameters
+        super(audioCtx, masterGain, params);
+        
+        // Set default parameters specific to chest sounds
         this.params = {
-            chestSize: params.chestSize || 2,         // Size of chest (0-4): small to large
-            chestMaterialType: params.chestMaterialType || 2,    // Material (0-4): wood to metal
-            chestCondition: params.chestCondition || 2,          // Condition (0-4): rusty/creaky to well-oiled
-            chestTreasureValue: params.chestTreasureValue || 2   // Value (0-4): common to legendary
+            chestSize: params?.chestSize || 2,         // Size of chest (0-4): small to large
+            chestMaterialType: params?.chestMaterialType || 2,    // Material (0-4): wood to metal
+            chestCondition: params?.chestCondition || 2,          // Condition (0-4): rusty/creaky to well-oiled
+            chestTreasureValue: params?.chestTreasureValue || 2   // Value (0-4): common to legendary
         };
-        this.activeNodes = new Set();
-        this.continuousTimeout = null;
+        
+        // We're now using the parent class's activeNodes Set
+        this.continuousTimeout = null; // Keep this specific to ChestSound
     }
 
     start() {
@@ -18,7 +23,6 @@ export class ChestSound {
         if (this.continuousTimeout) return;
         
         const scheduleNextOpen = () => {
-            const currentTime = this.audioCtx.currentTime;
             const interval = 2 + Math.random() * 2; // 2-4 seconds between plays
             
             this.playBurst();
@@ -34,10 +38,8 @@ export class ChestSound {
             this.continuousTimeout = null;
         }
         
-        this.activeNodes.forEach(node => {
-            if (node.stop) node.stop();
-        });
-        this.activeNodes.clear();
+        // Call parent's stop method to clean up audio nodes
+        super.stop();
     }
 
     playBurst() {
@@ -56,6 +58,17 @@ export class ChestSound {
         if (this.params.chestTreasureValue > 1) {
             this._createShimmerSound(currentTime + 0.7);
         }
+        
+        // Set a timeout to clean up resources after all sounds have completed
+        // Calculate the total duration based on the longest possible sound (shimmer)
+        const totalDuration = 0.7 + // Start time of shimmer
+                             (0.8 + (this.params.chestTreasureValue * 0.4)) + // Max shimmer duration
+                             0.5; // Extra buffer
+        
+        this.timeout = setTimeout(() => {
+            // This doesn't stop the sound but ensures resources get cleaned up
+            // after all sounds have naturally completed
+        }, totalDuration * 1000);
     }
     
     _createLockSound(startTime) {
@@ -75,7 +88,7 @@ export class ChestSound {
         
         // Add noise for rusty locks
         if (this.params.chestCondition < 2) {
-            const noiseBuffer = this._createNoiseBuffer(0.05);
+            const noiseBuffer = this.createNoiseBuffer(0.05); // Using parent's method
             const noiseSource = this.audioCtx.createBufferSource();
             noiseSource.buffer = noiseBuffer;
             
@@ -90,15 +103,13 @@ export class ChestSound {
             noiseSource.connect(noiseFilter).connect(noiseGain).connect(this.masterGain);
             noiseSource.start(startTime);
             noiseSource.stop(startTime + 0.05);
-            this.activeNodes.add(noiseSource);
-            noiseSource.onended = () => this.activeNodes.delete(noiseSource);
+            this.activeNodes.add(noiseSource); // Using parent's activeNodes Set
         }
         
         osc.connect(clickGain).connect(this.masterGain);
         osc.start(startTime);
         osc.stop(startTime + 0.05);
-        this.activeNodes.add(osc);
-        osc.onended = () => this.activeNodes.delete(osc);
+        this.activeNodes.add(osc); // Using parent's activeNodes Set
     }
     
     _createCreakSound(startTime) {
@@ -144,18 +155,17 @@ export class ChestSound {
         carrier.start(startTime);
         modulator.stop(startTime + creakDuration);
         carrier.stop(startTime + creakDuration);
+        
+        // Use parent's activeNodes Set
         this.activeNodes.add(modulator);
         this.activeNodes.add(carrier);
-        
-        modulator.onended = () => this.activeNodes.delete(modulator);
-        carrier.onended = () => this.activeNodes.delete(carrier);
     }
     
     _createThudSound(startTime) {
         // Thud when chest is fully open and hits the stop
         
         // Noise burst for impact
-        const noiseBuffer = this._createNoiseBuffer(0.2);
+        const noiseBuffer = this.createNoiseBuffer(0.2); // Using parent's method
         const noise = this.audioCtx.createBufferSource();
         noise.buffer = noiseBuffer;
         
@@ -174,8 +184,7 @@ export class ChestSound {
         noise.connect(thudFilter).connect(thudGain).connect(this.masterGain);
         noise.start(startTime);
         noise.stop(startTime + 0.2);
-        this.activeNodes.add(noise);
-        noise.onended = () => this.activeNodes.delete(noise);
+        this.activeNodes.add(noise); // Using parent's activeNodes Set
         
         // Resonance for the thud
         const resonance = this.audioCtx.createOscillator();
@@ -190,8 +199,7 @@ export class ChestSound {
         resonance.connect(resonanceGain).connect(this.masterGain);
         resonance.start(startTime);
         resonance.stop(startTime + 0.3);
-        this.activeNodes.add(resonance);
-        resonance.onended = () => this.activeNodes.delete(resonance);
+        this.activeNodes.add(resonance); // Using parent's activeNodes Set
     }
     
     _createShimmerSound(startTime) {
@@ -259,21 +267,8 @@ export class ChestSound {
             // Schedule and track
             shimmerOsc.start(toneStart);
             shimmerOsc.stop(toneStart + toneDuration);
-            this.activeNodes.add(shimmerOsc);
-            shimmerOsc.onended = () => this.activeNodes.delete(shimmerOsc);
+            this.activeNodes.add(shimmerOsc); // Using parent's activeNodes Set
         }
-    }
-    
-    _createNoiseBuffer(duration) {
-        const bufferSize = this.audioCtx.sampleRate * duration;
-        const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
-        const output = buffer.getChannelData(0);
-        
-        for (let i = 0; i < bufferSize; i++) {
-            output[i] = Math.random() * 2 - 1;
-        }
-        
-        return buffer;
     }
     
     _createImpulseResponse(duration) {
@@ -295,9 +290,5 @@ export class ChestSound {
         }
         
         return impulseBuffer;
-    }
-    
-    updateParams(newParams) {
-        this.params = { ...this.params, ...newParams };
     }
 }

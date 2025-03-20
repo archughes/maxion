@@ -1,13 +1,23 @@
-// wind.js
-export class WindSound {
-    constructor(audioCtx, masterGain, whiteNoiseBuffer, params) {
-        this.audioCtx = audioCtx;
-        this.masterGain = masterGain;
-        this.whiteNoiseBuffer = whiteNoiseBuffer;
-        this.params = {
+import { SoundGenerator } from './SoundGenerator.js';
+
+export class WindSound extends SoundGenerator {
+    /**
+     * Creates a wind sound generator with variable intensity and turbulence.
+     * @param {AudioContext} audioCtx - The Web Audio API AudioContext.
+     * @param {GainNode} masterGain - The master gain node to connect sounds to.
+     * @param {AudioBuffer} whiteNoiseBuffer - Pre-generated white noise buffer.
+     * @param {Object} params - Wind sound configuration parameters.
+     * @param {number} params.windLevel - Wind intensity (0-10 scale).
+     * @param {number} params.windTurbidity - Wind turbulence/variability (0-10 scale).
+     */
+    constructor(audioCtx, masterGain, whiteNoiseBuffer, params = {}) {
+        // Initialize base class with common parameters
+        super(audioCtx, masterGain, {
             windLevel: params.windLevel || 0,
             windTurbidity: params.windTurbidity || 0
-        };
+        });
+        
+        this.whiteNoiseBuffer = whiteNoiseBuffer;
         this.windSource = null;
         this.lfo = null;
         this.amplitudeLfo = null;
@@ -20,6 +30,9 @@ export class WindSound {
         this.activeWhistlers = new Set();
     }
 
+    /**
+     * Starts the wind sound with the current parameter settings.
+     */
     start() {
         if (this.params.windLevel <= 0 || this.windSource) return;
 
@@ -27,14 +40,19 @@ export class WindSound {
         this.windSource = this.audioCtx.createBufferSource();
         this.windSource.buffer = this.whiteNoiseBuffer;
         this.windSource.loop = true;
+        this.addActiveNode(this.windSource); // Track node for automatic cleanup
+        
         const windFilter = this.audioCtx.createBiquadFilter();
         windFilter.type = 'lowpass';
         windFilter.frequency.value = 150;
+        
         this.windGain = this.audioCtx.createGain();
         this.windGain.gain.value = Math.pow(this.params.windLevel / 4, 2);
 
         this.lfo = this.audioCtx.createOscillator();
         this.lfo.type = 'sine';
+        this.addActiveNode(this.lfo); // Track node for automatic cleanup
+        
         const targetFrequency = 0.1 + (this.params.windTurbidity / 4) * (0.9 + Math.random() * 1.5);
         this.lfo.frequency.value = this.previousLfoFrequency;
         this.lfo.frequency.linearRampToValueAtTime(targetFrequency, this.audioCtx.currentTime + 2);
@@ -43,6 +61,8 @@ export class WindSound {
         this.amplitudeLfo = this.audioCtx.createOscillator();
         this.amplitudeLfo.type = 'sine';
         this.amplitudeLfo.frequency.value = this.lfo.frequency.value / (1.0 + 2.0 * Math.random());
+        this.addActiveNode(this.amplitudeLfo); // Track node for automatic cleanup
+        
         this.amplitudeModGain = this.audioCtx.createGain();
         this.amplitudeModGain.gain.value = (this.params.windLevel / 4) * (this.params.windTurbidity / 4) * 0.5;
 
@@ -65,11 +85,12 @@ export class WindSound {
         }
     }
 
+    /**
+     * Stops all wind sounds and cleans up resources.
+     * Overrides parent stop() to handle additional cleanup.
+     */
     stop() {
         if (this.windSource) {
-            this.windSource.stop();
-            this.lfo.stop();
-            this.amplitudeLfo.stop();
             this.windSource = null;
             this.lfo = null;
             this.amplitudeLfo = null;
@@ -77,23 +98,32 @@ export class WindSound {
             this.modulationGain = null;
             this.amplitudeModGain = null;
         }
+        
         if (this.whistleTimeout) {
             clearTimeout(this.whistleTimeout);
             this.whistleTimeout = null;
         }
+        
         this.activeWhistlers.forEach(({ osc, lfo }) => {
             osc.stop();
             if (lfo) lfo.stop();
         });
         this.activeWhistlers.clear();
+        
+        // Call parent class stop() to handle common cleanup
+        super.stop();
     }
 
+    /**
+     * Schedules a random wind whistle effect based on wind parameters.
+     */
     scheduleWhistle() {
         if (this.params.windLevel <= 3 || !this.isPlaying()) return;
 
         const currentTime = this.audioCtx.currentTime;
         const whistleInterval = 2 + (10 - this.params.windLevel) * 0.5; // 2s to 4.5s
         const whistleChance = (this.params.windLevel - 3) / 7; // 0 at 3, 1 at 10
+        
         if (Math.random() < whistleChance) {
             const whistler = this.audioCtx.createOscillator();
             whistler.type = 'sawtooth';
@@ -130,11 +160,18 @@ export class WindSound {
             };
         }
 
-        this.whistleTimeout = setTimeout(() => this.scheduleWhistle(), whistleInterval * 1000);
+        this.timeout = setTimeout(() => this.scheduleWhistle(), whistleInterval * 1000);
+        this.whistleTimeout = this.timeout; // Keep track of both references
     }
 
+    /**
+     * Updates sound parameters with new values.
+     * @param {Object} newParams - New parameters to update.
+     */
     updateParams(newParams) {
-        this.params = { ...this.params, ...newParams };
+        // Call parent updateParams to merge parameters
+        super.updateParams(newParams);
+        
         if (this.windSource) {
             if (this.params.windLevel <= 0) {
                 this.stop();
@@ -151,6 +188,7 @@ export class WindSound {
                 } else if (this.params.windLevel <= 3 && this.whistleTimeout) {
                     clearTimeout(this.whistleTimeout);
                     this.whistleTimeout = null;
+                    this.timeout = null;
                     this.activeWhistlers.forEach(({ osc, lfo }) => {
                         osc.stop();
                         if (lfo) lfo.stop();
@@ -163,11 +201,18 @@ export class WindSound {
         }
     }
 
+    /**
+     * Plays a short burst of wind sound.
+     */
     playBurst() {
         this.start();
-        setTimeout(() => this.stop(), 2000);
+        this.timeout = setTimeout(() => this.stop(), 2000);
     }
 
+    /**
+     * Checks if the wind sound is currently playing.
+     * @returns {boolean} True if the sound is playing.
+     */
     isPlaying() {
         return !!this.windSource;
     }

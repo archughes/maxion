@@ -1,13 +1,22 @@
 // volcanicRumble.js
-export class VolcanicRumbleSound {
-    constructor(audioCtx, masterGain, whiteNoiseBuffer, params) {
-        this.audioCtx = audioCtx;
-        this.masterGain = masterGain;
+import { SoundGenerator } from './SoundGenerator.js';
+
+export class VolcanicRumbleSound extends SoundGenerator {
+    /**
+     * Constructor for volcanic rumble sound generator
+     * @param {AudioContext} audioCtx - The Web Audio API AudioContext
+     * @param {GainNode} masterGain - The master gain node
+     * @param {AudioBuffer} whiteNoiseBuffer - Pre-created white noise buffer
+     * @param {Object} params - Sound configuration parameters
+     */
+    constructor(audioCtx, masterGain, whiteNoiseBuffer, params = {}) {
+        // Pass common parameters to parent class
+        super(audioCtx, masterGain, {
+            rumbleIntensity: params.rumbleIntensity || 0,
+            ventActivity: params.ventActivity || 0
+        });
+        
         this.whiteNoiseBuffer = whiteNoiseBuffer;
-        this.params = {
-            rumbleIntensity: params.rumbleIntensity || 0, 
-            ventActivity: params.ventActivity || 0       
-        };
         this.rumbleSource = null;
         this.rumbleGain = null;
         this.lowpassFilter = null;
@@ -18,6 +27,9 @@ export class VolcanicRumbleSound {
         this.isPlaying = false;
     }
 
+    /**
+     * Starts the continuous volcanic rumble sound
+     */
     start() {
         if (this.params.rumbleIntensity <= 0 || this.isPlaying) return;
 
@@ -46,6 +58,10 @@ export class VolcanicRumbleSound {
         this.modulationGain.connect(this.rumbleGain.gain);
         this.rumbleGain.connect(this.masterGain);
 
+        // Add nodes to activeNodes for tracking
+        this.addActiveNode(this.rumbleSource);
+        this.addActiveNode(this.modulationOsc);
+
         this.modulationOsc.start();
         this.rumbleSource.start();
         this.isPlaying = true;
@@ -56,25 +72,29 @@ export class VolcanicRumbleSound {
         }
     }
 
+    /**
+     * Stops all sounds and cleans up resources
+     */
     stop() {
-        if (this.rumbleSource) {
-            this.rumbleSource.stop();
-            this.modulationOsc.stop();
-            this.rumbleSource = null;
-            this.rumbleGain = null;
-            this.lowpassFilter = null;
-            this.modulationOsc = null;
-            this.modulationGain = null;
-            this.isPlaying = false;
-        }
-        if (this.ventTimeout) {
-            clearTimeout(this.ventTimeout);
-            this.ventTimeout = null;
-        }
-        this.activeVentSources.forEach(source => source.stop());
+        // Stop parent class nodes
+        super.stop();
+        
+        // Reset instance variables
+        this.rumbleSource = null;
+        this.rumbleGain = null;
+        this.lowpassFilter = null;
+        this.modulationOsc = null;
+        this.modulationGain = null;
+        this.isPlaying = false;
+        
+        // Clear vent timeout (already cleared in super.stop() since it sets this.timeout)
+        this.ventTimeout = null;
         this.activeVentSources.clear();
     }
 
+    /**
+     * Schedules vent sounds based on vent activity
+     */
     scheduleVent() {
         if (this.params.ventActivity <= 0 || !this.isPlaying) return;
     
@@ -96,14 +116,27 @@ export class VolcanicRumbleSound {
     
         ventSource.connect(ventFilter).connect(ventGain).connect(this.masterGain);
         ventSource.start(currentTime, Math.random() * this.whiteNoiseBuffer.duration, ventDuration);
+        
+        // Add to active nodes set for tracking
+        this.addActiveNode(ventSource);
         this.activeVentSources.add(ventSource);
-        ventSource.onended = () => this.activeVentSources.delete(ventSource);
+        ventSource.onended = () => {
+            this.activeNodes.delete(ventSource);
+            this.activeVentSources.delete(ventSource);
+        };
     
-        this.ventTimeout = setTimeout(() => this.scheduleVent(), ventInterval * 1000);
+        // Store timeout in parent class timeout property for proper cleanup
+        this.timeout = setTimeout(() => this.scheduleVent(), ventInterval * 1000);
     }
 
+    /**
+     * Updates parameters with real-time changes to sound
+     * @param {Object} newParams - New parameters to apply
+     */
     updateParams(newParams) {
-        this.params = { ...this.params, ...newParams };
+        // Use parent class method for updating parameters
+        super.updateParams(newParams);
+        
         if (this.isPlaying) {
             if (this.params.rumbleIntensity <= 0) {
                 this.stop();
@@ -113,11 +146,11 @@ export class VolcanicRumbleSound {
                 this.modulationOsc.frequency.value = 0.1 + this.params.rumbleIntensity * 0.05;
                 this.modulationGain.gain.value = this.params.rumbleIntensity / 40;
 
-                if (this.params.ventActivity > 0 && !this.ventTimeout) {
+                if (this.params.ventActivity > 0 && !this.timeout) {
                     this.scheduleVent();
-                } else if (this.params.ventActivity <= 0 && this.ventTimeout) {
-                    clearTimeout(this.ventTimeout);
-                    this.ventTimeout = null;
+                } else if (this.params.ventActivity <= 0 && this.timeout) {
+                    clearTimeout(this.timeout);
+                    this.timeout = null;
                     this.activeVentSources.forEach(source => source.stop());
                     this.activeVentSources.clear();
                 }
@@ -127,8 +160,12 @@ export class VolcanicRumbleSound {
         }
     }
 
+    /**
+     * Plays a short burst of the volcanic rumble sound
+     */
     playBurst() {
         this.start();
-        setTimeout(() => this.stop(), 5000); // 5-second burst
+        // Set a 5-second timeout for the burst duration
+        this.timeout = setTimeout(() => this.stop(), 5000);
     }
 }

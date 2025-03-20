@@ -1,126 +1,201 @@
-export class FireSound {
-    constructor(audioCtx, masterGain, whiteNoiseBuffer, params) {
-        this.audioCtx = audioCtx;
-        this.masterGain = masterGain;
-        this.whiteNoiseBuffer = whiteNoiseBuffer;
-        this.params = {
+import { SoundGenerator } from './SoundGenerator.js';
+
+export class FireSound extends SoundGenerator {
+    constructor(audioCtx, masterGain, params = {}) {
+        super(audioCtx, masterGain, {
             fireIntensity: params.fireIntensity || 0,
             fireCrackleRate: params.fireCrackleRate || 0
-        };
-        this.activeSources = new Set();
-        this.crackleTimeout = null;
-        this.rumbleSource = null; // New for rumble
+        });
+        
+        this.whiteNoiseBuffer = this.createNoiseBuffer(2);
+        
+        this.rumbleSource = null;
         this.rumbleFilter = null;
         this.rumbleGain = null;
+        this.rumbleLFO = null;
+        this.rumbleLFOGain = null;
+        this.modulationLFO = null;
     }
 
     start() {
-        if (this.params.fireIntensity <= 0 || this.crackleTimeout) return;
+        if (this.params.fireIntensity <= 0 || this.timeout) return;
 
-        // Start rumble source
-        if (!this.rumbleSource) {
-            this.rumbleSource = this.audioCtx.createBufferSource();
-            this.rumbleSource.buffer = this.whiteNoiseBuffer;
-            this.rumbleSource.loop = true;
-            this.rumbleFilter = this.audioCtx.createBiquadFilter();
-            this.rumbleFilter.type = 'lowpass';
-            this.rumbleFilter.frequency.value = 150; // 100-200 Hz range
-            this.rumbleGain = this.audioCtx.createGain();
-            this.rumbleGain.gain.value = this.params.fireIntensity / 20; // Subtle rumble (0-0.2)
-            this.rumbleSource.connect(this.rumbleFilter)
-                            .connect(this.rumbleGain)
-                            .connect(this.masterGain);
-            this.rumbleSource.start();
-        }
-
+        this.startRumble();
+        
         const scheduleCrackle = () => {
-            const currentTime = this.audioCtx.currentTime;
-            const crackleInterval = 0.1 + (4 - this.params.fireCrackleRate) * 0.4;
-            const nextCrackleTime = currentTime + crackleInterval * (0.5 + Math.random());
-            this.scheduleFractalCrackle(nextCrackleTime);
-            this.crackleTimeout = setTimeout(scheduleCrackle, crackleInterval * 1000);
+            const baseInterval = 0.3 + (5 - this.params.fireCrackleRate) * 0.8;
+            const randomVariance = (Math.random() * 2 - 1) * baseInterval;
+            const crackleInterval = Math.max(0.1, baseInterval + randomVariance);
+            
+            const scheduleDelay = crackleInterval * 1000;
+            this.timeout = setTimeout(() => {
+                if (Math.random() < (0.3 + this.params.fireCrackleRate / 5)) {
+                    this.scheduleFractalCrackle(this.audioCtx.currentTime);
+                }
+                scheduleCrackle();
+            }, scheduleDelay);
         };
+        
         scheduleCrackle();
     }
 
+    startRumble() {
+        this.rumbleSource = this.audioCtx.createBufferSource();
+        this.rumbleSource.buffer = this.whiteNoiseBuffer;
+        this.rumbleSource.loop = true;
+        
+        this.rumbleFilter = this.audioCtx.createBiquadFilter();
+        this.rumbleFilter.type = 'lowpass';
+        this.rumbleFilter.frequency.value = 120;
+        this.rumbleFilter.Q.value = 0.8;
+        
+        this.rumbleGain = this.audioCtx.createGain();
+        this.rumbleGain.gain.value = this.params.fireIntensity / 15;
+        
+        this.rumbleLFO = this.audioCtx.createOscillator();
+        this.rumbleLFO.type = 'sine';
+        this.rumbleLFO.frequency.value = 0.2 + Math.random() * 0.3;
+        
+        this.rumbleLFOGain = this.audioCtx.createGain();
+        this.rumbleLFOGain.gain.value = 30;
+        
+        this.modulationLFO = this.audioCtx.createOscillator();
+        this.modulationLFO.type = 'sine';
+        this.modulationLFO.frequency.value = 0.07 + Math.random() * 0.1;
+        
+        const modulationGain = this.audioCtx.createGain();
+        modulationGain.gain.value = 0.7;
+        
+        this.modulationLFO.connect(modulationGain);
+        modulationGain.connect(this.rumbleLFOGain.gain);
+        
+        this.rumbleLFO.connect(this.rumbleLFOGain);
+        this.rumbleLFOGain.connect(this.rumbleFilter.frequency);
+        
+        this.rumbleSource.connect(this.rumbleFilter);
+        this.rumbleFilter.connect(this.rumbleGain);
+        this.rumbleGain.connect(this.masterGain);
+        
+        this.rumbleLFO.start();
+        this.modulationLFO.start();
+        this.rumbleSource.start();
+        
+        this.addActiveNode(this.rumbleSource);
+        this.addActiveNode(this.rumbleLFO);
+        this.addActiveNode(this.modulationLFO);
+    }
+
     stop() {
-        if (this.crackleTimeout) {
-            clearTimeout(this.crackleTimeout);
-            this.crackleTimeout = null;
-        }
-        this.activeSources.forEach(source => source.stop());
-        this.activeSources.clear();
-        if (this.rumbleSource) {
-            this.rumbleSource.stop();
-            this.rumbleSource = null;
-            this.rumbleFilter = null;
-            this.rumbleGain = null;
-        }
+        super.stop();
     }
 
     scheduleFractalCrackle(startTime) {
-        const isBigPop = Math.random() < 0.1; // 10% chance for big pop
-        const frequencyRange = isBigPop ? [200, 400] : [300, 1500]; // Big pop lower pitch
-        const duration = isBigPop ? 0.3 : 0.15; // Longer for big pop
-        const amplitudeMultiplier = isBigPop ? 1.5 : 1; // Louder for big pop
+        const isBigPop = Math.random() < 0.15;
+        const frequencyBase = isBigPop ? 250 : 800;
+        const frequencyRange = isBigPop ? [250, 600] : [800, 3000];
+        const duration = isBigPop ? 0.3 : 0.08 + Math.random() * 0.07;
+        const amplitudeMultiplier = isBigPop ? 1.5 : 0.7;
 
-        // Primary crackle
+        const randomPitchOffset = ((Math.random() * 2) - 1) * frequencyBase;
+        const actualFrequency = Math.max(
+            frequencyRange[0], 
+            Math.min(frequencyRange[1], frequencyBase + randomPitchOffset)
+        );
+
         const primarySource = this.audioCtx.createBufferSource();
         primarySource.buffer = this.whiteNoiseBuffer;
+        
         const primaryFilter = this.audioCtx.createBiquadFilter();
         primaryFilter.type = 'bandpass';
-        primaryFilter.frequency.value = frequencyRange[0] + Math.random() * (frequencyRange[1] - frequencyRange[0]);
-        primaryFilter.Q.value = 10;
+        primaryFilter.frequency.value = actualFrequency;
+        primaryFilter.Q.value = isBigPop ? 8 : 20;
+        
         const primaryGain = this.audioCtx.createGain();
-        const primaryAmplitude = (this.params.fireIntensity / 4) * (0.5 + Math.random() * 0.5) * amplitudeMultiplier;
-        primaryGain.gain.setValueAtTime(primaryAmplitude, startTime);
+        const primaryAmplitude = Math.max(
+            0.001, // Minimum safe value
+            (this.params.fireIntensity / 4) * (0.3 + Math.random() * 0.7) * amplitudeMultiplier
+        );
+        
+        primaryGain.gain.setValueAtTime(0.001, startTime);
+        primaryGain.gain.exponentialRampToValueAtTime(primaryAmplitude, startTime + 0.005);
         primaryGain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-
+        
         primarySource.connect(primaryFilter).connect(primaryGain).connect(this.masterGain);
-        primarySource.start(startTime, Math.random() * this.whiteNoiseBuffer.duration, duration);
-        this.activeSources.add(primarySource);
-        primarySource.onended = () => this.activeSources.delete(primarySource);
+        primarySource.start(startTime, Math.random() * (this.whiteNoiseBuffer.duration - duration), duration);
+        this.addActiveNode(primarySource);
 
-        // Secondary and tertiary crackles remain similar but adjust frequency ranges
-        if (Math.random() < 0.5 && this.params.fireIntensity > 1) {
-            const secondaryDelay = 0.05 + Math.random() * 0.05;
+        if (Math.random() < 0.6 && this.params.fireIntensity > 1) {
+            const secondaryDelay = 0.01 + Math.random() * 0.03;
             const secondarySource = this.audioCtx.createBufferSource();
             secondarySource.buffer = this.whiteNoiseBuffer;
+            
             const secondaryFilter = this.audioCtx.createBiquadFilter();
             secondaryFilter.type = 'bandpass';
-            secondaryFilter.frequency.value = 400 + Math.random() * 1100; // 400-1500 Hz
-            secondaryFilter.Q.value = 15;
+            secondaryFilter.frequency.value = actualFrequency * (1.5 + Math.random() * 0.5);
+            secondaryFilter.Q.value = 25;
+            
             const secondaryGain = this.audioCtx.createGain();
-            const secondaryAmplitude = primaryAmplitude * 0.7;
-            secondaryGain.gain.setValueAtTime(secondaryAmplitude, startTime + secondaryDelay);
-            secondaryGain.gain.exponentialRampToValueAtTime(0.001, startTime + secondaryDelay + 0.08);
+            const secondaryAmplitude = Math.max(0.001, primaryAmplitude * 0.6);
+            secondaryGain.gain.setValueAtTime(0.001, startTime + secondaryDelay);
+            secondaryGain.gain.exponentialRampToValueAtTime(secondaryAmplitude, startTime + secondaryDelay + 0.003);
+            secondaryGain.gain.exponentialRampToValueAtTime(0.001, startTime + secondaryDelay + 0.05);
 
             secondarySource.connect(secondaryFilter).connect(secondaryGain).connect(this.masterGain);
-            secondarySource.start(startTime + secondaryDelay, Math.random() * this.whiteNoiseBuffer.duration, 0.1);
-            this.activeSources.add(secondarySource);
-            secondarySource.onended = () => this.activeSources.delete(secondarySource);
-            // Tertiary crackle omitted for brevity but follows similar logic
+            secondarySource.start(startTime + secondaryDelay, Math.random() * this.whiteNoiseBuffer.duration, 0.06);
+            this.addActiveNode(secondarySource);
+            
+            if (isBigPop && Math.random() < 0.4) {
+                const tertiaryDelay = secondaryDelay + 0.01 + Math.random() * 0.02;
+                const tertiarySource = this.audioCtx.createBufferSource();
+                tertiarySource.buffer = this.whiteNoiseBuffer;
+                
+                const tertiaryFilter = this.audioCtx.createBiquadFilter();
+                tertiaryFilter.type = 'bandpass';
+                tertiaryFilter.frequency.value = 4000 + Math.random() * 3000;
+                tertiaryFilter.Q.value = 30;
+                
+                const tertiaryGain = this.audioCtx.createGain();
+                const tertiaryAmplitude = Math.max(0.001, secondaryAmplitude * 0.4);
+                tertiaryGain.gain.setValueAtTime(0.001, startTime + tertiaryDelay);
+                tertiaryGain.gain.exponentialRampToValueAtTime(tertiaryAmplitude, startTime + tertiaryDelay + 0.002);
+                tertiaryGain.gain.exponentialRampToValueAtTime(0.001, startTime + tertiaryDelay + 0.03);
+
+                tertiarySource.connect(tertiaryFilter).connect(tertiaryGain).connect(this.masterGain);
+                tertiarySource.start(startTime + tertiaryDelay, Math.random() * this.whiteNoiseBuffer.duration, 0.04);
+                this.addActiveNode(tertiarySource);
+            }
         }
     }
 
     playBurst() {
-        const burstDuration = 3;
-        const numCrackles = Math.floor(this.params.fireIntensity * 2);
+        if (this.params.fireIntensity <= 0) return; // Don’t play if intensity is 0
+
+        const burstDuration = 4;
+        const numCrackles = Math.floor(2 + this.params.fireIntensity * 3);
         const currentTime = this.audioCtx.currentTime;
+        
+        this.startRumble();
+        
         for (let i = 0; i < numCrackles; i++) {
-            const crackleTime = currentTime + Math.random() * (burstDuration - 0.15); // Ensure completion by 3s
+            const distribution = Math.pow(Math.random(), 1.5);
+            const crackleTime = currentTime + distribution * (burstDuration - 0.3);
             this.scheduleFractalCrackle(crackleTime);
         }
+        
+        this.timeout = setTimeout(() => this.stop(), burstDuration * 1000);
     }
 
     updateParams(newParams) {
-        this.params = { ...this.params, ...newParams };
-        if (this.crackleTimeout) {
-            if (this.params.fireIntensity <= 0) {
-                this.stop();
-            }
-        } else if (this.params.fireIntensity > 0) {
+        const wasActive = this.params.fireIntensity > 0;
+        super.updateParams(newParams);
+        const isActive = this.params.fireIntensity > 0;
+        
+        if (!wasActive && isActive) {
             this.start();
+        } else if (wasActive && !isActive) {
+            this.stop();
+        } else if (wasActive && isActive && this.rumbleGain) {
+            this.rumbleGain.gain.value = this.params.fireIntensity / 15;
         }
     }
 }
