@@ -1,5 +1,5 @@
 // terrain.js
-import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+import * as THREE from '../../lib/three.module.js';
 import { HeightmapGenerator } from './HeightmapGenerator.js';
 import { FeatureGenerator } from './FeatureGenerator.js';
 import { TerrainColorManager } from './TerrainColorManager.js';

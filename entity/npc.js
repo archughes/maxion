@@ -1,5 +1,5 @@
 // npc.js
-import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+import * as THREE from '../lib/three.module.js';
 import { scene, camera } from '../environment/scene.js';
 import { player } from './player.js';
 import { settings } from '../settings.js';

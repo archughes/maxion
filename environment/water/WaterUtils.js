@@ -1,4 +1,4 @@
-import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+import * as THREE from '../../lib/three.module.js';
 
 // Creates water geometry based on terrain parameters
 export function createWaterGeometry(width, height, terrain, waterLevel) {

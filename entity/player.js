@@ -1,5 +1,5 @@
 // player.js
-import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+import * as THREE from '../lib/three.module.js';
 import { scene, camera } from '../environment/scene.js';
 import { updateHealthUI, updateManaUI, updateInventoryUI, updateXPUI, updateCharacterUI } from '../ui.js';
 import { Character } from './character.js';

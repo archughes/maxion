@@ -1,5 +1,5 @@
 // game.js
-import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+import * as THREE from './lib/three.module.js';
 import { setupInput, cameraDistance, isRightClicking } from './input.js';
 import { scene, camera, renderer } from './environment/scene.js';
 import { player, updatePlayer, updateKnownMap } from './entity/player.js';

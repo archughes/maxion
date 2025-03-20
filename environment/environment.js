@@ -1,4 +1,4 @@
-import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+import * as THREE from '../lib/three.module.js';
 import { scene, camera } from './scene.js';
 import { enemies, questGivers, spawnNPCs } from '../entity/npc.js';
 import { player } from '../entity/player.js';
