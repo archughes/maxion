@@ -7,7 +7,7 @@ import { enemies, questGivers, updateNPC } from './entity/npc.js';
 import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateManaUI, updateQuestUI } from './ui.js';
 import { loadQuests } from './quests.js';
 import { craftItem, loadItems, loadRecipes } from './items.js';
-import { loadMap, terrain, doodads, skySystem } from './environment/environment.js';
+import { loadMap, terrain, doodads, skySystem, waterSystem } from './environment/environment.js';
 import { SoundManager } from './environment/sound-manager.js';
 import { timeSystem } from './environment/TimeSystem.js';
 import { initializeTerrainCache, setupMinimap } from './environment/map.js';
@@ -67,8 +67,8 @@ function animate() {
 
     const deltaTime = clock.getDelta();
     timeSystem.update(deltaTime);
-    skySystem.update(deltaTime, terrain.terrainFunc);
-    
+    waterSystem.update(deltaTime);
+    skySystem.update(deltaTime, terrain.terrainFunc);    
     player.updateCooldowns(deltaTime);
     updateKnownMap();
     updatePlayer(deltaTime, movement);
@@ -110,21 +110,6 @@ function animate() {
         if (camera.position.y > waterHeight) {
             camera.position.y = waterHeight;
         }
-    }
-
-    // Underwater visual effects
-    const defaultFogNear = 150, defaultFogFar = 250;
-    if (!scene.fog) {
-        scene.fog = new THREE.Fog(0xcccccc, defaultFogNear, defaultFogFar); // Reinitialize if null
-    }
-    if (camera.position.y > waterHeight && headY > waterHeight) {
-        scene.fog.near = defaultFogNear; // Default fog
-        scene.fog.far = defaultFogFar;
-        scene.fog.color.set(0xcccccc);
-    } else { // water fog
-        scene.fog.near = 10; // Dense fog
-        scene.fog.far = 50;
-        scene.fog.color.set(0x0077be); // Bluish tint
     }
 
     camera.lookAt(player.object.position);
@@ -271,6 +256,14 @@ export function removeDrowningMessage() {
 
 // Initial UI Setup
 init();
+
+// Handle resize
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    waterSystem.onResize();
+});
 
 // Expose crafting and upgrading to global scope for UI buttons
 window.craftItem = craftItem;

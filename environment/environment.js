@@ -6,7 +6,7 @@ import { Terrain } from './terrain/terrain.js';
 import { Tree, Bush, Rock, Flower, Campfire, Cactus } from './doodads/land-doodads.js';
 import { WaterPuddle, Coral, Seaweed } from './doodads/water-doodads.js';
 import { Chest, Portal, SnowPile } from './doodads/special-doodads.js';
-import { WaterSystem } from './water.js';
+import { WaterSystem } from './water/WaterSystem.js';
 import { SkySystem } from './SkySystem.js';
 
 // Load doodads dynamically
@@ -53,7 +53,7 @@ async function loadMap(mapName) {
         const waterWidth = mapData.water?.width || mapWidth;
         const waterHeight = mapData.water?.height || mapHeight;
         const waterColor = mapData.water?.color || 0x0077be;
-        waterSystem = new WaterSystem(waterWidth, waterHeight, waterLevel, waterColor, terrain); // Pass terrain
+        waterSystem = new WaterSystem(waterWidth, waterHeight, waterLevel, terrain);
     } else {
         terrain.waterLevel = -Infinity; // No water
     }
@@ -209,4 +209,4 @@ function interactWithEnvironment() {
     });
 }
 
-export { loadMap, interactWithEnvironment, doodads, portals, terrain, skySystem };
+export { loadMap, interactWithEnvironment, doodads, portals, terrain, skySystem, waterSystem };
