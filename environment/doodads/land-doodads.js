@@ -1,6 +1,5 @@
 import * as THREE from '../../lib/three.module.js';
 import { Doodad } from './base-doodad.js';
-import { player } from '../../entity/player.js';
 import { createFlameEffect } from '../../animations/environmental-effects.js';
 
 export class Tree extends Doodad {
@@ -107,11 +106,12 @@ export class Tree extends Doodad {
     }
 
     harvest() {
-        super.harvest();
+        let item = super.harvest();
         let woodType = "Wood"; 
         let quantity = this.variant === 'autumn' ? 2 : 1;
-        player.addItem({ name: woodType, type: "material", stackSize: 99, quantity });
+        item = { name: woodType, type: "material", stackSize: 99, quantity };
         console.log(`Harvested ${quantity} ${woodType} from ${this.variant} Tree`);
+        return item;
     }
 }
 
@@ -204,25 +204,26 @@ export class Bush extends Doodad {
     }
 
     harvest() {
-        super.harvest();
+        let item = super.harvest();
         switch (this.variant) {
             case 'berry':
-                player.addItem({ name: "Berry", type: "consumable", health: 5, stackSize: 99, quantity: 2 });
+                item = { name: "Berry", type: "consumable", health: 5, stackSize: 99, quantity: 2 };
                 console.log("Harvested 2 Berries!");
                 break;
             case 'flower':
-                player.addItem({ name: "Milkweed", type: "material", stackSize: 99, quantity: 1 });
+                item = { name: "Milkweed", type: "material", stackSize: 99, quantity: 1 };
                 console.log("Harvested 1 Milkweed!");
-                player.addItem({ name: "Flower", type: "material", stackSize: 99, quantity: 1 });
+                item = { name: "Flower", type: "material", stackSize: 99, quantity: 1 };
                 console.log("Harvested 1 Flower!");
                 break;
             case 'thorny':
-                player.addItem({ name: "Sunflower", type: "material", stackSize: 99, quantity: 1 });
+                item = { name: "Sunflower", type: "material", stackSize: 99, quantity: 1 };
                 console.log("Harvested 1 Sunflower!");
-                player.addItem({ name: "Pumpkin", type: "material", stackSize: 99, quantity: 1 });
+                item = { name: "Pumpkin", type: "material", stackSize: 99, quantity: 1 };
                 console.log("Harvested 1 Pumpkin!");
                 break;
         }
+        return item;
     }
 }
 
@@ -238,7 +239,6 @@ export class Rock extends Doodad {
                     opacity: 0.8,
                     shininess: 100
                 });
-                this.glow = this.addGlow(0x88CCEE, 0.5, 2);
                 break;
             case 'large':
                 geometry = new THREE.SphereGeometry(1.2, 8, 8);
@@ -265,7 +265,7 @@ export class Rock extends Doodad {
     }
 
     harvest() {
-        super.harvest();
+        let item = super.harvest();
         let loot = "Stone";
         let quantity = this.variant === 'large' ? Math.floor(Math.random() * 2) + 2 : 1;
         if (this.variant === 'crystal' && this.biome === 'winter') {
@@ -313,8 +313,9 @@ export class Rock extends Doodad {
                 }
             }
         }
-        player.addItem({ name: loot, type: "material", stackSize: 99, quantity });
+        item = { name: loot, type: "material", stackSize: 99, quantity };
         console.log(`Harvested ${quantity} ${loot} from ${this.variant} Rock in ${this.biome} biome`);
+        return item;
     }
 }
 
@@ -341,9 +342,10 @@ export class Flower extends Doodad {
     }
 
     harvest() {
-        super.harvest();
-        player.addItem({ name: "Flower", type: "material", stackSize: 99, quantity: 1 });
+        let item = super.harvest();
+        item = { name: "Flower", type: "material", stackSize: 99, quantity: 1 };
         console.log("Harvested 1 Flower!");
+        return item;
     }
 }
 
@@ -386,9 +388,10 @@ export class Campfire extends Doodad {
     }
 
     harvest() {
-        super.harvest();
-        player.addItem({ name: "Charcoal", type: "material", stackSize: 99, quantity: 1 });
+        let item = super.harvest();
+        item = { name: "Charcoal", type: "material", stackSize: 99, quantity: 1 };
         console.log("Harvested 1 Charcoal from Campfire!");
+        return item;
     }
 }
 
@@ -425,9 +428,9 @@ export class Cactus extends Doodad {
     }
 
     harvest() {
-        super.harvest();
-        player.addItem({ name: "Cactus Spine", type: "material", stackSize: 99, quantity: 1 });
-        player.takeDamage(2);
+        let item = super.harvest();
+        item = { name: "Cactus Spine", type: "material", stackSize: 99, quantity: 1 };
         console.log("Harvested 1 Cactus Spine! Took 2 damage from Cactus!");
+        return item;
     }
 }

@@ -8,6 +8,7 @@ import { WaterPuddle, Coral, Seaweed } from './doodads/water-doodads.js';
 import { Chest, Portal, SnowPile } from './doodads/special-doodads.js';
 import { WaterSystem } from './water/WaterSystem.js';
 import { SkySystem } from './SkySystem.js';
+import { completedQuests } from '../quests.js';
 
 // Load doodads dynamically
 let doodads = [];
@@ -204,7 +205,16 @@ function interactWithEnvironment() {
 
     doodads.forEach(doodad => {
         if (player.object.position.distanceTo(doodad.object.position) < (1 + player.collisionRadius + doodad.collisionRadius)) {
-            doodad.interact();
+            const item = doodad.interact(completedQuests);
+            if (typeof item === 'string') {
+                loadMap(item); // portal
+            } else if (item) {
+                if (Array.isArray(item)) {
+                    item.forEach(item => player.addItem(item));
+                } else {
+                    player.addItem(item);
+                }
+            }
         }
     });
 }

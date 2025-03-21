@@ -1,7 +1,6 @@
 import * as THREE from '../../lib/three.module.js';
 import { Entity } from '../../entity/entity.js';
 import { scene } from '../scene.js';
-import { soundManager } from '../../game.js';
 import { timeSystem } from '../TimeSystem.js';
 
 export class Doodad extends Entity {
@@ -70,14 +69,20 @@ export class Doodad extends Entity {
 
     interact() {
         if (this.isHarvested) return;
-        if (this.soundUrl) soundManager.playSound(this.soundUrl);
+        if (this.soundUrl) {
+
+        }
         this.currentInteractions++;
         if (this.currentInteractions >= this.interactionsToHarvest && Math.random() > 0.3) {
-            this.harvest();
+            const item = this.harvest();
+            return item;
+        } else {
+            return null;
         }
     }
 
     harvest() {
+        let item;
         this.isHarvested = true;
         scene.remove(this.object);
         setTimeout(() => {
@@ -85,6 +90,7 @@ export class Doodad extends Entity {
             this.currentInteractions = 0;
             scene.add(this.object);
         }, this.respawnTime * 1000);
+        return item;
     }
 
     adjustToTerrain(terrain) {
@@ -105,7 +111,9 @@ export class Doodad extends Entity {
             if (currentTime - this.lastDamageTime >= this.damageCooldown) {
                 player.takeDamage(this.collisionDamage);
                 this.lastDamageTime = currentTime;
-                if (this.soundUrl) soundManager.playSound(this.soundUrl);
+                if (this.soundUrl) {
+
+                }
             }
         }
     }

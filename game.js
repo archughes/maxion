@@ -5,7 +5,7 @@ import { scene, camera, renderer } from './environment/scene.js';
 import { player, updatePlayer, updateKnownMap } from './entity/player.js';
 import { enemies, questGivers, updateNPC } from './entity/npc.js';
 import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateManaUI, updateQuestUI } from './ui.js';
-import { loadQuests } from './quests.js';
+import { loadQuests, completedQuests } from './quests.js';
 import { craftItem, loadItems, loadRecipes } from './items.js';
 import { loadMap, terrain, doodads, skySystem, waterSystem } from './environment/environment.js';
 import { SoundManager } from './environment/sound-manager.js';
@@ -142,7 +142,7 @@ function update() {
             const distance = cameraPosition.distanceTo(doodad.object.position);
             doodad.visible = distance < maxDoodadDistance;
             if (doodad.update) {
-                doodad.update(deltaTime);
+                doodad.update(deltaTime, completedQuests);
             }
         } else {
             console.warn('Invalid doodad encountered:', doodad);
@@ -233,36 +233,6 @@ function toggleAudio() {
     console.log(`Audio ${audioEnabled ? "enabled" : "disabled"}`);
 }
 function toggleFullscreen() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
-
-export function showMessage(text) {
-    const messageDiv = document.createElement("div");
-    messageDiv.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:white;padding:20px;opacity:1;transition:opacity 1s;";
-    messageDiv.textContent = text;
-    document.body.appendChild(messageDiv);
-    setTimeout(() => {
-        messageDiv.style.opacity = "0";
-        setTimeout(() => document.body.removeChild(messageDiv), 1000);
-    }, 3000);
-}
-
-let drowningMessage = null;
-
-export function showDrowningMessage(text, isRed = false) {
-    if (!drowningMessage) {
-        drowningMessage = document.createElement("div");
-        drowningMessage.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:white;padding:20px;";
-        document.body.appendChild(drowningMessage);
-    }
-    drowningMessage.textContent = text;
-    drowningMessage.style.color = isRed ? "red" : "white";
-}
-
-export function removeDrowningMessage() {
-    if (drowningMessage) {
-        document.body.removeChild(drowningMessage);
-        drowningMessage = null;
-    }
-}
 
 // Initial UI Setup
 init();

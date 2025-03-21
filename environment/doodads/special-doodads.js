@@ -1,9 +1,6 @@
 import * as THREE from '../../lib/three.module.js';
 import { Doodad } from './base-doodad.js';
-import { player } from '../../entity/player.js';
-import { loadMap } from '../environment.js';
-import { showMessage } from '../../game.js';
-import { completedQuests } from '../../quests.js';
+import { showMessage } from '../../messages.js';
 import { createSparkleEffect } from '../../animations/environmental-effects.js';
 
 export class Chest extends Doodad {
@@ -46,14 +43,14 @@ export class Chest extends Doodad {
     }
 
     harvest() {
-        super.harvest();
+        let item = super.harvest();
+        item = this.contents;
         if (Array.isArray(this.contents)) {
-            this.contents.forEach(item => player.addItem(item));
             console.log(`Found ${this.contents.length} items in ${this.variant} chest!`);
         } else if (this.contents) {
-            player.addItem(this.contents);
             console.log(`Found ${this.contents.name} in ${this.variant} chest!`);
         }
+        return item;
     }
 }
 
@@ -84,15 +81,17 @@ export class Portal extends Doodad {
         createSparkleEffect(this.object, -1); // Call the sparkle effect in the constructor
     }
 
-    interact() {
+    interact(completedQuests) {
         if (!this.isHarvested) {
             super.interact();
-            if (!this.requiredQuest || completedQuests.includes(this.requiredQuest)) {
-                loadMap(this.destinationMap);
+            const isQuestCompleted = !this.requiredQuest || completedQuests.some(quest => quest.id === this.requiredQuest);
+            if (isQuestCompleted) {
+                return this.destinationMap;
             } else {
                 showMessage(`Complete the required quest ${this.requiredQuest} to unlock this portal!`);
                 console.log(`Complete the required quest ${this.requiredQuest} to unlock this portal!`);
             }
+            return null;
         }
     }
 
@@ -116,12 +115,9 @@ export class Portal extends Doodad {
         return mesh;
     }
 
-    update(deltaTime) {
-        if (!this.requiredQuest || completedQuests.includes(this.requiredQuest)) {
-            this.glowSprite.visible = true;
-        } else {
-            this.glowSprite.visible = false;
-        }
+    update(deltaTime, completedQuests) {
+        const isQuestCompleted = !this.requiredQuest || completedQuests.some(quest => quest.id === this.requiredQuest);
+        this.glowSprite.visible = isQuestCompleted;
     }
 }
 
@@ -142,10 +138,11 @@ export class SnowPile extends Doodad {
     }
 
     harvest() {
-        super.harvest();
-        player.addItem({ name: "Snowball", type: "material", stackSize: 99, quantity: this.variant === 'large' ? 2 : 1 });
+        let item0 = super.harvest();
+        let item1 = { name: "Snowball", type: "material", stackSize: 99, quantity: this.variant === 'large' ? 2 : 1 };
         console.log(`Harvested ${this.variant === 'large' ? 2 : 1} Snowball(s) from ${this.variant} SnowPile!`);
-        player.addItem({ name: "Holy Water", type: "material", stackSize: 99, quantity: this.variant === 'large' ? 2 : 1 });
+        let item2 = { name: "Holy Water", type: "material", stackSize: 99, quantity: this.variant === 'large' ? 2 : 1 };
         console.log(`Harvested ${this.variant === 'large' ? 2 : 1} Holy Water from ${this.variant} SnowPile!`);
+        return [item0, item1, item2];
     }
 }

@@ -1,6 +1,5 @@
 import * as THREE from '../../lib/three.module.js';
 import { Doodad } from './base-doodad.js';
-import { player } from '../../entity/player.js';
 
 export class WaterPuddle extends Doodad {
     constructor(x, z, variant = 'small', biome) {
@@ -22,9 +21,10 @@ export class WaterPuddle extends Doodad {
     }
 
     harvest() {
-        super.harvest();
-        player.addItem({ name: "Water", type: "material", stackSize: 99, quantity: 1 });
+        let item = super.harvest();
+        item = { name: "Water", type: "material", stackSize: 99, quantity: 1 };
         console.log("Harvested 1 Water from WaterPuddle!");
+        return item;
     }
 }
 
@@ -47,14 +47,15 @@ export class Coral extends Doodad {
     }
 
     harvest() {
-        super.harvest();
-        player.addItem({ 
+        item = super.harvest();
+        item = { 
             name: `${this.variant === 'red' ? 'Red' : 'Blue'} Coral`, 
             type: "material", 
             stackSize: 99, 
             quantity: 1 
-        });
+        };
         console.log(`Harvested 1 ${this.variant === 'red' ? 'Red' : 'Blue'} Coral!`);
+        return item;
     }
 }
 
@@ -81,8 +82,9 @@ export class Seaweed extends Doodad {
     }
 
     harvest() {
-        super.harvest();
-        player.addItem({ name: "Seaweed", type: "material", stackSize: 99, quantity: 1 });
+        let item = super.harvest();
+        item = { name: "Seaweed", type: "material", stackSize: 99, quantity: 1 };
         console.log("Harvested 1 Seaweed!");
+        return item;
     }
 }
