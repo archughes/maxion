@@ -1,5 +1,6 @@
 // items.js
 import { player } from './entity/player.js';
+import { updateInventoryUI } from './ui.js';
 
 class Item {
     constructor({ name, type, stackSize = 1 }) {
@@ -188,14 +189,20 @@ function createTieredItem(baseItem, tier) {
 
 function craftItem(recipeName) {
     const recipe = recipes[recipeName];
-    if(!recipe) return console.error("Recipe not found:", recipeName);
+    if (!recipe) return console.error("Recipe not found:", recipeName);
 
     // Check if player has required items
     let canCraft = true;
     for (const [reqItemName, amount] of Object.entries(recipe.required)) {
-        const reqItem = player.inventory.find(item => item.name === reqItemName);
-        // If item doesn't exist or amount is insufficient, can't craft
-        if (!reqItem || (reqItem.amount || 0) < amount) {
+        const reqItem = player.inventory.find(item => item.name === reqItemName) ||
+                        player.bags[0].items.find(item => item.name === reqItemName);
+        const requiredAmount = Number(amount); // Ensure amount is a number
+        if (isNaN(requiredAmount)) {
+            console.error(`Invalid amount for ${reqItemName} in recipe ${recipeName}: ${amount}`);
+            canCraft = false;
+            break;
+        }
+        if (!reqItem || (reqItem.amount || 0) < requiredAmount) {
             canCraft = false;
             break;
         }
@@ -204,24 +211,24 @@ function craftItem(recipeName) {
     if (canCraft) {
         // Deduct required items
         for (const [reqItemName, amount] of Object.entries(recipe.required)) {
-            const reqItem = player.inventory.find(item => item.name === reqItemName);
-            // Ensure amount is a number, default to 0 if undefined
-            reqItem.amount = reqItem.amount || 0;
-            reqItem.amount -= amount;
-            console.log(`Deducted ${amount} of ${reqItemName}, remaining: ${reqItem.amount}`); // Debug log
+            const requiredAmount = Number(amount);
+            const reqItem = player.inventory.find(item => item.name === reqItemName) ||
+                           player.bags[0].items.find(item => item.name === reqItemName);
+            reqItem.amount = reqItem.amount !== undefined ? reqItem.amount : 0; // Initialize if undefined
+            reqItem.amount -= requiredAmount;
+            console.log(`Deducted ${requiredAmount} of ${reqItemName}, remaining: ${reqItem.amount}`);
             if (reqItem.amount <= 0) {
-                // Remove item from inventory
-                const index = player.inventory.indexOf(reqItem);
+                const container = player.inventory.includes(reqItem) ? player.inventory : player.bags[0].items;
+                const index = container.indexOf(reqItem);
                 if (index !== -1) {
-                    player.inventory.splice(index, 1);
-                    console.log(`Removed ${reqItemName} from inventory`);
+                    container.splice(index, 1);
+                    console.log(`Removed ${reqItemName} from ${container === player.inventory ? 'inventory' : 'bag'}`);
                 }
             }
         }
         // Generate and add the result item
         const resultItem = getRecipeResult(recipe);
         if (resultItem) {
-            // Ensure resultItem has a valid amount if applicable
             if (resultItem.amount === undefined) resultItem.amount = 1;
             player.addItem(resultItem);
             console.log(`Crafted ${resultItem.name}!`);
@@ -233,8 +240,7 @@ function craftItem(recipeName) {
         console.log("Insufficient resources!");
     }
 
-    // Update UI to reflect changes if needed
-    updateInventoryUI(); // Assuming you have this function from earlier
+    updateInventoryUI();
 }
 
 // Existing useItem function remains unchanged

@@ -6,7 +6,7 @@ import { Character } from './character.js';
 import { terrain } from '../environment/environment.js';
 import { checkCollectionQuests } from '../quests.js';
 import { items } from '../items.js';
-import { showDrowningMessage, removeDrowningMessage } from '../game.js';
+import { showDrowningMessage, removeDrowningMessage } from '../messages.js';
 import { updateMinimap, terrainCache } from '../environment/map.js';
 import { AnimationQueue, animationSelector } from './animation.js';
 import { createSparkleEffect } from '../animations/environmental-effects.js';
@@ -16,7 +16,7 @@ const INVENTORY_SIZE = 8;
 class Player extends Character {
     constructor() {
         const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x00fff0 });
-        super(playerMaterial, 100, 4, true);
+        super(playerMaterial, 100, 6, true);
         this.object.position.y = this.heightOffset;
         scene.add(this.object);
         // console.log('Player added to scene:', this.object);

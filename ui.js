@@ -96,17 +96,22 @@ function updateRecipesUI() {
     const searchInput = document.querySelector("#recipes-popup .search-bar");
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
 
-    if (!player.knownRecipes || !Array.isArray(player.knownRecipes)) {
+    if (!player.knownRecipes || !Array.isArray(player.knownRecipes) || player.knownRecipes.length === 0) {
         list.innerHTML = "<p>No known recipes yet.</p>";
         return;
     }
 
     player.knownRecipes
-        .filter(recipe => recipe && typeof recipe === "object" && recipe.name && recipe.name.toLowerCase().includes(searchTerm))
+        .filter(recipe => {
+            if (!recipe) return false;
+            const recipeName = typeof recipe === "string" ? recipe : recipe.name;
+            return recipeName && recipeName.toLowerCase().includes(searchTerm);
+        })
         .forEach(recipe => {
+            const recipeName = typeof recipe === "string" ? recipe : recipe.name;
             const div = document.createElement("div");
-            div.innerHTML = `${recipe.name} <button>Craft</button>`;
-            div.querySelector("button").addEventListener("click", () => craftItem(recipe.name));
+            div.innerHTML = `${recipeName} <button class="craft-btn">Craft</button>`; // Add class
+            div.querySelector(".craft-btn").addEventListener("click", () => craftItem(recipeName));
             list.appendChild(div);
         });
 }
@@ -130,14 +135,34 @@ function updateStatsUI() {
     statsDiv.innerHTML = `
         <p>Level: ${player.level}</p>
         <h4>Stats (Points: ${player.statPoints})</h4>
-        <p>Strength: ${player.stats.strength} ${player.statPoints > 0 ? '<button onclick="player.increaseStat(\'strength\'); updateStatsUI();">+</button>' : ''}</p>
-        <p>Agility: ${player.stats.agility} ${player.statPoints > 0 ? '<button onclick="player.increaseStat(\'agility\'); updateStatsUI();">+</button>' : ''}</p>
-        <p>Intelligence: ${player.stats.intelligence} ${player.statPoints > 0 ? '<button onclick="player.increaseStat(\'intelligence\'); updateStatsUI();">+</button>' : ''}</p>
+        <p>Strength: ${player.stats.strength} ${player.statPoints > 0 ? '<button class="stat-btn" data-stat="strength">+</button>' : ''}</p>
+        <p>Agility: ${player.stats.agility} ${player.statPoints > 0 ? '<button class="stat-btn" data-stat="agility">+</button>' : ''}</p>
+        <p>Intelligence: ${player.stats.intelligence} ${player.statPoints > 0 ? '<button class="stat-btn" data-stat="intelligence">+</button>' : ''}</p>
         <h4>Skills (Points: ${player.skillPoints})</h4>
-        <p>Power Attack: ${powerAttack?.level > 0 ? `Level ${powerAttack.level}` : "Locked"} ${player.skillPoints > 0 ? '<button onclick="player.upgradeSkill(\'Power Attack\'); updateStatsUI();">+</button>' : ''}</p>
-        <p>Fireball: ${fireball?.level > 0 ? `Level ${fireball.level}` : "Locked"} ${player.skillPoints > 0 ? '<button onclick="player.upgradeSkill(\'Fireball\'); updateStatsUI();">+</button>' : ''}</p>
-        <p>Invisibility: ${invisibility?.level > 0 ? `Level ${invisibility.level}` : "Locked"} ${player.skillPoints > 0 ? '<button onclick="player.upgradeSkill(\'Invisibility\'); updateStatsUI();">+</button>' : ''}</p>
+        <p>Power Attack: ${powerAttack?.level > 0 ? `Level ${powerAttack.level}` : "Locked"} ${player.skillPoints > 0 ? '<button class="skill-btn" data-skill="Power Attack">+</button>' : ''}</p>
+        <p>Fireball: ${fireball?.level > 0 ? `Level ${fireball.level}` : "Locked"} ${player.skillPoints > 0 ? '<button class="skill-btn" data-skill="Fireball">+</button>' : ''}</p>
+        <p>Invisibility: ${invisibility?.level > 0 ? `Level ${invisibility.level}` : "Locked"} ${player.skillPoints > 0 ? '<button class="skill-btn" data-skill="Invisibility">+</button>' : ''}</p>
     `;
+
+    // Attach event listeners to stat buttons
+    statsDiv.querySelectorAll(".stat-btn").forEach(button => {
+        button.addEventListener("click", (event) => {
+            event.stopPropagation(); // Prevent click from closing popup
+            const stat = button.dataset.stat;
+            player.increaseStat(stat);
+            updateStatsUI(); // Refresh the UI immediately
+        });
+    });
+
+    // Attach event listeners to skill buttons
+    statsDiv.querySelectorAll(".skill-btn").forEach(button => {
+        button.addEventListener("click", (event) => {
+            event.stopPropagation(); // Prevent click from closing popup
+            const skill = button.dataset.skill;
+            player.upgradeSkill(skill);
+            updateStatsUI(); // Refresh the UI immediately
+        });
+    });
 }
 
 function updateQuestUI() {

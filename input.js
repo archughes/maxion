@@ -15,7 +15,7 @@ function setupInput() {
     const gameCanvas = document.querySelector("canvas");
 
     document.addEventListener("keydown", event => {
-        console.log(`Key pressed: ${event.code}`);
+        // console.log(`Key pressed: ${event.code}`);
         switch (event.code) {
             case "KeyW": player.moveForward = true; break;
             case "KeyS": player.moveBackward = true; break;

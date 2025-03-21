@@ -19,7 +19,7 @@ export class Movement {
         
         const waterLevel = this.terrain.getWaterLevel(pos.x, pos.z);
         this.owner.isInWater = this.owner.object.position.y - this.owner.heightOffset + 0.5 < waterLevel;
-        console.log(this.owner.isInWater, waterLevel, this.owner.object.position.y - this.owner.heightOffset); // Check feet position
+        // console.log(this.owner.isInWater, waterLevel, this.owner.object.position.y - this.owner.heightOffset); // Check feet position
         if (this.owner.isInWater) {
             // Water movement: use camera directions
             const camDir = this.camera.getWorldDirection(new THREE.Vector3());
