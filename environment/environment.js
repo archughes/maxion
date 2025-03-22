@@ -19,21 +19,72 @@ let waterSystem = null;
 let skySystem = null;
 
 async function loadMap(mapName) {
-    if (terrain) scene.remove(terrain.mesh);
-    if (waterSystem) waterSystem.dispose();
-    if (skySystem) {
-        skySystem.suns.forEach(sun => scene.remove(sun.mesh));
-        skySystem.moons.forEach(moon => scene.remove(moon.mesh));
-        scene.remove(skySystem.stars);
-        scene.remove(skySystem.sky);
-        skySystem.cloudSystem.resetClouds();
+    if (terrain) {
+        scene.remove(terrain.mesh);
+        terrain.mesh.geometry.dispose(); // Dispose geometry
+        terrain.mesh.material.dispose(); // Dispose material
+        terrain = null; // Clear reference
     }
-    doodads.forEach(d => scene.remove(d.mesh));
-    enemies.forEach(e => scene.remove(e.mesh));
-    questGivers.forEach(qg => scene.remove(qg.object));
+    if (waterSystem) {
+        waterSystem.dispose();
+        waterSystem = null;
+    }
+    if (skySystem) {
+        skySystem.suns.forEach(sun => {
+            scene.remove(sun.mesh);
+            sun.mesh.geometry.dispose();
+            sun.mesh.material.dispose();
+        });
+        skySystem.moons.forEach(moon => {
+            scene.remove(moon.mesh);
+            moon.mesh.geometry.dispose();
+            moon.mesh.material.dispose();
+        });
+        scene.remove(skySystem.stars);
+        skySystem.stars.geometry.dispose();
+        skySystem.stars.material.dispose();
+        scene.remove(skySystem.sky);
+        skySystem.sky.material.dispose();
+        // Remove all cloud meshes
+        skySystem.cloudSystem.clouds.forEach(cloud => {
+            scene.remove(cloud.mesh);
+            cloud.mesh.geometry.dispose();
+            cloud.mesh.material.dispose();
+        });
+        skySystem.cloudSystem.resetClouds(); // Reset after removal
+        skySystem = null;
+    }
+    doodads.forEach(d => {
+        scene.remove(d.object); // Use d.object, not d.mesh
+        if (d.object.geometry) d.object.geometry.dispose();
+        if (d.object.material) d.object.material.dispose();
+        if (d.object.children) {
+            d.object.children.forEach(child => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) child.material.dispose();
+            });
+        }
+    });
+    doodads = []; // Clear array
+    portals = [];
+    enemies.forEach(e => {
+        scene.remove(e.mesh); // Assuming enemies use .mesh
+        if (e.mesh.geometry) e.mesh.geometry.dispose();
+        if (e.mesh.material) e.mesh.material.dispose();
+    });
+    enemies.length = 0; // Clear array (assuming enemies is mutable)
+    questGivers.forEach(qg => {
+        scene.remove(qg.object);
+        if (qg.object.geometry) qg.object.geometry.dispose();
+        if (qg.object.material) qg.object.material.dispose();
+    });
+    questGivers.length = 0; // Clear array (assuming questGivers is mutable)
     if (currentMap?.lighting) {
         scene.remove(currentMap.lighting.directional);
+        currentMap.lighting.directional.dispose();
         scene.remove(currentMap.lighting.ambient);
+        currentMap.lighting.ambient.dispose();
+        currentMap.lighting = null;
     }
 
     const response = await fetch(`./maps/${mapName}.json`);
@@ -78,6 +129,7 @@ async function loadMap(mapName) {
 
     spawnNPCs(mapData);
     doodads.forEach(doodad => doodad.adjustToTerrain(terrain));
+    player.object.position.set(0, 0, 0); // Player has teleported
     player.adjustToTerrain(terrain);
     enemies.forEach(enemy => enemy.adjustToTerrain(terrain));
     questGivers.forEach(qg => qg.adjustToTerrain(terrain));

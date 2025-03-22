@@ -35,7 +35,8 @@
         "Rock": { "variants": { "normal": { "elevation": [0, 20], "density": 0.002 } } },
         "Bush": { "variants": { "thorny": { "elevation": [0, 10], "density": 0.002 } } },
         "Campfire": { "variants": { "small": { "elevation": [0, 10], "density": 0.00001 } } },
-        "Portal": { "variants": { "purple": { "elevation": [0, 20], "position": { "x": 50, "z": 50 }, "count": 1, "destinationMap": "spring", "requiredQuest": "upgrade_gear_autumn" } } }
+        "Portal": { "variants": { "purple": { "elevation": [0, 20], "position": { "x": 50, "z": 50 }, "count": 1, "destinationMap": "spring", "requiredQuest": "upgrade_gear_autumn" } } },
+        "Portal": { "variants": { "purple": { "elevation": [0, 20], "position": { "x": -50, "z": -50 }, "count": 1, "destinationMap": "summer" } } }
     },
     "enemies": [
         { "position": { "x": 10, "z": 10 } },
