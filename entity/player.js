@@ -8,7 +8,7 @@ import { checkCollectionQuests } from '../quests.js';
 import { items } from '../items.js';
 import { showDrowningMessage, removeDrowningMessage } from '../messages.js';
 import { updateMinimap, terrainCache } from '../environment/map.js';
-import { AnimationQueue, animationSelector } from './animation.js';
+import { animationSelector } from './animation.js';
 import { createSparkleEffect } from '../animations/environmental-effects.js';
 
 const INVENTORY_SIZE = 8;
@@ -16,7 +16,7 @@ const INVENTORY_SIZE = 8;
 class Player extends Character {
     constructor() {
         const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x00fff0 });
-        super(playerMaterial, 100, 6, true);
+        super(playerMaterial, 100, 6, 'human');
         this.object.position.y = this.heightOffset;
         scene.add(this.object);
         // console.log('Player added to scene:', this.object);
@@ -43,27 +43,12 @@ class Player extends Character {
         this.isAutoAttacking = false;
         this.isInvisible = false;
 
-        this.moveForward = false;
-        this.moveBackward = false;
-        this.moveLeft = false;
-        this.moveRight = false;
-        this.rotateLeft = false;
-        this.rotateRight = false;
-        this.isJumping = false;
-        this.firstJump = false;
-        this.jumpVelocity = 0;
-        this.limbAngle = 0; // For arm/leg animations
-        this.isRunning = false;
-        this.runTimer = 0;
-        this.selectedTarget = null;
-        this.animationQueue = new AnimationQueue();
         this.onLand = (fallVelocity) => {
             const fallDamage = Math.floor(fallVelocity * 2);
             this.takeDamage(fallDamage, undefined, 'fall');
             console.log(`Fall damage taken: ${fallDamage} HP (Velocity: ${fallVelocity.toFixed(2)})`);
           };
-                
-        this.isInWater = false;
+        
         this.collisionRadius = 0.5;
     }
 
@@ -76,7 +61,7 @@ class Player extends Character {
         // Skill-specific logic with immediate effect
         if (skillName === "Power Attack") {
             if (distanceToTarget <= action.range) {
-                const damage = 15 + action.level * 5;
+                const damage = this.damage + action.level * 5;
                 this.selectedTarget.takeDamage(damage * (this.stats.strength / 10), 'physical', 'player');
                 console.log(`Player used Power Attack for ${damage * (this.stats.strength / 10)} damage!`);
                 action.cooldown = action.maxCooldown - action.level * 0.5;
@@ -443,17 +428,21 @@ function updatePlayer(deltaTime, movement) {
     movement.update(deltaTime);
     
     player.isMoving = player.moveForward || player.moveBackward || player.moveLeft || player.moveRight;
-    if (player.useComplexModel) {
+    if (player.modelType !== 'cube') {
+        player.mixer.update(deltaTime);
         player.animationQueue.update(deltaTime);
         switch (true) {
             case player.isJumping:
                 player.animationQueue.enqueue(animationSelector("jump", player));
                 break;
-            case player.isInWater:
+            case player.isUnderWater:
                 player.animationQueue.enqueue(animationSelector("swim", player));
                 break;
             case player.isMoving:
                 player.animationQueue.enqueue(animationSelector("walk", player));
+                break;
+            case player.isProne:
+                player.animationQueue.enqueue(animationSelector("crawl", player));
                 break;
             default:
                 player.animationQueue.clear();

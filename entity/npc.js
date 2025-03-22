@@ -8,17 +8,23 @@ import { Character } from './character.js'; // Assuming this exists
 import { terrain } from '../environment/environment.js';
 import { updateQuestUI } from '../ui.js';
 import { selectAttackingEnemy } from '../input.js';
+import { animationSelector } from './animation.js';
 
 const damageMultiplier = { easy: 0.5, normal: 1, hard: 2 }[settings.difficulty];
 
 class NPC extends Character {
     constructor(x, z, color = 0xff0000) {
         const material = new THREE.MeshPhongMaterial({ color });
-        super(material, 50 * damageMultiplier, 0.05, false);
-        this.object.position.set(x || 5, this.heightOffset, z || 5);
-        this.damage = 20 * damageMultiplier;
+        super(material, 50 * damageMultiplier, 0.05, 'cube');
+        this.spawnPoint = new THREE.Vector3(x || 5, 0, z || 5);
+        this.object.position.set(this.spawnPoint.x, this.heightOffset, this.spawnPoint.z);
+        this.lastPosition = this.spawnPoint.clone(this.object.position);
+        this.damage = this.damage * damageMultiplier;
         scene.add(this.object);
         this.object.userData.entity = this;
+
+        this.wanderDirection = null;
+        this.wanderTimer = 0;
 
         this.healthBar = new THREE.Mesh(
             new THREE.PlaneGeometry(1, 0.1),
@@ -78,28 +84,75 @@ class NPC extends Character {
         this.updateHealthBar();
     }
 
+    updateAnimations(deltaTime) {
+        if (this.mixer) {
+            this.mixer.update(deltaTime);
+        }
+        this.animationQueue.update(deltaTime);
+    }
+
     update(deltaTime) {
-        if (player.isInvisible) {
-            // Ignore player while invisible
+        if (player.isInvisible || this.health <= 0) {
+            this.updateAnimations(deltaTime);
             return;
         }
-        
+    
         super.update(deltaTime);
-        if (this.health <= 0) return;
-        const slopeInfo = terrain.getSlopeAt(player.object.position.x, player.object.position.z);
+        this.updateAnimations(deltaTime);
+    
+        const slopeInfo = terrain.getSlopeAt(this.object.position.x, this.object.position.z);
         const steepThreshold = 1.5;
         const slopeMultiplier = 1 / (1 + slopeInfo.magnitude);
         const effectiveSpeed = this.speed * this.baseSpeedMultiplier * slopeMultiplier;
-
+    
+        let previousPosition = this.object.position.clone();
+        this.isMoving = false;
+    
+        // Water interaction
+        const waterLevel = terrain.getWaterLevel(this.object.position.x, this.object.position.z);
+        if (this.isInWater) {
+            const terrainHeight = terrain.getHeightAt(this.object.position.x, this.object.position.z);
+            if (this.object.position.y > terrainHeight + this.heightOffset) {
+                this.object.position.y -= this.gravity * deltaTime * deltaTime;
+            } else {
+                this.object.position.y = waterLevel - this.heightOffset + 0.5;
+            }
+        }
+    
+        // Check if stuck and jump
+        const distanceMoved = this.object.position.distanceTo(this.lastPosition);
+        if (distanceMoved < 0.1 && !this.isInWater && !this.isJumping) {
+            this.stuckTimer += deltaTime;
+            if (this.stuckTimer >= 2) {
+                this.isJumping = true;
+                this.jumpVelocity = 5;
+                this.stuckTimer = 0;
+            }
+        } else {
+            this.stuckTimer = 0;
+        }
+        this.lastPosition.copy(this.object.position);
+    
+        // Apply jumping
+        if (this.isJumping) {
+            this.object.position.y += this.jumpVelocity * deltaTime;
+            this.jumpVelocity -= this.gravity * deltaTime;
+            const terrainHeight = terrain.getHeightAt(this.object.position.x, this.object.position.z);
+            if (this.object.position.y <= terrainHeight + this.heightOffset) {
+                this.object.position.y = terrainHeight + this.heightOffset;
+                this.isJumping = false;
+                this.jumpVelocity = 0;
+            }
+        }
+    
+        // Sliding on steep slopes
         if (!this.isInWater && slopeInfo.magnitude > steepThreshold) {
             this.isSliding = true;
             const slideAcceleration = this.gravity * slopeInfo.magnitude * deltaTime;
             this.slideVelocity.addScaledVector(slopeInfo.direction, slideAcceleration);
             this.slideVelocity.clampLength(0, this.maxSlideSpeed);
-    
             this.object.position.x += this.slideVelocity.x * deltaTime;
             this.object.position.z += this.slideVelocity.z * deltaTime;
-    
             const terrainHeight = terrain.getHeightAt(this.object.position.x, this.object.position.z);
             if (this.object.position.y > terrainHeight + this.heightOffset) {
                 this.object.position.y -= this.gravity * deltaTime * deltaTime;
@@ -112,45 +165,112 @@ class NPC extends Character {
                     this.slideVelocity.set(0, 0, 0);
                 }
             }
-            this.updateHealthBar();
+            this.isMoving = true;
         } else {
             this.isSliding = false;
             this.slideVelocity.set(0, 0, 0);
-        }
-        
-        const distanceToPlayer = this.object.position.distanceTo(player.object.position);
-        if (distanceToPlayer < 5) {
-            const direction = Math.atan2(
-                player.object.position.z - this.object.position.z,
-                player.object.position.x - this.object.position.x
-            );
-            this.object.position.x += Math.cos(direction) * effectiveSpeed;
-            this.object.position.z += Math.sin(direction) * effectiveSpeed;
-            this.object.position.y = terrain.getHeightAt(this.object.position.x, this.object.position.z) + 0 + this.heightOffset;
-            this.updateHealthBar();
-            if (distanceToPlayer < 1 && this.attackCooldown <= 0) {
-                player.takeDamage(this.damage, undefined, 'npc');
-                this.attackCooldown = this.attackInterval;
-                selectAttackingEnemy(this);
+    
+            const distanceToPlayer = this.object.position.distanceTo(player.object.position);
+    
+            // Chasing logic
+            if (distanceToPlayer < 5) {
+                if (player.isInWater) {
+                    const direction = new THREE.Vector3()
+                        .subVectors(player.object.position, this.object.position)
+                        .normalize();
+                    this.object.position.addScaledVector(direction, effectiveSpeed);
+                    this.isMoving = true;
+                } else {
+                    const direction = Math.atan2(
+                        player.object.position.z - this.object.position.z,
+                        player.object.position.x - this.object.position.x
+                    );
+                    const newX = this.object.position.x + Math.cos(direction) * effectiveSpeed;
+                    const newZ = this.object.position.z + Math.sin(direction) * effectiveSpeed;
+                    const newY = terrain.getHeightAt(newX, newZ) + this.heightOffset;
+                    if (!this.isInWaterTest(newX, newZ, newY, terrain)) {
+                        this.object.position.x = newX;
+                        this.object.position.z = newZ;
+                        this.object.position.y = newY;
+                        this.isMoving = true;
+                    }
+                }
+                this.updateHealthBar();
+                if (distanceToPlayer < 1 && this.attackCooldown <= 0) {
+                    player.takeDamage(this.damage, undefined, 'npc');
+                    this.attackCooldown = this.attackInterval;
+                    selectAttackingEnemy(this);
+                }
+            } else {
+                // Wandering logic
+                const distanceFromSpawn = this.object.position.distanceTo(this.spawnPoint);
+                if (distanceFromSpawn > 20) {
+                    this.wanderDirection = Math.atan2(
+                        this.spawnPoint.z - this.object.position.z,
+                        this.spawnPoint.x - this.object.position.x
+                    );
+                    this.wanderTimer = 2 + Math.random() * 3;
+                } else if (!this.wanderDirection || this.wanderTimer <= 0) {
+                    let newDirection;
+                    let attempts = 0;
+                    do {
+                        newDirection = Math.random() * 2 * Math.PI;
+                        const testX = this.object.position.x + Math.cos(newDirection) * effectiveSpeed;
+                        const testZ = this.object.position.z + Math.sin(newDirection) * effectiveSpeed;
+                        const testY = terrain.getHeightAt(testX, testZ) + this.heightOffset;
+                        if (!this.isInWaterTest(testX, testZ, testY, terrain)) {
+                            break;
+                        }
+                        attempts++;
+                    } while (attempts < 10);
+                    if (attempts < 10) {
+                        this.wanderDirection = this.wanderDirection
+                            ? THREE.MathUtils.lerp(this.wanderDirection, newDirection, 0.1)
+                            : newDirection;
+                        this.wanderTimer = 2 + Math.random() * 3;
+                    } else {
+                        this.wanderDirection = Math.atan2(
+                            this.spawnPoint.z - this.object.position.z,
+                            this.spawnPoint.x - this.object.position.x
+                        );
+                        this.wanderTimer = 2 + Math.random() * 3;
+                    }
+                }
+    
+                const newX = this.object.position.x + Math.cos(this.wanderDirection) * effectiveSpeed;
+                const newZ = this.object.position.z + Math.sin(this.wanderDirection) * effectiveSpeed;
+                const newY = terrain.getHeightAt(newX, newZ) + this.heightOffset;
+                if (!this.isInWaterTest(newX, newZ, newY, terrain)) {
+                    this.object.position.x = newX;
+                    this.object.position.z = newZ;
+                    this.object.position.y = newY;
+                    this.wanderTimer -= deltaTime;
+                    this.isMoving = true;
+                }
             }
-        } else {
-            const direction = Math.random() * 2 * Math.PI;
-            this.object.position.x += Math.cos(direction) * effectiveSpeed;
-            this.object.position.z += Math.sin(direction) * effectiveSpeed;
-            this.object.position.y = terrain.getHeightAt(this.object.position.x, this.object.position.z) + 0 + this.heightOffset;
-            this.updateHealthBar();
         }
-
-        // Drowning logic
-        const headY = this.object.position.y + this.heightOffset;
-        const waterHeight = terrain.getWaterLevel(this.object.position.x, this.object.position.z);
-        if (headY < waterHeight) {
+    
+        this.updateHealthBar();
+    
+        // Animation and drowning logic (unchanged)
+        this.isUnderWater = this.isUnderWaterTest(this.object.position.x, this.object.position.z, this.object.position.y, terrain);
+        if (this.modelType !== 'cube') {
+            if (this.isUnderWater) {
+                this.animationQueue.enqueue(animationSelector("swim", this));
+            } else if (this.isMoving) {
+                this.animationQueue.enqueue(animationSelector("walk", this));
+            } else {
+                this.animationQueue.clear();
+            }
+        }
+    
+        if (this.isInWater) {
             this.drowningTimer += deltaTime;
             if (this.drowningTimer >= this.drowningTime) {
                 this.drowningDamageTimer += deltaTime;
                 if (this.drowningDamageTimer >= this.drowningDamageInterval) {
                     this.drowningDamageTimer = 0;
-                    this.takeDamage(this.maxHealth * 0.1, undefined, 'drown'); // 10% HP loss
+                    this.takeDamage(this.maxHealth * 0.1, undefined, 'drown');
                 }
             }
         } else {
@@ -173,7 +293,8 @@ class QuestGiver extends NPC {
         this.exclamation.position.y = this.object.position.y + 1.0 + this.heightOffset;
     }
 
-    update() {
+    update(deltaTime) {
+        this.updateAnimations(deltaTime); // Update animations even though it doesn't move
         // Quest givers don't move or attack
     }
 
@@ -233,14 +354,20 @@ const maxEnemies = 5;
 
 function spawnEnemy() {
     if (enemies.length < maxEnemies) {
-        const x = (Math.random() - 0.5) * 50;
-        const z = (Math.random() - 0.5) * 50;
+        let x, z, terrainHeight, waterLevel;
+        do {
+            x = (Math.random() - 0.5) * 50; // Random x within a range
+            z = (Math.random() - 0.5) * 50; // Random z within a range
+            terrainHeight = terrain.getHeightAt(x, z);
+            waterLevel = terrain.getWaterLevel(x, z);
+        } while (terrainHeight < waterLevel); // Repeat until position is above water
         const enemy = new NPC(x, z);
         enemies.push(enemy);
     }
 }
 
 function spawnNPCs(mapData) {
+    // Clear existing NPCs
     enemies.forEach(enemy => scene.remove(enemy.object));
     enemies.length = 0;
     questGivers.forEach(qg => {
@@ -249,18 +376,56 @@ function spawnNPCs(mapData) {
     });
     questGivers.length = 0;
 
+    // Spawn enemies
     if (mapData.enemies) {
         mapData.enemies.forEach(enemyData => {
-            const enemy = new NPC(enemyData.position.x, enemyData.position.z);
+            let x = enemyData.position.x;
+            let z = enemyData.position.z;
+            let terrainHeight = terrain.getHeightAt(x, z);
+            let waterLevel = terrain.getWaterLevel(x, z);
+            if (terrainHeight < waterLevel) {
+                // Find a nearby position above water
+                for (let i = 1; i <= 10; i++) {
+                    const newX = x + (Math.random() - 0.5) * i;
+                    const newZ = z + (Math.random() - 0.5) * i;
+                    terrainHeight = terrain.getHeightAt(newX, newZ);
+                    waterLevel = terrain.getWaterLevel(newX, newZ);
+                    if (terrainHeight >= waterLevel) {
+                        x = newX;
+                        z = newZ;
+                        break;
+                    }
+                }
+            }
+            const enemy = new NPC(x, z);
             enemies.push(enemy);
         });
     }
 
+    // Spawn quest givers
     if (mapData.questGivers) {
         mapData.questGivers.forEach(qgData => {
+            let x = qgData.position.x;
+            let z = qgData.position.z;
+            let terrainHeight = terrain.getHeightAt(x, z);
+            let waterLevel = terrain.getWaterLevel(x, z);
+            if (terrainHeight < waterLevel) {
+                // Find a nearby position above water
+                for (let i = 1; i <= 10; i++) {
+                    const newX = x + (Math.random() - 0.5) * i;
+                    const newZ = z + (Math.random() - 0.5) * i;
+                    terrainHeight = terrain.getHeightAt(newX, newZ);
+                    waterLevel = terrain.getWaterLevel(newX, newZ);
+                    if (terrainHeight >= waterLevel) {
+                        x = newX;
+                        z = newZ;
+                        break;
+                    }
+                }
+            }
             const quest = quests.find(q => q.id === qgData.questId);
             if (quest) {
-                const questGiver = new QuestGiver(qgData.position.x, qgData.position.z, quest);
+                const questGiver = new QuestGiver(x, z, quest);
                 questGivers.push(questGiver);
             }
         });
@@ -292,7 +457,7 @@ function updateNPC(deltaTime) {
             console.log("Enemy defeated!");
         }
     });
-    questGivers.forEach(qg => qg.update());
+    questGivers.forEach(qg => qg.update(deltaTime));
 }
 
 function damageNPC(amount, target) {

@@ -36,7 +36,8 @@ export class Movement {
             const headY = pos.y + this.owner.heightOffset; // Current head position
             const waterHeight = this.terrain.getWaterLevel(pos.x, pos.z);
             const headNearSurface = Math.abs(headY - waterHeight) < 0.3;
-            const headAboveSurface = headY - waterHeight > 0.0;
+            this.isUnderWater = this.owner.isUnderWaterTest(pos.x, pos.z, headY, this.terrain);
+            this.owner.setProne(this.isUnderWater);
             if (moveDir.lengthSq() > 0) {
                 moveDir.normalize(); // Normalize first to work with direction only
         
@@ -50,7 +51,7 @@ export class Movement {
                 }
         
                 // Only allow downward movement if angle is more negative than -45 degrees
-                if (angleDegrees > -30 && headAboveSurface) {
+                if (angleDegrees > -30 && !this.isUnderWater) {
                     // Project moveDir onto the horizontal plane (remove y component if not steep enough)
                     moveDir.y = 0;
                     if (moveDir.lengthSq() > 0) moveDir.normalize(); // Re-normalize after zeroing y

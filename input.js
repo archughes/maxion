@@ -15,6 +15,12 @@ function setupInput() {
     const gameCanvas = document.querySelector("canvas");
 
     document.addEventListener("keydown", event => {
+
+        // Prevent browser shortcut interference in game
+        if ((event.shiftKey || event.altKey) && ["KeyW", "KeyQ", "KeyE", "KeyA", "KeyS", "KeyD", "KeyX", "KeyU", "KeyI", "KeyP", "KeyM"].includes(event.code)) {
+            event.preventDefault(); // Stops Ctrl+W, Ctrl+Q, etc.
+        }
+
         // console.log(`Key pressed: ${event.code}`);
         switch (event.code) {
             case "KeyW": player.moveForward = true; break;
@@ -40,6 +46,9 @@ function setupInput() {
             case "ShiftLeft":
                 player.isRunning = true;
                 player.runTimer = 3;
+                break;
+            case "AltLeft":
+                player.setProne(true);
                 break;
             case "Digit1": useAction(0); break;
             case "Digit2": useAction(1); break;
@@ -124,6 +133,9 @@ function setupInput() {
             case "ShiftLeft":
                 player.isRunning = false;
                 break;
+            case "AltLeft":
+                player.setProne(false);
+                break;
         }
     });
 
@@ -137,7 +149,7 @@ function setupInput() {
             rightClickStartTime = Date.now();
             mouseMovementSum = 0;
             document.querySelector("canvas").requestPointerLock();
-            if (player.useComplexModel) {
+            if (player.modelType !== 'cube') {
                 player.head.rotation.y = 0; // Reset head yaw to align with body
                 player.head.rotation.x = 0; // Reset head pitch to neutral
             }
@@ -224,7 +236,7 @@ function setupInput() {
     document.addEventListener("mousemove", event => {
         if (isRightClicking && document.pointerLockElement === document.querySelector("canvas")) {
             mouseMovementSum += Math.abs(event.movementX) + Math.abs(event.movementY);
-            if (player.useComplexModel) {
+            if (player.modelType !== 'cube') {
                 player.object.rotation.y -= event.movementX * 0.004;
                 player.head.rotation.x -= event.movementY * 0.004;
                 player.head.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, player.head.rotation.x));
@@ -244,7 +256,7 @@ function setupInput() {
             cameraState.pitch += pitchDelta;
             cameraState.pitch = Math.max(minPitch, Math.min(maxPitch, cameraState.pitch));
         } else if (isLeftClicking && document.pointerLockElement === document.querySelector("canvas")) {
-            if (player.useComplexModel) {
+            if (player.modelType !== 'cube') {
                 player.head.rotation.y -= event.movementX * 0.004; // Button 1: Head yaw
                 player.head.rotation.x -= event.movementY * 0.004; // Head pitch
                 player.head.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, player.head.rotation.x));

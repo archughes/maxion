@@ -8,6 +8,8 @@ class Entity {
         this.position = new THREE.Vector3();
         this.gravity = 6.5;
         this.heightOffset = 0; // Default height offset (feet to center)
+        this.isInWater = false;
+        this.isUnderWater = false;
         this.baseSpeedMultiplier = 1; // Base value
         this.speedMultiplier = this.baseSpeedMultiplier; // Dynamic value
         this.whoKill = '';
@@ -21,10 +23,20 @@ class Entity {
     adjustToTerrain(terrain) {
         const terrainHeight = terrain.getHeightAt(this.object.position.x, this.object.position.z);
         this.object.position.y = terrainHeight + this.heightOffset;
-        const waterLevel = terrain.getWaterLevel(this.position.x, this.position.z);
-        this.isInWater = this.object.position.y - this.heightOffset + 0.5 < waterLevel; // Check feet position
+        this.isInWater = this.isInWaterTest(this.object.position.x, this.object.position.z, this.object.position.y, terrain);
+        this.isUnderWater = this.isUnderWaterTest(this.object.position.x, this.object.position.z, this.object.position.y, terrain);
         this.baseSpeedMultiplier = this.isInWater ? 0.3 : 1;
         this.speedMultiplier = this.baseSpeedMultiplier;
+    }
+
+    isInWaterTest(x, z, y, terrain) {
+        const waterLevel = terrain.getWaterLevel(x, z);
+        return y - this.heightOffset + 0.5 < waterLevel;
+    }
+
+    isUnderWaterTest(x, z, y, terrain) {
+        const waterLevel = terrain.getWaterLevel(x, z);
+        return y + this.heightOffset < waterLevel;
     }
 }
 
@@ -34,6 +46,23 @@ class CombatEntity extends Entity {
         this.armor = armor; // Reduces incoming damage
         this.resistances = { physical: armor, magic: 0 };
         this.collisionRadius = 0.5;
+        this.moveForward = false;
+        this.moveBackward = false;
+        this.moveLeft = false;
+        this.moveRight = false;
+        this.rotateLeft = false;
+        this.rotateRight = false;
+        this.firstJump = false;
+        this.isJumping = false;
+        this.jumpVelocity = 0;
+        this.isMoving = false;
+        this.isSliding = false;
+        this.isRunning = false;
+        this.runTimer = 0;
+        this.selectedTarget = null;
+        this.attackCooldown = 0;
+        this.attackInterval = 1;
+        this.damage = 20;
     }
 
     takeDamage(amount, type = 'physical', attacker = '') {
@@ -59,6 +88,12 @@ class CombatEntity extends Entity {
     adjustToTerrain(terrain) {
         super.adjustToTerrain(terrain); 
         // No magic number here; heightOffset is set by subclasses
+    }
+
+    update(deltaTime) {
+        if (this.attackCooldown > 0) {
+            this.attackCooldown -= deltaTime;
+        }
     }
 }
 

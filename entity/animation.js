@@ -1,3 +1,5 @@
+import * as THREE from '../lib/three.module.js';
+
 class AnimationQueue {
     constructor() {
         this.queue = [];
@@ -35,90 +37,108 @@ class AnimationQueue {
 }
 
 class CharacterAnimation {
-    constructor(name, duration, onStart, onUpdate, onComplete) {
+    constructor(name, duration, character, mixer, clip) {
         this.name = name;
         this.duration = duration;
+        this.character = character;
+        this.mixer = mixer;
+        this.clip = clip;
         this.elapsed = 0;
         this.completed = false;
-        this.onStart = onStart;
-        this.onUpdate = onUpdate;
-        this.onComplete = onComplete;
+        this.action = null;
     }
 
     start() {
-        if (this.onStart) this.onStart();
+        this.action = this.mixer.clipAction(this.clip);
+        this.action.setLoop(THREE.LoopOnce, 1);
+        this.action.clampWhenFinished = true;
+        this.action.play();
     }
 
     update(deltaTime) {
         if (this.completed) return;
         this.elapsed += deltaTime;
-        if (this.onUpdate) this.onUpdate(this.elapsed / this.duration);
         if (this.elapsed >= this.duration) {
             this.completed = true;
-            if (this.onComplete) this.onComplete();
+            if (this.action) this.action.stop();
         }
     }
 }
 
 function animationSelector(animationName, character) {
+    const mixer = character.mixer; // Use the player's mixer
     switch (animationName) {
         case "walk":
-            return createWalkAnimation(character);
+            return createWalkAnimation(character, mixer);
         case "swim":
-            return createSwimAnimation(character);
+            return createSwimAnimation(character, mixer);
         case "jump":
-            return createJumpAnimation(character);
+            return createJumpAnimation(character, mixer);
+        case "crawl":
+            return createCrawlAnimation(character, mixer);
         default:
-            console.warn("Unknown animation: " + animationName);
+            console.warn(`Unknown animation: ${animationName}`);
             return null;
     }
 }
 
-function createWalkAnimation(character) {
-    return new CharacterAnimation(
-        "walk",
-        0.5,
-        () => console.log("Start walking animation"),
-        (progress) => {
-            character.limbAngle = Math.sin(progress * Math.PI * 2) * 0.5;
-            character.leftArm.rotation.z = character.limbAngle;
-            character.rightArm.rotation.z = -character.limbAngle;
-            character.leftLeg.rotation.z = -character.limbAngle;
-            character.rightLeg.rotation.z = character.limbAngle;
-        },
-        () => console.log("Walking cycle completed")
-    );
+function createWalkAnimation(character, mixer) {
+    const times = [0, 0.25, 0.5];
+    const valuesLeftArm = [0, 0.5, -0.5];
+    const valuesRightArm = [0, -0.5, 0.5];
+    const valuesLeftLeg = [0, -0.5, 0.5];
+    const valuesRightLeg = [0, 0.5, -0.5];
+
+    const clip = new THREE.AnimationClip('walk', 0.5, [
+        new THREE.VectorKeyframeTrack(`${character.leftArm.uuid}.rotation[x]`, times, valuesLeftArm),
+        new THREE.VectorKeyframeTrack(`${character.rightArm.uuid}.rotation[x]`, times, valuesRightArm),
+        new THREE.VectorKeyframeTrack(`${character.leftLeg.uuid}.rotation[x]`, times, valuesLeftLeg),
+        new THREE.VectorKeyframeTrack(`${character.rightLeg.uuid}.rotation[x]`, times, valuesRightLeg),
+    ]);
+
+    return new CharacterAnimation("walk", 0.5, character, mixer, clip);
 }
 
-function createSwimAnimation(character) {
-    return new CharacterAnimation(
-        "swim",
-        0.7,
-        () => console.log("Start swimming animation"),
-        (progress) => {
-            character.limbAngle = Math.sin(progress * Math.PI * 2) * 0.3;
-            character.leftArm.rotation.z = character.limbAngle * 0.5;
-            character.rightArm.rotation.z = -character.limbAngle * 0.5;
-            character.leftLeg.rotation.z = -character.limbAngle * 0.5;
-            character.rightLeg.rotation.z = character.limbAngle * 0.5;
-        },
-        () => console.log("Swimming cycle completed")
-    );
+function createSwimAnimation(character, mixer) {
+    const times = [0, 0.35, 0.7];
+    const valuesArms = [0, 0.3, -0.3];
+    const valuesLegs = [0, -0.3, 0.3];
+
+    const clip = new THREE.AnimationClip('swim', 0.7, [
+        new THREE.VectorKeyframeTrack(`${character.leftArm.uuid}.rotation[z]`, times, valuesArms),
+        new THREE.VectorKeyframeTrack(`${character.rightArm.uuid}.rotation[z]`, times, valuesArms.map(v => -v)),
+        new THREE.VectorKeyframeTrack(`${character.leftLeg.uuid}.rotation[z]`, times, valuesLegs),
+        new THREE.VectorKeyframeTrack(`${character.rightLeg.uuid}.rotation[z]`, times, valuesLegs.map(v => -v)),
+    ]);
+
+    return new CharacterAnimation("swim", 0.7, character, mixer, clip);
 }
 
-function createJumpAnimation(character) {
-    return new CharacterAnimation(
-        "jump",
-        0.3,
-        () => console.log("Start jump animation"),
-        (progress) => {
-            character.leftArm.rotation.x = character.jumpVelocity > 0 ? -Math.PI / 4 : Math.PI / 2;
-            character.rightArm.rotation.x = character.jumpVelocity > 0 ? -Math.PI / 4 : -Math.PI / 2;
-            character.leftArm.rotation.z = 0;
-            character.rightArm.rotation.z = 0;
-        },
-        () => console.log("Jump completed")
-    );
+function createJumpAnimation(character, mixer) {
+    const times = [0, 0.15, 0.3];
+    const valuesArms = [-Math.PI / 4, Math.PI / 2, 0];
+
+    const clip = new THREE.AnimationClip('jump', 0.3, [
+        new THREE.VectorKeyframeTrack(`${character.leftArm.uuid}.rotation[x]`, times, valuesArms),
+        new THREE.VectorKeyframeTrack(`${character.rightArm.uuid}.rotation[x]`, times, valuesArms.map(v => -v)),
+    ]);
+
+    return new CharacterAnimation("jump", 0.3, character, mixer, clip);
+}
+
+function createCrawlAnimation(character, mixer) {
+    const times = [0, 0.3, 0.6];
+    const valuesArms = [0, 0.4, -0.4];
+    const valuesLegs = [0, -0.4, 0.4];
+
+    const clip = new THREE.AnimationClip('crawl', 0.6, [
+        new THREE.VectorKeyframeTrack(`${character.leftArm.uuid}.rotation[z]`, times, valuesArms),
+        new THREE.VectorKeyframeTrack(`${character.rightArm.uuid}.rotation[z]`, times, valuesArms.map(v => -v)),
+        new THREE.VectorKeyframeTrack(`${character.leftLeg.uuid}.rotation[z]`, times, valuesLegs),
+        new THREE.VectorKeyframeTrack(`${character.rightLeg.uuid}.rotation[z]`, times, valuesLegs.map(v => -v)),
+    ]);
+
+    return new CharacterAnimation("crawl", 0.6, character, mixer, clip);
 }
 
 export { CharacterAnimation, AnimationQueue, animationSelector };
