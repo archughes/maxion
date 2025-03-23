@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medieval RPG Icon Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        select {
+            padding: 5px;
+            font-size: 16px;
+        }
+        #iconDisplay {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Medieval RPG Icon Tester</h1>
+        <div class="controls">
+            <select id="categorySelect">
+                <option value="items">Items</option>
+                <option value="materials">Materials</option>
+                <option value="potions">Potions</option>
+                <option value="spells">Spells</option>
+                <option value="plants">Plants</option>
+                <option value="special">Special Items</option>
+            </select>
+            <select id="typeSelect"></select>
+            <select id="modifierSelect"></select>
+            <select id="materialSelect"></select>
+        </div>
+        <div id="iconDisplay"></div>
+    </div>
+
+    <script src="textures/IconGenerator.js"></script>
+    <script>
+        const generator = new IconGenerator();
+        const iconDisplay = document.getElementById('iconDisplay');
+        const categorySelect = document.getElementById('categorySelect');
+        const typeSelect = document.getElementById('typeSelect');
+        const modifierSelect = document.getElementById('modifierSelect');
+        const materialSelect = document.getElementById('materialSelect');
+
+        // Configuration for different categories
+        const config = {
+            items: {
+                types: ['sword', 'staff', 'dagger', 'bow', 'wand', 'shield', 'chest', 'helm', 'gloves', 'ring', 'ingot', 'ore', 'potion'],
+                modifiers: ['starter', 'wood', 'stone', 'iron', 'steel', 'diamond', 'eternium'],
+                materials: ['wood', 'stone', 'iron', 'steel', 'diamond', 'eternium'],
+                generate: (type, modifier, material) => generator.generateItemIcon(type, material || 'iron', modifier || 'iron')
+            },
+            materials: {
+                types: ['ingot', 'ore'],
+                modifiers: [],
+                materials: ['wood', 'stone', 'iron', 'steel', 'diamond', 'eternium'],
+                generate: (type, _, material) => generator.generateMaterialIcon(material, type)
+            },
+            potions: {
+                types: ['health', 'mana', 'speed', 'strength', 'invisibility'],
+                modifiers: ['small', 'medium', 'large'],
+                materials: [],
+                generate: (type, modifier) => generator.generatePotionIcon(type, modifier)
+            },
+            spells: {
+                types: ['attack', 'fire', 'invisibility', 'ice', 'nature', 'arcane', 'holy', 'shadow'],
+                modifiers: ['novice', 'apprentice', 'adept', 'master', 'grandmaster'],
+                materials: [],
+                generate: (type, modifier) => generator.generateSpellIcon(type, modifier)
+            },
+            plants: {
+                types: ['milkweed', 'sunflower', 'berry', 'pumpkin', 'flower', 'snowball', 'cactusSpine', 
+                        'charcoal', 'redCoral', 'blueCoral', 'seaweed', 'iceCrystal', 'holyWater', 'dragonScale'],
+                modifiers: [],
+                materials: [],
+                generate: (type) => generator.generatePlantIcon(type)
+            },
+            special: {
+                types: ['Dragon Plate Armor', 'Frost Bow', 'Phoenix Potion', 'Enchanted Staff', 'Bandit Chestplate'],
+                modifiers: [],
+                materials: [],
+                generate: (type) => generator.generateSpecialItemIcon(type)
+            }
+        };
+
+        // DRY utility functions
+        function createOption(value, text) {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = text || value;
+            return option;
+        }
+
+        function populateSelect(selectElement, items, defaultText) {
+            selectElement.innerHTML = '';
+            if (defaultText) {
+                selectElement.appendChild(createOption('', defaultText));
+            }
+            items.forEach(item => selectElement.appendChild(createOption(item)));
+        }
+
+        function updateDropdowns(category) {
+            const cfg = config[category];
+            
+            // Update type dropdown
+            populateSelect(typeSelect, cfg.types, 'Select Type');
+            
+            // Update modifier dropdown (hide if empty)
+            if (cfg.modifiers.length > 0) {
+                populateSelect(modifierSelect, cfg.modifiers, 'Select Modifier');
+                modifierSelect.style.display = 'inline-block';
+            } else {
+                modifierSelect.style.display = 'none';
+            }
+            
+            // Update material dropdown (hide if empty)
+            if (cfg.materials.length > 0) {
+                populateSelect(materialSelect, cfg.materials, 'Select Material');
+                materialSelect.style.display = 'inline-block';
+            } else {
+                materialSelect.style.display = 'none';
+            }
+            
+            updateIcon();
+        }
+
+        function updateIcon() {
+            const category = categorySelect.value;
+            const type = typeSelect.value;
+            const modifier = modifierSelect.value;
+            const material = materialSelect.value;
+            
+            iconDisplay.innerHTML = '';
+            
+            if (!type || !category) return;
+            
+            const cfg = config[category];
+            let svg;
+            
+            try {
+                if (category === 'items') {
+                    svg = cfg.generate(type, modifier || 'iron', material || 'iron');
+                } else if (category === 'materials') {
+                    svg = cfg.generate(type, null, material || 'iron');
+                } else if (category === 'potions') {
+                    svg = cfg.generate(type, modifier || 'medium');
+                } else if (category === 'spells') {
+                    svg = cfg.generate(type, modifier || 'adept');
+                } else {
+                    svg = cfg.generate(type);
+                }
+                iconDisplay.appendChild(svg);
+            } catch (e) {
+                iconDisplay.textContent = 'Error generating icon';
+                console.error(e);
+            }
+        }
+
+        // Event listeners
+        categorySelect.addEventListener('change', () => updateDropdowns(categorySelect.value));
+        typeSelect.addEventListener('change', updateIcon);
+        modifierSelect.addEventListener('change', updateIcon);
+        materialSelect.addEventListener('change', updateIcon);
+
+        // Initial setup
+        updateDropdowns(categorySelect.value);
+    </script>
+</body>
+</html>
