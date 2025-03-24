@@ -1,6 +1,6 @@
 // items.js
 import { player } from './entity/player.js';
-import { updateInventoryUI } from './ui.js';
+import { updateInventoryUI } from './ui/inventory-ui.js';
 
 class Item {
     constructor({ name, type, stackSize = 1 }) {

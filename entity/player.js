@@ -1,7 +1,9 @@
-// player.js
 import * as THREE from '../lib/three.module.js';
-import { scene, camera } from '../environment/scene.js';
-import { updateHealthUI, updateManaUI, updateInventoryUI, updateXPUI, updateStatsUI, updateSpellUI } from '../ui.js';
+import { scene } from '../environment/scene.js';
+import { updateHealthUI, updateManaUI, updateXPUI } from '../ui/bars-ui.js';
+import { updateInventoryUI } from '../ui/inventory-ui.js';
+import { updateStatsUI } from '../ui/stats-ui.js';
+import { updateSpellUI } from '../ui/spells-ui.js';
 import { Character } from './character.js';
 import { terrain } from '../environment/environment.js';
 import { checkCollectionQuests } from '../quests.js';
@@ -9,7 +11,7 @@ import { items } from '../items.js';
 import { showDrowningMessage, removeDrowningMessage } from '../messages.js';
 import { updateMinimap, terrainCache } from '../environment/map.js';
 import { animationSelector } from './animation.js';
-import { spellManager, Spell } from '../spells.js';
+import { spellManager } from '../spells.js';
 import { createSparkleEffect } from '../animations/environmental-effects.js';
 
 const INVENTORY_SIZE = 8;
@@ -20,31 +22,29 @@ class Player extends Character {
         super(playerMaterial, 100, 6, 'human');
         this.object.position.y = this.heightOffset;
         scene.add(this.object);
-        // console.log('Player added to scene:', this.object);
 
         this.knownMap = new Set();
-        this.learnedSpells = []; // Array of spell objects
+        this.learnedSpells = [];
         this.actionBar = [null, null, null, null, null, null];
         this.mana = 50;
         this.xp = 0;
         this.level = 1;
         this.stats = { strength: 10, agility: 10, intelligence: 10 };
         this.inventory = [];
-        this.bags = [new Bag(10)]; // One bag with 10 slots
+        this.bags = [new Bag(10)];
         this.equippedWeapon = null;
         this.equippedArmor = null;
         this.equippedHelmet = null;
         this.skillPoints = 0;
         this.statPoints = 0;
-        this.knownRecipes = []; 
+        this.knownRecipes = [];
         this.isAutoAttacking = false;
         this.isInvisible = false;
         this.onLand = (fallVelocity) => {
             const fallDamage = Math.floor(fallVelocity * 2);
             this.takeDamage(fallDamage, undefined, 'fall');
             console.log(`Fall damage taken: ${fallDamage} HP (Velocity: ${fallVelocity.toFixed(2)})`);
-          };
-        
+        };
         this.collisionRadius = 0.5;
     }
 
@@ -61,7 +61,7 @@ class Player extends Character {
     learnSpell(spellName) {
         const spell = spellManager.getSpellByName(spellName);
         if (spell && !this.learnedSpells.find(s => s.name === spell.name)) {
-            this.learnedSpells.push(spell); // Use the original instance
+            this.learnedSpells.push(spell);
         }
     }
 
@@ -85,29 +85,21 @@ class Player extends Character {
     }
 
     setInvisibilityEffect(isInvisible) {
-        // Apply effect to all meshes in the player group
         this.object.traverse((child) => {
             if (child.isMesh && child.material) {
                 child.material.transparent = true;
                 child.material.opacity = isInvisible ? 0.3 : 1.0;
             }
         });
-        
-        if (isInvisible) {
-            createSparkleEffect(this.object, 2000); 
-        }
+        if (isInvisible) createSparkleEffect(this.object, 2000);
     }
 
     toggleVisibility(duration) {
-        this.object.visible = true; // Ensure the object is visible first
-        if (this.object.material) {
-            this.object.material.opacity = 0.3; // Set opacity to 30%
-        }
+        this.object.visible = true;
+        if (this.object.material) this.object.material.opacity = 0.3;
         setTimeout(() => {
-            this.object.visible = true; // Ensure player reappears
-            if (this.object.material) {
-                this.object.material.opacity = 1; // Reset opacity
-            }
+            this.object.visible = true;
+            if (this.object.material) this.object.material.opacity = 1;
         }, duration);
     }
 
@@ -136,20 +128,20 @@ class Player extends Character {
             this.isAutoAttacking = false;
             return;
         }
-        const action = this.actionBar[0]; // Power Attack is in slot 0
+        const action = this.actionBar[0];
         if (action && action.name === "Power Attack" && action.cooldown <= 0) {
             const distanceToTarget = this.object.position.distanceTo(this.selectedTarget.object.position);
             if (distanceToTarget <= action.range) {
                 this.useSkill("Power Attack");
             } else {
-                this.isAutoAttacking = false; // Stop if out of range
+                this.isAutoAttacking = false;
             }
         }
     }
 
     takeDamage(amount) {
-        super.takeDamage(amount); 
-        updateHealthUI(); 
+        super.takeDamage(amount);
+        updateHealthUI();
     }
 
     heal(amount) {
@@ -183,14 +175,13 @@ class Player extends Character {
     levelUp() {
         this.level++;
         this.xp -= 100 * (this.level - 1);
-        this.statPoints += 5;  // 5 stat points to allocate manually
-        this.skillPoints += 1; // 1 skill point for skills
-        this.health = 100;     // Heal to full
-        this.mana = 50;        // Restore mana to full
+        this.statPoints += 5;
+        this.skillPoints += 1;
+        this.health = 100;
+        this.mana = 50;
         updateHealthUI();
         updateManaUI();
-    
-        // Visual effect: Glowing sphere that expands and fades
+
         const effect = new THREE.Mesh(
             new THREE.SphereGeometry(1, 16, 16),
             new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 })
@@ -208,10 +199,8 @@ class Player extends Character {
                 scene.remove(effect);
             }
         }, 50);
-    
-        // Play sound (defined in game.js)
+
         window.levelUpSound.play();
-    
         console.log(`Leveled up to ${this.level}! Stat points: ${this.statPoints}, Skill points: ${this.skillPoints}`);
     }
 
@@ -222,7 +211,7 @@ class Player extends Character {
         }
         const itemData = items.find(i => i.name === newItem.name) || { stackSize: 1 };
         const stackable = itemData.stackSize > 1;
-    
+
         if (stackable) {
             const existing = this.inventory.find(item => item.name === newItem.name);
             if (existing) {
@@ -236,7 +225,6 @@ class Player extends Character {
                 this.inventory.push(newItem);
             } else if (this.bags[0].addItem(newItem)) {
                 console.log("Added bag item:", newItem);
-                console.log("Item added to bag!");
             } else {
                 console.log("Inventory and bag full!");
             }
@@ -246,7 +234,6 @@ class Player extends Character {
     }
 
     removeItem(item, amount = 1) {
-        // Find the item in the inventory (compare by reference or name)
         const inventoryItem = this.inventory.find(i => i === item || i.name === item.name);
         if (inventoryItem && inventoryItem.amount !== undefined) {
             inventoryItem.amount -= amount;
@@ -254,14 +241,12 @@ class Player extends Character {
                 this.inventory.splice(this.inventory.indexOf(inventoryItem), 1);
             }
         } else if (inventoryItem) {
-            // Item exists but has no amount (e.g., a single-use item)
             this.inventory.splice(this.inventory.indexOf(inventoryItem), 1);
         } else {
-            // Try removing from bag if not in main inventory
             this.bags[0].removeItem(item, amount);
         }
         updateInventoryUI();
-    };
+    }
 
     equipItem(item) {
         console.log("Attempting Equipping:", item);
@@ -276,17 +261,17 @@ class Player extends Character {
             this.stats[stat]++;
             this.statPoints--;
             console.log(`Increased ${stat} to ${this.stats[stat]}`);
-            updateStatsUI(); // Refresh UI
+            updateStatsUI();
         }
     }
-    
-    upgradeSkill(skillName) {
+
+    upgradeSkill(spellName) {
         if (this.skillPoints <= 0) return;
-        const action = this.actionBar.find(a => a?.type === "skill" && a.name === skillName);
+        const action = this.actionBar.find(a => a?.type === "skill" && a.name === spellName);
         if (action) {
             action.level++;
             this.skillPoints--;
-            console.log(`Upgraded ${skillName} to level ${action.level}`);
+            console.log(`Upgraded ${spellName} to level ${action.level}`);
             updateStatsUI();
         }
     }
@@ -316,7 +301,6 @@ class Bag {
     }
 
     removeItem(item, amount = 1) {
-        // Find the item by reference or name
         const bagItem = this.items.find(i => i === item || i.name === item.name);
         if (bagItem && bagItem.amount !== undefined) {
             bagItem.amount -= amount;
@@ -324,7 +308,6 @@ class Bag {
                 this.items.splice(this.items.indexOf(bagItem), 1);
             }
         } else if (bagItem) {
-            // Item exists but has no amount (single-use)
             this.items.splice(this.items.indexOf(bagItem), 1);
         }
     }
@@ -346,11 +329,11 @@ function updateKnownMap() {
     if (currentTime - lastKnownMapUpdate >= knownMapUpdateInterval) {
         const playerPos = player.object.position;
         const playerRotationY = player.object.rotation.y;
-        
+
         if (playerPos.equals(lastPlayerPosition) && playerRotationY === lastPlayerRotationY) {
             return;
         }
-        
+
         lastPlayerPosition.copy(playerPos);
         lastPlayerRotationY = playerRotationY;
 
@@ -367,7 +350,6 @@ function updateKnownMap() {
         const playerSegZ = Math.floor((playerPos.z / segmentHeight) + heightSegments / 2);
         const segRadius = Math.ceil(viewDistance / Math.min(segmentWidth, segmentHeight));
 
-        // Collect newly discovered segments
         let newDiscoveries = [];
 
         const minX = Math.max(0, playerSegX - segRadius);
@@ -391,18 +373,17 @@ function updateKnownMap() {
                     const key = `${x},${z}`;
                     if (!player.knownMap.has(key)) {
                         player.knownMap.add(key);
-                        newDiscoveries.push({ x, z }); // Store new segment
+                        newDiscoveries.push({ x, z });
                     }
                 }
             }
         }
 
-        // If there are new discoveries, store them and flag an update
         if (newDiscoveries.length > 0) {
             terrainCache.newDiscoveries = newDiscoveries;
             terrainCache.terrainCacheNeedsUpdate = true;
         }
-        
+
         updateMinimap();
         lastKnownMapUpdate = currentTime;
     }
@@ -411,7 +392,7 @@ function updateKnownMap() {
 function updatePlayer(deltaTime, movement) {
     player.autoAttack(deltaTime);
     movement.update(deltaTime);
-    
+
     player.isMoving = player.moveForward || player.moveBackward || player.moveLeft || player.moveRight;
     if (player.modelType !== 'cube') {
         player.mixer.update(deltaTime);
@@ -437,8 +418,7 @@ function updatePlayer(deltaTime, movement) {
 
     player.regenerateMana(0.05);
 
-    // Drowning mechanic
-    const headY = player.object.position.y + player.heightOffset; // Head at top of 1-unit cube
+    const headY = player.object.position.y + player.heightOffset;
     const level = terrain.getWaterLevel(player.object.position.x, player.object.position.z);
     if (headY < level) {
         if (player.drowningTimer < player.drowningTime) {
@@ -446,11 +426,11 @@ function updatePlayer(deltaTime, movement) {
             const remaining = Math.ceil(player.drowningTime - player.drowningTimer);
             showDrowningMessage(`Drowning in ${remaining}...`);
         } else {
-            showDrowningMessage("Drowning!", true); // Red text flag
+            showDrowningMessage("Drowning!", true);
             player.drowningDamageTimer += deltaTime;
             if (player.drowningDamageTimer >= player.drowningDamageInterval) {
                 player.drowningDamageTimer = 0;
-                player.takeDamage(player.maxHealth * 0.1, undefined, 'drown'); // 10% HP loss
+                player.takeDamage(player.maxHealth * 0.1, undefined, 'drown');
             }
         }
     } else {
@@ -458,7 +438,6 @@ function updatePlayer(deltaTime, movement) {
         player.drowningDamageTimer = 0;
         removeDrowningMessage();
     }
-
 }
 
 export { player, updatePlayer, updateKnownMap };

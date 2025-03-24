@@ -1,10 +1,9 @@
-// game.js
 import * as THREE from './lib/three.module.js';
 import { setupInput, cameraDistance, isRightClicking } from './input.js';
 import { scene, camera, renderer } from './environment/scene.js';
 import { player, updatePlayer, updateKnownMap } from './entity/player.js';
 import { enemies, questGivers, updateNPC } from './entity/npc.js';
-import { setupPopups, setupActionBar, updateInventoryUI, updateHealthUI, updateManaUI, updateQuestUI } from './ui.js';
+import { UIManager } from './ui/ui.js'; // Updated to use UIManager
 import { loadQuests, completedQuests } from './quests.js';
 import { craftItem, loadItems, loadRecipes } from './items.js';
 import { loadMap, terrain, doodads, skySystem, waterSystem } from './environment/environment.js';
@@ -12,20 +11,12 @@ import { SoundManager } from './environment/sound-manager.js';
 import { timeSystem } from './environment/TimeSystem.js';
 import { initializeTerrainCache, setupMinimap } from './environment/map.js';
 import { Movement } from './entity/movement.js';
-import { settings } from './settings.js';
+import { settings } from './ui/settings.js';
 import { loadSpells } from './spells.js';
-
-// Add Mana Bar to UI
-const manaBar = document.createElement("div");
-manaBar.className = "mana-bar";
-manaBar.innerHTML = '<div class="mana-fill" style="width: 100px;"></div>';
-document.querySelector(".ui").appendChild(manaBar);
 
 // Input Handling
 let clock = new THREE.Clock();
-export const cameraState = {
-    pitch: 0
-};
+export const cameraState = { pitch: 0 };
 export const soundManager = new SoundManager();
 
 let movement = null;
@@ -36,16 +27,12 @@ async function init() {
     await loadQuests();
     await loadItems();
     await loadRecipes();
-    await loadMap('summer'); 
+    await loadMap('summer');
 
-    // Initial UI Setup
+    // Initial Setup
     setupInput();
-    setupPopups();
+    UIManager.initialize(); // Replaces individual UI setups
     document.body.focus();
-    updateInventoryUI();
-    updateHealthUI();
-    updateManaUI();
-    updateQuestUI();
     initializeTerrainCache();
     setupMinimap();
     movement = new Movement(player, terrain, camera);
@@ -53,12 +40,11 @@ async function init() {
     update();
 }
 
-const levelUpSound = new Audio('sounds/level_up.wav'); // Free "level up" sound from Freesound.org
+const levelUpSound = new Audio('sounds/level_up.wav');
 levelUpSound.preload = 'auto';
-window.levelUpSound = levelUpSound; // Make it globally accessible
+window.levelUpSound = levelUpSound;
 
-const attackSound = new Audio();
-attackSound.src = 'sounds/swordhit1.wav'; // Valid MP3 URL
+const attackSound = new Audio('sounds/swordhit1.wav');
 attackSound.preload = 'auto';
 
 function animate() {
@@ -71,7 +57,7 @@ function animate() {
     const deltaTime = clock.getDelta();
     timeSystem.update(deltaTime);
     waterSystem.update(deltaTime);
-    skySystem.update(deltaTime, terrain.terrainFunc);    
+    skySystem.update(deltaTime, terrain.terrainFunc);
     player.updateCooldowns(deltaTime);
     updateKnownMap();
     updatePlayer(deltaTime, movement);
@@ -84,7 +70,7 @@ function animate() {
         if (fpsDisplay) {
             fpsDisplay.querySelector('.time-display').textContent = `FPS: ${fps}`;
         }
-        console.log(`FPS: ${fps}`); // Console print when enabled
+        console.log(`FPS: ${fps}`);
     }
 
     // Update Camera
@@ -98,34 +84,25 @@ function animate() {
     if (isRightClicking) {
         camera.position.x = player.object.position.x - horizontalDistance * bodyDirection.x;
         camera.position.z = player.object.position.z - horizontalDistance * bodyDirection.z;
-        camera.position.y = player.object.position.y + 2 + cameraDistance * Math.sin(cameraState.pitch);
     } else {
         camera.position.x = player.object.position.x - horizontalDistance * headDirection.x;
         camera.position.z = player.object.position.z - horizontalDistance * headDirection.z;
-        camera.position.y = player.object.position.y + 2 + cameraDistance * Math.sin(cameraState.pitch);
     }
-    // Clamp camera based on player's head position
+    camera.position.y = player.object.position.y + 2 + cameraDistance * Math.sin(cameraState.pitch);
+
+    // Clamp camera
     const waterHeight = terrain.getWaterLevel(camera.position.x, camera.position.z);
     const headY = player.object.position.y + player.heightOffset;
     const terrainHeight = terrain.getHeightAt(camera.position.x, camera.position.z);
     if (headY > waterHeight) {
-        // Head above water: camera above water and terrain
         const minCameraHeight = Math.max(terrainHeight, waterHeight);
-        if (camera.position.y < minCameraHeight) {
-            camera.position.y = minCameraHeight + 0.1;
-        }
+        if (camera.position.y < minCameraHeight) camera.position.y = minCameraHeight + 0.1;
     } else {
-        // Head below water: camera between terrain and water
-        if (camera.position.y < terrainHeight) {
-            camera.position.y = terrainHeight;
-        }
-        if (camera.position.y > waterHeight) {
-            camera.position.y = waterHeight;
-        }
+        if (camera.position.y < terrainHeight) camera.position.y = terrainHeight;
+        if (camera.position.y > waterHeight) camera.position.y = waterHeight;
     }
 
     camera.lookAt(player.object.position);
-    
     renderer.render(scene, camera);
 }
 
@@ -135,32 +112,24 @@ const maxEnemyDistance = 120;
 
 function update() {
     const deltaTime = clock.getDelta();
-
     const cameraPosition = camera.position;
 
-    // Doodads
     doodads.forEach(doodad => {
         if (doodad.object && doodad.object.position) {
             const distance = cameraPosition.distanceTo(doodad.object.position);
             doodad.visible = distance < maxDoodadDistance;
-            if (doodad.update) {
-                doodad.update(deltaTime, completedQuests);
-            }
+            if (doodad.update) doodad.update(deltaTime, completedQuests);
         } else {
             console.warn('Invalid doodad encountered:', doodad);
         }
     });
 
-    // Quest Givers
     questGivers.forEach(qg => {
-        const distance = cameraPosition.distanceTo(qg.object.position);
-        qg.object.visible = distance < maxQuestGiverDistance;
+        qg.object.visible = cameraPosition.distanceTo(qg.object.position) < maxQuestGiverDistance;
     });
 
-    // Enemies
     enemies.forEach(enemy => {
-        const distance = cameraPosition.distanceTo(enemy.object.position);
-        enemy.object.visible = distance < maxEnemyDistance;
+        enemy.object.visible = cameraPosition.distanceTo(enemy.object.position) < maxEnemyDistance;
     });
 }
 
@@ -169,15 +138,14 @@ function handleCollisions() {
     const playerRadius = player.collisionRadius || 0.5;
 
     doodads.forEach(doodad => {
-        if (doodad.isHarvested || !doodad.object.visible) return; // Skip harvested or invisible doodads
+        if (doodad.isHarvested || !doodad.object.visible) return;
 
         const doodadPos = doodad.object.position.clone();
-        const doodadRadius = doodad.collisionRadius * doodad.object.scale.x; // Scale-adjusted radius
+        const doodadRadius = doodad.collisionRadius * doodad.object.scale.x;
         const distance = playerPos.distanceTo(doodadPos);
         const minDistance = playerRadius + doodadRadius;
 
         if (distance < minDistance) {
-            // Collision detected, push player back
             const direction = playerPos.sub(doodadPos).normalize();
             const overlap = minDistance - distance;
             player.object.position.add(direction.multiplyScalar(overlap));
@@ -190,28 +158,16 @@ function gameOver() {
     const gameOverDiv = document.createElement("div");
     gameOverDiv.className = 'popup';
     gameOverDiv.style.cssText = `
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: url('parchment-texture.png');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        color: white;
-        padding: 20px;
-        text-align: center;
-        width: 30%;
-        height: 30%;
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: url('./textures/parchment-texture.png') center/cover no-repeat;
+        color: white; padding: 20px; text-align: center; width: 30%; height: 30%;
     `;
-
     gameOverDiv.innerHTML = `
         <h1>Game Over</h1>
         <button id="respawn" style="cursor: pointer; pointer-events: auto; padding: 10px 20px; background: brown; color: white; border: none; font-size: 16px;">
             Respawn
         </button>
     `;
-
     document.body.appendChild(gameOverDiv);
 
     document.getElementById("respawn").addEventListener("click", () => {
@@ -223,23 +179,24 @@ function gameOver() {
     });
 }
 
-
 function toggleSettings() {
-    const settingsDiv = document.querySelector(".settings");
-    settingsDiv.style.display = settingsDiv.style.display === "none" ? "block" : "none";
+    const settingsPopup = document.getElementById("settings-popup");
+    settingsPopup.style.display = settingsPopup.style.display === "block" ? "none" : "block";
 }
+
 let audioEnabled = true;
 function toggleAudio() {
     audioEnabled = !audioEnabled;
     attackSound.muted = !audioEnabled;
     console.log(`Audio ${audioEnabled ? "enabled" : "disabled"}`);
 }
-function toggleFullscreen() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
 
-// Initial UI Setup
+function toggleFullscreen() {
+    document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+}
+
 init();
 
-// Handle resize
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -247,9 +204,8 @@ window.addEventListener('resize', () => {
     waterSystem.onResize();
 });
 
-// Expose crafting and upgrading to global scope for UI buttons
 window.craftItem = craftItem;
-window.player = player; // For skill point spending
+window.player = player;
 window.toggleSettings = toggleSettings;
 window.toggleAudio = toggleAudio;
 window.toggleFullscreen = toggleFullscreen;

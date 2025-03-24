@@ -1,6 +1,6 @@
 // quests.js
 import { player } from './entity/player.js';
-import { updateQuestUI } from './ui.js';
+import { updateQuestUI } from './ui/quests-ui.js';
 
 let factions = { Villagers: 0, Mages: 0 };
 let quests = [];

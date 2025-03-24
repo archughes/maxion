@@ -1,0 +1,40 @@
+.health-bar,
+.mana-bar,
+.xp-bar {
+    position: absolute;
+    width: 200px;
+    height: 20px;
+    background: url('../textures/parchment-texture-fill.jpg') center/cover no-repeat;
+    border: 3px solid #8B4513;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.health-bar { top: 10px; left: 80px; }
+.mana-bar { top: 40px; left: 80px; }
+.xp-bar {
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+}
+
+.health-fill,
+.mana-fill,
+.xp-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.health-fill { background-color: #FF4040; }
+.mana-fill { background-color: #4169E1; }
+.xp-fill { background: linear-gradient(to right, #FFD700, #DAA520); }
+
+.low-health {
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { background-color: #FF4040; }
+    50% { background-color: #FF0000; }
+    100% { background-color: #FF4040; }
+}

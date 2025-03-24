@@ -2,11 +2,11 @@
 import * as THREE from '../lib/three.module.js';
 import { scene, camera } from '../environment/scene.js';
 import { player } from './player.js';
-import { settings } from '../settings.js';
+import { settings } from '../ui/settings.js';
 import { quests, activeQuests, addQuest, completeQuest, completedQuests, canStartQuest, updateQuestProgress  } from '../quests.js';
 import { Character } from './character.js'; // Assuming this exists
 import { terrain } from '../environment/environment.js';
-import { updateQuestUI } from '../ui.js';
+import { updateQuestUI } from '../ui/quests-ui.js';
 import { selectAttackingEnemy } from '../input.js';
 import { animationSelector } from './animation.js';
 

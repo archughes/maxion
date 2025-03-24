@@ -1,0 +1,55 @@
+.bottom-row {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.action-bar {
+    display: flex;
+    gap: 5px;
+}
+
+.inventory-container {
+    display: flex;
+    gap: 10px;
+}
+
+.action-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px; /* Fixed width */
+    height: 40px; /* Fixed height */
+    background: url('../textures/parchment-texture-fill.jpg') center/cover no-repeat;
+    border: 2px solid #8B4513;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    color: #3C2F2F;
+    padding: 0; /* Remove padding to maximize icon space */
+    cursor: pointer;
+    pointer-events: auto;
+    font-family: 'Cinzel', serif;
+    position: relative; /* For cooldown overlay */
+    overflow: hidden; /* Prevent overflow */
+}
+
+.action-slot img {
+    width: 36px; /* Slightly smaller than slot to account for border */
+    height: 36px;
+    object-fit: contain; /* Ensure icon fits without stretching */
+}
+
+.action-slot::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: var(--cooldown-percent);
+    background: rgba(139, 69, 19, 0.5);
+    z-index: 1;
+    pointer-events: none;
+}

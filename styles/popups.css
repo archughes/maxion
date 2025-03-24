@@ -1,0 +1,77 @@
+.popup-btn,
+.action-slot,
+.item-slot,
+.close-btn {
+    background: url('../textures/parchment-texture-fill.jpg') center/cover no-repeat;
+    border: 2px solid #8B4513;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    color: #3C2F2F;
+    padding: 10px;
+    cursor: pointer;
+    pointer-events: auto;
+    font-family: 'Cinzel', serif;
+}
+
+.popup {
+    position: absolute;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: url('../textures/parchment-texture.png');
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    padding: 40px;
+    width: 600px;
+    max-height: 600px;
+    z-index: 20;
+    overflow: hidden;
+    border: none;
+    box-shadow: none;
+    cursor: pointer;
+    pointer-events: auto;
+    font-family: 'Cinzel', serif;
+}
+
+.popup-btn:hover,
+.action-slot:hover,
+.item-slot:hover,
+.close-btn:hover {
+    border-color: goldenrod;
+}
+
+.search-bar {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    border: 2px solid #8B4513;
+    background: rgba(255, 255, 255, 0.1);
+    color: #3C2F2F;
+    font-family: 'Cinzel', serif;
+    pointer-events: auto;
+}
+
+.scroll-box {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+}
+
+.character-btn {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    width: 60px;
+    height: 60px;
+    border: 2px solid #8B4513;
+    cursor: pointer;
+    pointer-events: auto;
+    background: url('../textures/character-icon.png') center no-repeat;
+    background-size: contain;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+}

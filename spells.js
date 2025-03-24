@@ -1,5 +1,5 @@
 import { player } from './entity/player.js';
-import { setupActionBar } from './ui.js';
+import { setupActionBar } from './ui/action-bar-ui.js';
 
 const RANK_NAMES = ['starter', 'wood', 'stone', 'iron', 'steel', 'diamond', 'eternium'];
 const MAX_RANK = 6;

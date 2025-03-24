@@ -54,7 +54,7 @@ The project is organized into modular directories and files, each dedicated to s
 - **`input.js`**: Manages user input and camera controls.
 - **`items.js`**: Implements item and crafting system logic.
 - **`LICENSE`**: Project license file (assumed; update with specific license details).
-- **`parchment-texture-fill.jpg`, `parchment-texture.png`**: Texture assets for UI elements.
+- **`parchment-texture-fill.jpg`, `parchment-texture.png`, `parchment-texture-scroll.png`**: Texture assets for UI elements.
 - **`character-icon.png`**: Icon for the character button.
 - **`ui.js`**: Manages UI updates and interactions (assumed dependency).
 - **`quests.js`**: Handles quest system logic.

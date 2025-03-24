@@ -1,8 +1,8 @@
 // settings.js - Advanced settings and game state management with property-based API
 
-import { CONFIG } from './data/config.js';
-import { SaveLoadManager } from './saveLoadManager.js';
-import { EpicManager } from './epicManager.js';
+import { CONFIG } from '../data/config.js';
+import { SaveLoadManager } from '../saveLoadManager.js';
+import { EpicManager } from '../epicManager.js';
 
 // Instantiate singletons
 const epicManager = new EpicManager();

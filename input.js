@@ -6,7 +6,11 @@ import { activeQuests, completeQuest } from './quests.js';
 import { camera } from './environment/scene.js';
 import { useItem } from './items.js';
 import { cameraState } from './game.js';
-import { updateInventoryUI, updateStatsUI, updateQuestUI, closeAllPopups } from './ui.js';
+import { UIManager } from './ui/ui.js'; // Updated import
+import { updateInventoryUI } from './ui/inventory-ui.js'; // Specific UI updates
+import { updateQuestUI } from './ui/quests-ui.js';
+import { updateStatsUI } from './ui/stats-ui.js';
+import { updateSpellUI } from './ui/spells-ui.js';
 import { updateMinimap } from './environment/map.js';
 
 let isRightClicking = false, isLeftClicking = false, cameraDistance = 5, nearbyEnemies = [], currentEnemyIndex = -1, previousTarget = null;
@@ -15,13 +19,10 @@ function setupInput() {
     const gameCanvas = document.querySelector("canvas");
 
     document.addEventListener("keydown", event => {
-
-        // Prevent browser shortcut interference in game
         if ((event.shiftKey || event.altKey) && ["KeyW", "KeyQ", "KeyE", "KeyA", "KeyS", "KeyD", "KeyX", "KeyU", "KeyI", "KeyP", "KeyM"].includes(event.code)) {
-            event.preventDefault(); // Stops Ctrl+W, Ctrl+Q, etc.
+            event.preventDefault();
         }
 
-        // console.log(`Key pressed: ${event.code}`);
         switch (event.code) {
             case "KeyW": player.moveForward = true; break;
             case "KeyS": player.moveBackward = true; break;
@@ -30,18 +31,15 @@ function setupInput() {
             case "KeyQ": player.rotateLeft = true; break;
             case "KeyE": player.rotateRight = true; break;
             case "Space":
-                const terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z); // Allows jumping if very close to ground and falling
-                console.log((player.object.position.y - terrainHeight - player.heightOffset));
-                if ((!player.isJumping || ((player.object.position.y - terrainHeight - player.heightOffset) < 0.1 && player.jumpVelocity < 0 && player.jumpVelocity > -0.5)) 
-                    && !player.isInWater 
+                const terrainHeight = terrain.getHeightAt(player.object.position.x, player.object.position.z);
+                if ((!player.isJumping || ((player.object.position.y - terrainHeight - player.heightOffset) < 0.1 && player.jumpVelocity < 0 && player.jumpVelocity > -0.5))
+                    && !player.isInWater
                     && (player.object.position.y - terrainHeight - player.heightOffset) < 0.5) {
                     player.jumpVelocity = 6;
                     player.isJumping = true;
                     player.firstJump = true;
                 }
-                if (player.isInWater) {
-                    player.moveUp = true;
-                }
+                if (player.isInWater) player.moveUp = true;
                 break;
             case "ShiftLeft":
                 player.isRunning = true;
@@ -58,51 +56,51 @@ function setupInput() {
             case "Digit6": useAction(5); break;
             case "KeyX": interactWithEnvironment(); checkQuests(); break;
             case "KeyM":
-            console.log("Map key pressed");
-            const minimap = document.querySelector('.minimap');
-            minimap.classList.toggle('expanded'); // Toggle minimap expansion
-            const canvas = document.querySelector('.map-frame canvas');
+                console.log("Map key pressed");
+                const minimap = document.querySelector('.minimap');
+                minimap.classList.toggle('expanded');
+                const canvas = document.querySelector('.map-frame canvas');
                 if (canvas) {
                     canvas.width = minimap.classList.contains('expanded') ? 500 : 150;
                     canvas.height = minimap.classList.contains('expanded') ? 500 : 150;
                 }
-                updateMinimap(); // Refresh minimap
+                updateMinimap();
                 break;
             case "KeyI":
                 console.log("Inventory key pressed");
                 const inventoryPopup = document.getElementById("inventory-popup");
-                closeAllPopups(inventoryPopup); // Close others
+                UIManager.closeAllPopups(inventoryPopup);
                 inventoryPopup.style.display = inventoryPopup.style.display === "block" ? "none" : "block";
                 if (inventoryPopup.style.display === "block") updateInventoryUI();
                 break;
             case "KeyU":
                 console.log("Quests key pressed");
                 const questsPopup = document.getElementById("quests-popup");
-                closeAllPopups(questsPopup);
+                UIManager.closeAllPopups(questsPopup);
                 questsPopup.style.display = questsPopup.style.display === "block" ? "none" : "block";
                 if (questsPopup.style.display === "block") updateQuestUI();
                 break;
             case "KeyK":
                 console.log("Stats key pressed");
                 const statsPopup = document.getElementById("stats-popup");
-                closeAllPopups(statsPopup);
+                UIManager.closeAllPopups(statsPopup);
                 statsPopup.style.display = statsPopup.style.display === "block" ? "none" : "block";
                 if (statsPopup.style.display === "block") updateStatsUI();
                 break;
             case "KeyP":
                 console.log("Spells key pressed");
                 const spellPopup = document.getElementById("spell-popup");
-                closeAllPopups(spellPopup);
+                UIManager.closeAllPopups(spellPopup);
                 spellPopup.style.display = spellPopup.style.display === "block" ? "none" : "block";
                 if (spellPopup.style.display === "block") updateSpellUI();
                 break;
             case "Tab":
-                event.preventDefault(); // Prevent default browser behavior (e.g., focus switch)
+                event.preventDefault();
                 selectNextEnemy();
                 break;
             case "Escape":
                 console.log("Escape key pressed");
-                closeAllPopups();
+                UIManager.closeAllPopups();
                 if (previousTarget && previousTarget.selectionDisc) {
                     previousTarget.selectionDisc.visible = false;
                 }
@@ -111,8 +109,6 @@ function setupInput() {
                 nearbyEnemies = [];
                 currentEnemyIndex = -1;
                 console.log("Target unselected");
-                break;
-            default:
                 break;
         }
     });
@@ -126,16 +122,10 @@ function setupInput() {
             case "KeyQ": player.rotateLeft = false; break;
             case "KeyE": player.rotateRight = false; break;
             case "Space":
-                if (player.isInWater) {
-                    player.moveUp = false;
-                }
+                if (player.isInWater) player.moveUp = false;
                 break;
-            case "ShiftLeft":
-                player.isRunning = false;
-                break;
-            case "AltLeft":
-                player.setProne(false);
-                break;
+            case "ShiftLeft": player.isRunning = false; break;
+            case "AltLeft": player.setProne(false); break;
         }
     });
 
@@ -150,8 +140,8 @@ function setupInput() {
             mouseMovementSum = 0;
             document.querySelector("canvas").requestPointerLock();
             if (player.modelType !== 'cube') {
-                player.head.rotation.y = 0; // Reset head yaw to align with body
-                player.head.rotation.x = 0; // Reset head pitch to neutral
+                player.head.rotation.y = 0;
+                player.head.rotation.x = 0;
             }
         } else if (event.button === 0) {
             isLeftClicking = true;
@@ -162,7 +152,7 @@ function setupInput() {
             dualMouseForwardFlag = true;
         }
     });
-    
+
     document.addEventListener("mouseup", event => {
         if (event.button === 2) {
             isRightClicking = false;
@@ -181,11 +171,8 @@ function setupInput() {
                         if (previousTarget && previousTarget.selectionDisc) {
                             previousTarget.selectionDisc.visible = false;
                         }
-                        // Select new target
                         player.selectedTarget = hitObject.userData.entity;
-                        if (player.selectedTarget.selectionDisc) {
-                            player.selectedTarget.selectionDisc.visible = true;
-                        }
+                        if (player.selectedTarget.selectionDisc) player.selectedTarget.selectionDisc.visible = true;
                         previousTarget = player.selectedTarget;
                         console.log("Selected target with button 2:", player.selectedTarget);
                         if (player.object.position.distanceTo(player.selectedTarget.object.position) < 5) {
@@ -210,11 +197,8 @@ function setupInput() {
                         if (previousTarget && previousTarget.selectionDisc) {
                             previousTarget.selectionDisc.visible = false;
                         }
-                        // Select new target
                         player.selectedTarget = hitObject.userData.entity;
-                        if (player.selectedTarget.selectionDisc) {
-                            player.selectedTarget.selectionDisc.visible = true;
-                        }
+                        if (player.selectedTarget.selectionDisc) player.selectedTarget.selectionDisc.visible = true;
                         previousTarget = player.selectedTarget;
                         console.log("Selected target with button 1:", player.selectedTarget);
                     }
@@ -243,7 +227,6 @@ function setupInput() {
             } else {
                 player.object.rotation.y -= event.movementX * 0.004;
             }
-            // Camera pitch for button 2
             const maxPitch = Math.PI / 2;
             const minPitch = -Math.PI / 2;
             const pitchThreshold = 0.9;
@@ -257,11 +240,10 @@ function setupInput() {
             cameraState.pitch = Math.max(minPitch, Math.min(maxPitch, cameraState.pitch));
         } else if (isLeftClicking && document.pointerLockElement === document.querySelector("canvas")) {
             if (player.modelType !== 'cube') {
-                player.head.rotation.y -= event.movementX * 0.004; // Button 1: Head yaw
-                player.head.rotation.x -= event.movementY * 0.004; // Head pitch
+                player.head.rotation.y -= event.movementX * 0.004;
+                player.head.rotation.x -= event.movementY * 0.004;
                 player.head.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, player.head.rotation.x));
             }
-            // Camera pitch for button 1
             const maxPitch = Math.PI / 2;
             const minPitch = -Math.PI / 2;
             const pitchThreshold = 0.9;
@@ -308,7 +290,7 @@ function useAction(slot) {
             } else {
                 console.log(`Skill ${action.name} failed (cooldown/mana/range)`);
             }
-            player.updateSkillAvailability(); // Update UI after use
+            player.updateSkillAvailability();
         }
     }
 }
@@ -339,10 +321,7 @@ function selectNextEnemy() {
             }
             return true;
         })
-        .map(enemy => ({
-            enemy,
-            distance: playerPos.distanceTo(enemy.object.position)
-        }))
+        .map(enemy => ({ enemy, distance: playerPos.distanceTo(enemy.object.position) }))
         .sort((a, b) => a.distance - b.distance)
         .map(item => item.enemy);
 
@@ -357,53 +336,39 @@ function selectNextEnemy() {
         return;
     }
 
-    // Deselect previous target
     if (previousTarget && previousTarget.selectionDisc) {
         previousTarget.selectionDisc.visible = false;
     }
 
-    // Cycle to the next enemy
     currentEnemyIndex = (currentEnemyIndex + 1) % nearbyEnemies.length;
     player.selectedTarget = nearbyEnemies[currentEnemyIndex];
-    if (player.selectedTarget.selectionDisc) {
-        player.selectedTarget.selectionDisc.visible = true;
-    }
-    previousTarget = player.selectedTarget; // Update previous target
+    if (player.selectedTarget.selectionDisc) player.selectedTarget.selectionDisc.visible = true;
+    previousTarget = player.selectedTarget;
     console.log(`Selected enemy ${currentEnemyIndex + 1}/${nearbyEnemies.length} at distance ${playerPos.distanceTo(player.selectedTarget.object.position).toFixed(2)} units`);
 }
 
 function selectAttackingEnemy(attackingNPC) {
-    if (!player.selectedTarget) { // Only if no target is currently selected
-        // Deselect previous target (just in case)
+    if (!player.selectedTarget) {
         if (previousTarget && previousTarget.selectionDisc) {
             previousTarget.selectionDisc.visible = false;
         }
 
-        // Set the new target
         player.selectedTarget = attackingNPC;
-        if (player.selectedTarget.selectionDisc) {
-            player.selectedTarget.selectionDisc.visible = true;
-        }
+        if (player.selectedTarget.selectionDisc) player.selectedTarget.selectionDisc.visible = true;
         previousTarget = player.selectedTarget;
 
-        // Update nearbyEnemies and currentEnemyIndex to keep Tab targeting consistent
         const playerPos = player.object.position;
         nearbyEnemies = enemies
             .filter(enemy => {
                 if (!enemy || !enemy.object || enemy.health <= 0) return false;
-                const distance = playerPos.distanceTo(enemy.object.position);
-                return distance <= 25; // Same range as selectNextEnemy
+                return playerPos.distanceTo(enemy.object.position) <= 25;
             })
-            .map(enemy => ({
-                enemy,
-                distance: playerPos.distanceTo(enemy.object.position)
-            }))
+            .map(enemy => ({ enemy, distance: playerPos.distanceTo(enemy.object.position) }))
             .sort((a, b) => a.distance - b.distance)
             .map(item => item.enemy);
 
         currentEnemyIndex = nearbyEnemies.indexOf(attackingNPC);
         if (currentEnemyIndex === -1) {
-            // If the attacking NPC isn’t in the list (e.g., outside FOV), add it
             nearbyEnemies.push(attackingNPC);
             currentEnemyIndex = nearbyEnemies.length - 1;
         }
