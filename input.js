@@ -6,7 +6,7 @@ import { activeQuests, completeQuest } from './quests.js';
 import { camera } from './environment/scene.js';
 import { useItem } from './items.js';
 import { cameraState } from './game.js';
-import { updateInventoryUI, updateCharacterUI, updateQuestUI, updateStatsUI, closeAllPopups } from './ui.js';
+import { updateInventoryUI, updateStatsUI, updateQuestUI, closeAllPopups } from './ui.js';
 import { updateMinimap } from './environment/map.js';
 
 let isRightClicking = false, isLeftClicking = false, cameraDistance = 5, nearbyEnemies = [], currentEnemyIndex = -1, previousTarget = null;
@@ -75,13 +75,6 @@ function setupInput() {
                 inventoryPopup.style.display = inventoryPopup.style.display === "block" ? "none" : "block";
                 if (inventoryPopup.style.display === "block") updateInventoryUI();
                 break;
-            case "KeyP":
-                console.log("Character panel key pressed");
-                const characterPopup = document.getElementById("character-popup");
-                closeAllPopups(characterPopup);
-                characterPopup.style.display = characterPopup.style.display === "block" ? "none" : "block";
-                if (characterPopup.style.display === "block") updateCharacterUI();
-                break;
             case "KeyU":
                 console.log("Quests key pressed");
                 const questsPopup = document.getElementById("quests-popup");
@@ -95,6 +88,13 @@ function setupInput() {
                 closeAllPopups(statsPopup);
                 statsPopup.style.display = statsPopup.style.display === "block" ? "none" : "block";
                 if (statsPopup.style.display === "block") updateStatsUI();
+                break;
+            case "KeyP":
+                console.log("Spells key pressed");
+                const spellPopup = document.getElementById("spell-popup");
+                closeAllPopups(spellPopup);
+                spellPopup.style.display = spellPopup.style.display === "block" ? "none" : "block";
+                if (spellPopup.style.display === "block") updateSpellUI();
                 break;
             case "Tab":
                 event.preventDefault(); // Prevent default browser behavior (e.g., focus switch)
@@ -285,18 +285,10 @@ function setupInput() {
 }
 
 function useAction(slot) {
-    console.log(`Using action slot ${slot}`);
     const action = player.actionBar[slot];
+    console.log(`Using action slot ${slot}, ${action ? `action: ${action.name}` : "no action"}`);
     if (action) {
-        if (action.type === "skill") {
-            const success = player.useSkill(action.name);
-            if (success) {
-                console.log(`Skill used: ${action.name}`);
-            } else {
-                console.log(`Skill ${action.name} failed (cooldown/mana/range)`);
-            }
-            player.updateSkillAvailability(); // Update UI after use
-        } else if (action.type === "consumable") {
+        if (action.type === "consumable") {
             useItem(action);
             console.log(`Consumable used: ${action.name}`);
             if (action.amount !== undefined) {
@@ -309,6 +301,14 @@ function useAction(slot) {
                 player.removeItem(action);
                 player.actionBar[slot] = null;
             }
+        } else {
+            const success = player.useSkill(action.name);
+            if (success) {
+                console.log(`Skill used: ${action.name}`);
+            } else {
+                console.log(`Skill ${action.name} failed (cooldown/mana/range)`);
+            }
+            player.updateSkillAvailability(); // Update UI after use
         }
     }
 }

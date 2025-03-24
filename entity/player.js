@@ -1,7 +1,7 @@
 // player.js
 import * as THREE from '../lib/three.module.js';
 import { scene, camera } from '../environment/scene.js';
-import { updateHealthUI, updateManaUI, updateInventoryUI, updateXPUI, updateCharacterUI } from '../ui.js';
+import { updateHealthUI, updateManaUI, updateInventoryUI, updateXPUI, updateStatsUI, updateSpellUI } from '../ui.js';
 import { Character } from './character.js';
 import { terrain } from '../environment/environment.js';
 import { checkCollectionQuests } from '../quests.js';
@@ -9,6 +9,7 @@ import { items } from '../items.js';
 import { showDrowningMessage, removeDrowningMessage } from '../messages.js';
 import { updateMinimap, terrainCache } from '../environment/map.js';
 import { animationSelector } from './animation.js';
+import { spellManager, Spell } from '../spells.js';
 import { createSparkleEffect } from '../animations/environmental-effects.js';
 
 const INVENTORY_SIZE = 8;
@@ -22,12 +23,8 @@ class Player extends Character {
         // console.log('Player added to scene:', this.object);
 
         this.knownMap = new Set();
-        this.actionBar = [
-            { type: "skill", name: "Power Attack", level: 1, cooldown: 0, maxCooldown: 5, range: 2 },
-            { type: "skill", name: "Fireball", level: 1, cooldown: 0, maxCooldown: 10, range: 5, manaCost: 10 },
-            { type: "skill", name: "Invisibility", level: 1, cooldown: 0, maxCooldown: 15, range: 0, manaCost: 5 },
-            null, null, null // Slots 4-6 for items
-        ];
+        this.learnedSpells = []; // Array of spell objects
+        this.actionBar = [null, null, null, null, null, null];
         this.mana = 50;
         this.xp = 0;
         this.level = 1;
@@ -42,7 +39,6 @@ class Player extends Character {
         this.knownRecipes = []; 
         this.isAutoAttacking = false;
         this.isInvisible = false;
-
         this.onLand = (fallVelocity) => {
             const fallDamage = Math.floor(fallVelocity * 2);
             this.takeDamage(fallDamage, undefined, 'fall');
@@ -52,42 +48,40 @@ class Player extends Character {
         this.collisionRadius = 0.5;
     }
 
-    useSkill(skillName) {
-        const action = this.actionBar.find(a => a?.type === "skill" && a.name === skillName);
-        if (!action || action.level <= 0 || action.cooldown > 0) return false;
+    playerInit() {
+        this.learnSpell("Power Attack");
+        this.actionBar[0] = spellManager.getSpellByName("Power Attack");
+        this.learnSpell("Fireball");
+        this.actionBar[1] = spellManager.getSpellByName("Fireball");
+        this.learnSpell("Invisibility");
+        this.actionBar[2] = spellManager.getSpellByName("Invisibility");
+        updateSpellUI();
+    }
 
-        const distanceToTarget = this.selectedTarget ? this.object.position.distanceTo(this.selectedTarget.object.position) : Infinity;
-
-        // Skill-specific logic with immediate effect
-        if (skillName === "Power Attack") {
-            if (distanceToTarget <= action.range) {
-                const damage = this.damage + action.level * 5;
-                this.selectedTarget.takeDamage(damage * (this.stats.strength / 10), 'physical', 'player');
-                console.log(`Player used Power Attack for ${damage * (this.stats.strength / 10)} damage!`);
-                action.cooldown = action.maxCooldown - action.level * 0.5;
-                this.isAutoAttacking = true; // Enable auto-attack
-                return true;
-            }
-        } else if (skillName === "Fireball" && this.useMana(action.manaCost)) {
-            if (distanceToTarget <= action.range) {
-                const damage = 20 + action.level * 10;
-                this.selectedTarget.takeDamage(damage * (this.stats.intelligence / 10), 'magic', 'player');
-                console.log(`Player cast Fireball for ${damage * (this.stats.intelligence / 10)} damage!`);
-                action.cooldown = action.maxCooldown - action.level * 1;
-                return true;
-            }
-        } else if (skillName === "Invisibility" && this.useMana(action.manaCost)) {
-            console.log("Player is invisible!");
-            action.cooldown = action.maxCooldown - action.level * 2;
-            this.isInvisible = true;
-            this.setInvisibilityEffect(true);
-            setTimeout(() => {
-                this.isInvisible = false;
-                this.setInvisibilityEffect(false);
-            }, 5000);
-            return true;
+    learnSpell(spellName) {
+        const spell = spellManager.getSpellByName(spellName);
+        if (spell && !this.learnedSpells.find(s => s.name === spell.name)) {
+            this.learnedSpells.push(spell); // Use the original instance
         }
-        return false; // Failed due to range, mana, or other conditions
+    }
+
+    useSkill(skillName) {
+        return spellManager.castSpell(skillName, this, this.selectedTarget);
+    }
+
+    upgradeSkill(spellName) {
+        if (this.skillPoints <= 0) return;
+        const spell = this.learnedSpells.find(s => s.name === spellName);
+        if (spell && spell.upgradeRank()) {
+            this.skillPoints--;
+            console.log(`Upgraded ${spellName} to rank ${spell.rank}`);
+            updateStatsUI();
+        }
+    }
+
+    updateCooldowns(delta) {
+        spellManager.updateCooldowns(delta);
+        this.updateSkillAvailability();
     }
 
     setInvisibilityEffect(isInvisible) {
@@ -115,15 +109,6 @@ class Player extends Character {
                 this.object.material.opacity = 1; // Reset opacity
             }
         }, duration);
-    }
-
-    updateCooldowns(delta) {
-        this.actionBar.forEach(action => {
-            if (action?.type === "skill" && action.cooldown > 0) {
-                action.cooldown = Math.max(0, action.cooldown - delta);
-            }
-        });
-        this.updateSkillAvailability(); // Check range and update UI
     }
 
     updateSkillAvailability() {
@@ -291,7 +276,7 @@ class Player extends Character {
             this.stats[stat]++;
             this.statPoints--;
             console.log(`Increased ${stat} to ${this.stats[stat]}`);
-            updateCharacterUI(); // Refresh UI
+            updateStatsUI(); // Refresh UI
         }
     }
     
@@ -302,7 +287,7 @@ class Player extends Character {
             action.level++;
             this.skillPoints--;
             console.log(`Upgraded ${skillName} to level ${action.level}`);
-            updateCharacterUI();
+            updateStatsUI();
         }
     }
 }

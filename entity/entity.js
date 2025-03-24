@@ -63,25 +63,45 @@ class CombatEntity extends Entity {
         this.attackCooldown = 0;
         this.attackInterval = 1;
         this.damage = 20;
+
+        this.damageModifiers = {
+            physical: 1.0, // Default: no resistance or vulnerability
+            fire: 1.0,
+            ice: 1.0,
+            arcane: 1.0,
+            holy: 1.0,
+            shadow: 1.0,
+            nature: 1.0
+          };
+    }
+    
+    updateDamageModifiers() {
+        // Reset modifiers
+        Object.keys(this.damageModifiers).forEach(type => this.damageModifiers[type] = 1.0);
+    
+        // Apply equipment effects (example logic)
+        if (this.equippedArmor) {
+          if (this.equippedArmor.type === "armor") {
+            this.damageModifiers.physical *= 0.8; // 20% physical resistance
+            if (this.equippedArmor.name.includes("Fire")) this.damageModifiers.fire *= 0.7;
+          }
+        }
+        if (this.equippedHelmet) {
+          if (this.equippedHelmet.name.includes("Ice")) this.damageModifiers.ice *= 0.7;
+        }
+    
+        // Apply active spell effects (example for player)
+        if (this.isInvisible) {
+          this.damageModifiers.physical *= 0.5; // 50% physical resistance while invisible
+        }
     }
 
     takeDamage(amount, type = 'physical', attacker = '') {
-        let finalDamage = amount;
 
-        switch (type) {
-            case 'physical':
-                const maxArmor = 100; // TODO: Map to entity level?
-                finalDamage = amount * (1 - (this.resistances[type] / maxArmor || 0));
-                break;
-            case 'magic':
-                finalDamage = amount * (1 - (this.resistances[type] || 0));
-                break;
-            default:
-                finalDamage = Math.max(0, amount - this.armor);
-                break;
-        }
+        this.updateDamageModifiers(); // Update before calculating damage
+        const modifiedAmount = amount * (this.damageModifiers[type] || 1.0);
 
-        super.takeDamage(finalDamage, attacker);
+        super.takeDamage(modifiedAmount, attacker);
         // console.log(`CombatEntity took ${amount} damage! Current health: ${this.health}`);
     }
 

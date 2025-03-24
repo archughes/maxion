@@ -3,7 +3,7 @@
  * Procedurally generates SVG icons for different game elements based on their properties
  */
 
-class IconGenerator {
+export class IconGenerator {
     constructor() {
       // Color palettes
       this.palettes = {
@@ -107,17 +107,6 @@ class IconGenerator {
           colors: this.getColorVariation('shadow', 'iron')
         }
       };
-  
-    //   // Ranks with quality modifiers
-    //   this.ranks = {
-    //     starter: 0.7,
-    //     wood: 0.8,
-    //     stone: 0.9,
-    //     iron: 1.0,
-    //     steel: 1.1,
-    //     diamond: 1.2,
-    //     eternium: 1.3
-    //   };
   
       // Potion sizes with size modifiers
       this.potionSizes = {

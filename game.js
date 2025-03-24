@@ -13,6 +13,7 @@ import { timeSystem } from './environment/TimeSystem.js';
 import { initializeTerrainCache, setupMinimap } from './environment/map.js';
 import { Movement } from './entity/movement.js';
 import { settings } from './settings.js';
+import { loadSpells } from './spells.js';
 
 // Add Mana Bar to UI
 const manaBar = document.createElement("div");
@@ -31,14 +32,15 @@ let movement = null;
 
 // Game Loop
 async function init() {
+    await loadSpells();
     await loadQuests();
     await loadItems();
     await loadRecipes();
     await loadMap('summer'); 
+
     // Initial UI Setup
     setupInput();
     setupPopups();
-    setupActionBar();
     document.body.focus();
     updateInventoryUI();
     updateHealthUI();

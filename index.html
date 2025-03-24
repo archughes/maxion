@@ -206,12 +206,16 @@
             border-bottom: 1px solid #8B4513;
         }
 
-        .action-slot {
+        .action-slot, .item-slot {
+            display: flex;
+            flex-direction: row; /* Icon and text side by side */
+            justify-content: center;
+            align-items: center;
             position: relative;
-            width: 40px;
-            height: 40px;
+            overflow: hidden;
+            width: 40px; /* Action slot */
+            height: 40px; /* Action slot */
             text-align: center;
-            line-height: 40px;
             background: url('parchment-texture-fill.jpg');
             background-size: cover;
             background-position: center;
@@ -219,7 +223,25 @@
             border: 2px solid #8B4513;
             cursor: pointer;
             --cooldown-percent: 0;
-            /* Custom property for cooldown */
+        }
+
+        .item-slot {
+            width: 50px; /* Inventory slot */
+            height: 50px;
+        }
+
+        .action-slot svg, .item-slot svg { /* Updated from original */
+            width: 40px;
+            height: 40px;
+            max-width: 40px; /* Adjusted from 40px */
+            max-height: 40px;
+            flex-shrink: 0; /* Prevent SVG from shrinking */
+        }
+
+        .action-slot span, .item-slot span {
+            margin-left: 5px; /* Space between icon and text */
+            font-size: 12px; /* Adjust text size to fit */
+            white-space: nowrap; /* Prevent text wrapping */
         }
 
         .action-slot::after {
@@ -232,13 +254,6 @@
             background: rgba(139, 69, 19, 0.5);
             /* Brownish cooldown overlay */
             transition: height 0.1s linear;
-        }
-
-        .item-slot {
-            width: 50px;
-            height: 50px;
-            text-align: center;
-            line-height: 50px;
         }
 
         .item-slot.equipped {
@@ -462,8 +477,7 @@
             </div>
             <div class="inventory-container">
                 <button class="popup-btn" data-target="inventory-popup">Inventory</button>
-                <button class="popup-btn" data-target="recipes-popup">Recipes</button>
-                <button class="popup-btn" data-target="character-popup">Equipped</button>
+                <button class="popup-btn" data-target="spell-popup">Spells</button>
                 <button class="popup-btn" data-target="settings-popup">Settings</button>
                 <button class="popup-btn" data-target="quests-popup">Quests</button>
             </div>
@@ -471,20 +485,19 @@
 
         <!-- Popups -->
         <div class="popup" id="inventory-popup" style="display:none;">
-            <h2>Inventory</h2>
-            <input type="text" class="search-bar" placeholder="Search Inventory...">
-            <div class="inventory-grid scroll-box"></div>
+            <h2>Inventory & Recipes</h2>
+            <input type="text" class="search-bar" placeholder="Search...">
+            <div class="scroll-box" style="max-height: 350px; overflow-y: auto;">
+                <h3>Inventory</h3>
+                <div class="inventory-grid"></div>
+                <h3>Recipes</h3>
+                <div class="recipe-list"></div>
+            </div>
             <button class="close-btn">Close</button>
         </div>
-        <div class="popup" id="recipes-popup" style="display:none;">
-            <h2>Recipes</h2>
-            <input type="text" class="search-bar" placeholder="Search Recipes...">
-            <div class="recipe-list scroll-box"></div>
-            <button class="close-btn">Close</button>
-        </div>
-        <div class="popup" id="character-popup" style="display:none;">
-            <h2>Equipped Items</h2>
-            <div class="character-info"></div>
+        <div class="popup" id="spell-popup" style="display:none;">
+            <h2>Spells</h2>
+            <div class="spell-list scroll-box"></div>
             <button class="close-btn">Close</button>
         </div>
         <div class="popup" id="settings-popup" style="display:none;">
@@ -560,7 +573,9 @@
         </div>
         <div class="popup" id="stats-popup" style="display:none;">
             <h2>Character Stats</h2>
-            <div class="stats-info"></div>
+            <div class="scroll-box" style="max-height: 350px; overflow-y: auto;">
+                <div class="stats-info"></div>
+            </div>
             <button class="close-btn">Close</button>
         </div>
 

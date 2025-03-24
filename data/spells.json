@@ -1,0 +1,75 @@
+[
+  {
+    "name": "Power Attack",
+    "type": "physical",
+    "damage": 10,
+    "manaCost": 5,
+    "cooldown": 1,
+    "range": 4,
+    "icon": "attack"
+  },
+  {
+    "name": "Fireball",
+    "type": "fire",
+    "damage": 10,
+    "manaCost": 5,
+    "cooldown": 4,
+    "range": 4,
+    "icon": "fire"
+  },
+  {
+    "name": "Frost Nova",
+    "type": "ice",
+    "damage": 12,
+    "manaCost": 10,
+    "cooldown": 12,
+    "range": 3,
+    "icon": "ice"
+  },
+  {
+    "name": "Invisibility",
+    "type": "invisibility",
+    "damage": 0,
+    "manaCost": 5,
+    "cooldown": 15,
+    "range": 0,
+    "duration": 5,
+    "icon": "invisibility"
+  },
+  {
+    "name": "Arcane Blast",
+    "type": "arcane",
+    "damage": 15,
+    "manaCost": 8,
+    "cooldown": 6,
+    "range": 5,
+    "icon": "arcane"
+  },
+  {
+    "name": "Holy Light",
+    "type": "holy",
+    "damage": 8,
+    "manaCost": 6,
+    "cooldown": 10,
+    "range": 4,
+    "icon": "holy"
+  },
+  {
+    "name": "Shadow Bolt",
+    "type": "shadow",
+    "damage": 14,
+    "manaCost": 9,
+    "cooldown": 9,
+    "range": 5,
+    "icon": "shadow"
+  },
+  {
+    "name": "Nature's Wrath",
+    "type": "nature",
+    "damage": 16,
+    "manaCost": 12,
+    "cooldown": 12,
+    "range": 4,
+    "icon": "nature"
+  }
+]
