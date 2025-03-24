@@ -250,12 +250,9 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: calc(var(--cooldown-percent) * 100%);
+            height: var(--cooldown-percent);
             background: rgba(139, 69, 19, 0.5);
-            /* Brownish cooldown overlay */
-            transition: height 0.1s linear;
         }
-
         .item-slot.equipped {
             border-color: goldenrod;
         }
