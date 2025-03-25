@@ -1,36 +1,37 @@
 import { player } from './entity/player.js';
 import { setupActionBar } from './ui/action-bar-ui.js';
+import { CooldownEntity, cooldownManager } from './cooldown.js';
 
 const RANK_NAMES = ['starter', 'wood', 'stone', 'iron', 'steel', 'diamond', 'eternium'];
 const MAX_RANK = 6;
 
-export class Spell {
+export class Spell extends CooldownEntity {
   constructor(data, rankLevel = 0) {
+    super(data.cooldown || 0);
     this.name = data.name;
     this.type = data.type;
     this.rank = Math.min(Math.max(rankLevel, 0), MAX_RANK);
     this.baseDamage = data.damage || 0;
     this.baseManaCost = data.manaCost || 0;
-    this.baseCooldown = data.cooldown || 0;
     this.baseRange = data.range || 0;
     this.baseDuration = data.duration || 0;
     this.icon = data.icon;
-    this.cooldownRemaining = 0;
 
     this.modifyByRank();
+    cooldownManager.register(this, this.name);
   }
 
   modifyByRank() {
     const rankFactor = this.rank * 0.2;
     this.damage = this.baseDamage * (1 + rankFactor);
     this.manaCost = this.baseManaCost * (1 + rankFactor * 0.5);
-    this.cooldown = this.baseCooldown / (1 + rankFactor * 0.25);
+    this.baseCooldown = this.baseCooldown / (1 + rankFactor * 0.25);
     this.range = this.baseRange * (1 + rankFactor * 0.5);
     this.duration = this.baseDuration * (1 + rankFactor * 0.5);
 
     this.damage = Math.round(this.damage);
     this.manaCost = Math.round(this.manaCost);
-    this.cooldown = Math.round(this.cooldown * 10) / 10;
+    this.baseCooldown = Math.round(this.baseCooldown * 10) / 10;
     this.range = Math.round(this.range);
     this.duration = Math.round(this.duration * 10) / 10;
   }
@@ -62,18 +63,9 @@ class SpellManager {
     return this.spells;
   }
 
-  updateCooldowns(delta) {
-    this.spells.forEach(spell => {
-      if (spell.cooldownRemaining > 0) {
-        spell.cooldownRemaining = Math.max(0, spell.cooldownRemaining - delta);
-        // console.log(`Cooldown remaining for ${spell.name}: ${spell.cooldownRemaining.toFixed(1)}s`);
-      }
-    });
-  }
-
   castSpell(spellName, player, target) {
     const spell = player.learnedSpells.find(s => s.name === spellName);
-    if (!spell || spell.cooldownRemaining > 0 || (spell.manaCost && !player.useMana(spell.manaCost))) {
+    if (!spell || spell.isOnCooldown() || (spell.manaCost && !player.useMana(spell.manaCost))) {
       return false;
     }
 
@@ -155,7 +147,7 @@ class SpellManager {
     }
 
     if (success) {
-      spell.cooldownRemaining = spell.cooldown;
+      spell.startCooldown();
       console.log(`Spell ${spell.name} cooldown set to ${spell.cooldownRemaining}s`);
     }
     return success;

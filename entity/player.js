@@ -79,11 +79,6 @@ class Player extends Character {
         }
     }
 
-    updateCooldowns(delta) {
-        spellManager.updateCooldowns(delta);
-        this.updateSkillAvailability();
-    }
-
     setInvisibilityEffect(isInvisible) {
         this.object.traverse((child) => {
             if (child.isMesh && child.material) {
@@ -101,18 +96,6 @@ class Player extends Character {
             this.object.visible = true;
             if (this.object.material) this.object.material.opacity = 1;
         }, duration);
-    }
-
-    updateSkillAvailability() {
-        const distanceToTarget = this.selectedTarget ? this.object.position.distanceTo(this.selectedTarget.object.position) : Infinity;
-        this.actionBar.forEach((action, slot) => {
-            if (action?.type === "skill") {
-                const outOfRange = action.range > 0 && distanceToTarget > action.range;
-                const onCooldown = action.cooldown > 0;
-                const unavailable = outOfRange || onCooldown || (action.manaCost && this.mana < action.manaCost);
-                this.updateActionBarSlotUI(slot, unavailable);
-            }
-        });
     }
 
     updateActionBarSlotUI(slot, unavailable) {
@@ -267,7 +250,7 @@ class Player extends Character {
 
     upgradeSkill(spellName) {
         if (this.skillPoints <= 0) return;
-        const action = this.actionBar.find(a => a?.type === "skill" && a.name === spellName);
+        const action = this.actionBar.find(a => a?.isUsable && a.name === spellName);
         if (action) {
             action.level++;
             this.skillPoints--;

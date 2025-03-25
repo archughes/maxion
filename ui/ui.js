@@ -11,7 +11,7 @@ export const UIManager = {
     initialize() {
         const uiContainer = document.getElementById('game-ui');
         uiContainer.innerHTML = `
-            <img src="character-icon.png" class="character-btn" data-target="stats-popup">
+            <img src="./textures/character-icon.png" class="character-btn" data-target="stats-popup">
             ${renderHealthBar()}
             ${renderManaBar()}
             ${renderXPBar()}

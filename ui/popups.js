@@ -4,6 +4,21 @@ import { updateStatsUI } from './stats-ui.js';
 import { updateQuestUI } from './quests-ui.js';
 import { updateSettings, saveSettings, loadGame, saveGame } from './settings.js';
 
+let spellUIInterval = null;
+
+function startSpellUIUpdate() {
+    if (!spellUIInterval) {
+        spellUIInterval = setInterval(updateSpellUI, 100); // Update every 100ms (10 FPS)
+    }
+}
+
+function stopSpellUIUpdate() {
+    if (spellUIInterval) {
+        clearInterval(spellUIInterval);
+        spellUIInterval = null;
+    }
+}
+
 export function setupPopups() {
     document.querySelectorAll(".popup-btn, .character-btn").forEach(btn => {
         btn.addEventListener("click", () => {

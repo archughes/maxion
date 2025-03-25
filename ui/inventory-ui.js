@@ -31,15 +31,17 @@ export function updateInventoryUI() {
                 ${item.defense ? `Defense: ${item.defense}` : ''}
                 ${item.health ? `Health: ${item.health}` : ''}
                 ${item.mana ? `Mana: ${item.mana}` : ''}
+                ${item.isOnCooldown() ? `Cooldown: ${item.cooldownRemaining.toFixed(1)}s / ${item.baseCooldown}s` : ''}
             `);
 
             slot.draggable = true;
             slot.addEventListener("dragstart", (e) => e.dataTransfer.setData("text/plain", JSON.stringify(item)));
             slot.addEventListener("click", (event) => {
                 event.stopPropagation();
-                if (["weapon", "armor", "helmet"].includes(item.type)) {
+                if (["weapon", "armor", "helmet"].includes(item.type) && event.button === 2) {
                     player.equipItem(item);
-                } else if (item.type === "consumable") {
+                } 
+                if (event.button === 0) {
                     useItem(item);
                     updateInventoryUI();
                 }

@@ -54,12 +54,6 @@ export function updateActionBar() {
         if (action) {
             const icon = action.type !== "consumable" ? getSpellIcon(action, 40) : getItemIcon(action, 40);
             slot.appendChild(icon);
-            if (action.type !== "consumable" && action.cooldownRemaining > 0) {
-                const cooldownPercent = (action.cooldownRemaining / action.cooldown * 100);
-                slot.style.setProperty('--cooldown-percent', `${cooldownPercent}%`);
-            } else {
-                slot.style.setProperty('--cooldown-percent', '0%');
-            }
         }
     });
     requestAnimationFrame(updateActionBar);

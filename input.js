@@ -133,7 +133,7 @@ function setupInput() {
     let mouseMovementSum = 0;
     let dualMouseForwardFlag = false;
     document.addEventListener("mousedown", event => {
-        if (event.target.closest(".inventory-container, .popup, .action-bar, .minimap, .character-btn")) return;
+        if (event.target.closest(".inventory-container, .popup, .game-over, .action-bar, .minimap, .character-btn")) return;
         if (event.button === 2) {
             isRightClicking = true;
             rightClickStartTime = Date.now();
@@ -290,7 +290,6 @@ function useAction(slot) {
             } else {
                 console.log(`Skill ${action.name} failed (cooldown/mana/range)`);
             }
-            player.updateSkillAvailability();
         }
     }
 }

@@ -13,6 +13,7 @@ import { initializeTerrainCache, setupMinimap } from './environment/map.js';
 import { Movement } from './entity/movement.js';
 import { settings } from './ui/settings.js';
 import { loadSpells } from './spells.js';
+import { cooldownManager } from './cooldown.js';
 
 // Input Handling
 let clock = new THREE.Clock();
@@ -31,7 +32,7 @@ async function init() {
 
     // Initial Setup
     setupInput();
-    UIManager.initialize(); // Replaces individual UI setups
+    UIManager.initialize();
     document.body.focus();
     initializeTerrainCache();
     setupMinimap();
@@ -58,7 +59,7 @@ function animate() {
     timeSystem.update(deltaTime);
     waterSystem.update(deltaTime);
     skySystem.update(deltaTime, terrain.terrainFunc);
-    player.updateCooldowns(deltaTime);
+    cooldownManager.update(deltaTime);
     updateKnownMap();
     updatePlayer(deltaTime, movement);
     updateNPC(deltaTime);
@@ -156,7 +157,7 @@ function handleCollisions() {
 
 function gameOver() {
     const gameOverDiv = document.createElement("div");
-    gameOverDiv.className = 'popup';
+    gameOverDiv.className = 'game-over';
     gameOverDiv.style.cssText = `
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
         background: url('./textures/parchment-texture.png') center/cover no-repeat;

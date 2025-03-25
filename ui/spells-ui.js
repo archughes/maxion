@@ -18,13 +18,12 @@ export function updateSpellUI() {
             e.dataTransfer.setData("text/plain", JSON.stringify({ ...spell, type: "spell" }));
         });
         spellList.appendChild(spellElement);
-
         setupTooltip(spellElement, () => `
             <strong>${spell.name}</strong><br>
             Type: ${spell.type}<br>
             Damage: ${spell.damage}<br>
             Mana Cost: ${spell.manaCost}<br>
-            Cooldown: ${spell.cooldown}s<br>
+            Cooldown: ${spell.isOnCooldown() ? `${spell.cooldownRemaining.toFixed(1)}s / ${spell.baseCooldown}s` : `${spell.baseCooldown}s`}<br>
             Range: ${spell.range}
         `);
     });

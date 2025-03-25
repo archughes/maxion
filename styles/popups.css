@@ -12,7 +12,7 @@
     font-family: 'Cinzel', serif;
 }
 
-.popup {
+.popup, .game-over {
     position: absolute;
     bottom: 60px;
     left: 50%;
@@ -36,7 +36,8 @@
 .popup-btn:hover,
 .action-slot:hover,
 .item-slot:hover,
-.close-btn:hover {
+.close-btn:hover,
+.respawn:hover {
     border-color: goldenrod;
 }
 
@@ -71,7 +72,6 @@
     border: 2px solid #8B4513;
     cursor: pointer;
     pointer-events: auto;
-    background: url('../textures/character-icon.png') center no-repeat;
     background-size: contain;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
 }

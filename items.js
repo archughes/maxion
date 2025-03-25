@@ -1,19 +1,21 @@
-// items.js
 import { player } from './entity/player.js';
-import { updateInventoryUI } from './ui/inventory-ui.js';
+import { CooldownEntity, cooldownManager } from './cooldown.js';
 
-class Item {
-    constructor({ name, type, stackSize = 1 }) {
-        this.name = name;
-        this.type = type;
-        this.stackSize = stackSize; // Fixed typo from stackSize1
+class Item extends CooldownEntity {
+    constructor(data) {
+        super(data.cooldown);
+        this.name = data.name;
+        this.type = data.type;
+        this.stackSize = data.stackSize || 1;
+        this.isUsable = data.usable || false;
+        cooldownManager.register(this, this.name);
     }
 }
 
 class WeaponItem extends Item {
     constructor(data) {
         super(data);
-        this.damage = data.damage || data.baseDamage; // Use baseDamage if provided
+        this.damage = data.damage || data.baseDamage;
         this.damageType = data.damageType || 'physical';
         this.critChance = data.critChance || 0.05;
         this.attackSpeed = data.attackSpeed || 1.0;
@@ -44,6 +46,8 @@ class ConsumableItem extends Item {
         super(data);
         this.health = data.health || 0;
         this.mana = data.mana || 0;
+        this.consumableItem = true;
+        this.isUsable = data.usable || true;
     }
 }
 
@@ -239,16 +243,14 @@ function craftItem(recipeName) {
     } else {
         console.log("Insufficient resources!");
     }
-
-    updateInventoryUI();
 }
 
-// Existing useItem function remains unchanged
 function useItem(item) {
-    if (item.type === "consumable") {
+    if ((item.type === "consumable" || item.isUsable) && !item.isOnCooldown()) {
         if (item.health) player.heal(item.health);
         if (item.mana) player.regenerateMana(item.mana);
-        player.removeItem(item);
+        if (item.consumableItem) player.removeItem(item);
+        item.startCooldown();
     }
 }
 

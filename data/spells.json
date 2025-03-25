@@ -14,7 +14,7 @@
     "damage": 10,
     "manaCost": 5,
     "cooldown": 4,
-    "range": 4,
+    "range": 8,
     "icon": "fire"
   },
   {
@@ -42,7 +42,7 @@
     "damage": 15,
     "manaCost": 8,
     "cooldown": 6,
-    "range": 5,
+    "range": 8,
     "icon": "arcane"
   },
   {
@@ -51,7 +51,7 @@
     "damage": 8,
     "manaCost": 6,
     "cooldown": 10,
-    "range": 4,
+    "range": 8,
     "icon": "holy"
   },
   {
@@ -60,7 +60,7 @@
     "damage": 14,
     "manaCost": 9,
     "cooldown": 9,
-    "range": 5,
+    "range": 8,
     "icon": "shadow"
   },
   {
@@ -69,7 +69,7 @@
     "damage": 16,
     "manaCost": 12,
     "cooldown": 12,
-    "range": 4,
+    "range": 8,
     "icon": "nature"
   }
 ]
