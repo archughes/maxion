@@ -5,9 +5,17 @@ export class SongGenerator extends InstrumentGenerator {
     constructor(audioCtx, masterGain, params = {}) {
         super(audioCtx, masterGain, params);
         this.tempo = params.tempo || 120;
-        this.globalDynamics = params.globalDynamics || 'mf'; // mezzo-forte as default
+        this.globalDynamics = params.globalDynamics || 'mf';
         this.songs = {};
         this.progressions = this.collectProgressions();
+        this.instrumentInstances = {};
+        this.userOverrides = {
+            tempo: false,
+            instrument: false,
+            octave: false,
+            scale: false,
+            root: false
+        };
     }
 
     // Collect progressions from original instruments.js presets
@@ -27,16 +35,57 @@ export class SongGenerator extends InstrumentGenerator {
     // Load song from JSON file with improved error handling
     async loadSong(songName) {
         try {
-            const response = await fetch(`./sounds/songs/${songName}.json`);
+            const songFile = `./sounds/songs/${songName}.json`;
+            console.log('Loading song:', songFile);
+            const response = await fetch(songFile);
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
             const songData = await response.json();
+
+            if (!songData || !songData.instruments || typeof songData.instruments !== 'object') {
+                if (songData) console.log(songData);
+                throw new Error('Invalid song data format: missing or invalid instruments');
+            }
+
             this.songs[songName] = songData;
+            
+            // Initialize instrument instances
+            for (const [instrument, config] of Object.entries(songData.instruments)) {
+                this.instrumentInstances[instrument] = new InstrumentGenerator(
+                    this.audioCtx,
+                    this.masterGain,
+                    { instrumentType: instrument }
+                );
+            }
+            
             return songData;
         } catch (error) {
             console.error(`Error loading song ${songName}:`, error.message);
-            return null; // Return null to indicate failure
+            return null;
+        }
+    }
+
+    getSongConfig(songName) {
+        const song = this.songs[songName];
+        if (!song) return null;
+        return {
+            tempo: song.tempo,
+            instruments: Object.keys(song.instruments),
+            configs: song.instruments
+        };
+    }
+
+    setOverride(control, value) {
+        this.userOverrides[control] = true;
+        switch(control) {
+            case 'tempo': this.tempo = value; break;
+            case 'instrument': 
+                for (const inst of Object.values(this.instrumentInstances)) {
+                    inst.instrumentType = value;
+                }
+                break;
+            case 'octave': this.params.octave = value; break;
         }
     }
 
@@ -55,7 +104,7 @@ export class SongGenerator extends InstrumentGenerator {
     }
 
     // Play song with dynamics and tempo, now with octave parameter
-    async playSong(songName, octave) {
+    async playSong(songName) {
         if (this.timeout) return;
         const song = this.songs[songName] || await this.loadSong(songName);
         if (!song) {
@@ -63,47 +112,54 @@ export class SongGenerator extends InstrumentGenerator {
             return;
         }
 
-        const msPerBeat = 60000 / (song.tempo || this.tempo);
-        let currentTime = 0;
+        const msPerBeat = 60000 / (this.userOverrides.tempo ? this.tempo : song.tempo || this.tempo);
+        let maxTime = 0;
 
-        // Build the full sequence based on repeat pattern
-        const fullSequence = [];
-        const pattern = song.repeatPattern || 'v'; // Default to verse if no pattern
-        const parts = pattern.split(' ');
-        parts.forEach(part => {
-            if (part === 'v' && song.verse) {
-                fullSequence.push(...song.verse);
-            } else if (part === 'c' && song.chorus) {
-                fullSequence.push(...song.chorus);
-            }
-        });
-        console.log('Full sequence:', fullSequence);
-
-        fullSequence.forEach((event) => {
-            const durationMs = event.duration * msPerBeat;
-            setTimeout(() => {
-                if (event.type === 'chord') {
-                    const chordNotes = super.createChordNotes(event.root, event.chordType, octave);
-                    const gainNode = super.playNotesWithEnvelope(
-                        chordNotes.map(note => super.getFrequency(note.note, note.octave)),
-                        durationMs / 1000 * 0.95,
-                        this.masterGain
-                    );
-                    this.applyDynamics(event.dynamics || this.globalDynamics, gainNode, this.audioCtx.currentTime);
-
-                    if (event.crescendo || event.decrescendo) {
-                        const endLevel = event.crescendo ? 1.2 : 0.2;
-                        gainNode.gain.linearRampToValueAtTime(endLevel, this.audioCtx.currentTime + durationMs / 1000);
-                    }
+        // Build sequences for each instrument
+        for (const [instrument, config] of Object.entries(song.instruments)) {
+            const fullSequence = [];
+            const pattern = song.repeatPattern || 'v';
+            const parts = pattern.split(' ');
+            parts.forEach(part => {
+                if (part === 'v' && config.verse) {
+                    fullSequence.push(...config.verse);
+                } else if (part === 'c' && config.chorus) {
+                    fullSequence.push(...config.chorus);
                 }
-            }, currentTime);
-            currentTime += durationMs;
-        });
+            });
+
+            let currentTime = 0;
+            const instrumentGen = this.instrumentInstances[instrument];
+            
+            fullSequence.forEach((event) => {
+                const durationMs = event.duration * msPerBeat;
+                setTimeout(() => {
+                    if (event.type === 'chord') {
+                        const octave = this.userOverrides.octave ? this.params.octave : config.octave || 4;
+                        const chordNotes = instrumentGen.createChordNotes(event.root, event.chordType, octave);
+                        const gainNode = instrumentGen.playNotesWithEnvelope(
+                            chordNotes.map(note => instrumentGen.getFrequency(note.note, note.octave)),
+                            durationMs / 1000 * 0.95,
+                            this.masterGain
+                        );
+                        this.applyDynamics(event.dynamics || this.globalDynamics, gainNode, this.audioCtx.currentTime);
+
+                        if (event.crescendo || event.decrescendo) {
+                            const endLevel = event.crescendo ? 1.2 : 0.2;
+                            gainNode.gain.linearRampToValueAtTime(endLevel, this.audioCtx.currentTime + durationMs / 1000);
+                        }
+                    }
+                }, currentTime);
+                currentTime += durationMs;
+            });
+
+            maxTime = Math.max(maxTime, currentTime);
+        }
 
         this.timeout = setTimeout(() => {
             super.stop();
             this.timeout = null;
-        }, currentTime + 1000);
+        }, maxTime + 1000);
     }
 
     getProgression(progressionStr, root = 'C', scaleType = 'major') {

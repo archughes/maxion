@@ -32,16 +32,26 @@ class SongsTest extends SoundTestCommon {
 
         this.populateDropdowns();
 
-        this.controls.instrument.addEventListener('change', () => this.updateInstrument());
+        this.controls.instrument.addEventListener('change', () => {
+            this.songGenerator.setOverride('instrument', this.controls.instrument.value);
+            this.updateInstrument();
+        });
         this.controls.tempo.addEventListener('input', () => {
             this.controls.tempoValue.textContent = this.controls.tempo.value;
-            this.songGenerator.tempo = parseInt(this.controls.tempo.value);
+            this.songGenerator.setOverride('tempo', parseInt(this.controls.tempo.value));
         });
         this.controls.dynamics.addEventListener('change', () => {
             this.songGenerator.globalDynamics = this.controls.dynamics.value;
         });
         this.controls.octave.addEventListener('input', () => {
             this.controls.octaveValue.textContent = this.controls.octave.value;
+            this.songGenerator.setOverride('octave', parseInt(this.controls.octave.value));
+        });
+        this.controls.scale.addEventListener('change', () => {
+            this.songGenerator.setOverride('scale', this.controls.scale.value);
+        });
+        this.controls.root.addEventListener('change', () => {
+            this.songGenerator.setOverride('root', this.controls.root.value);
         });
 
         document.getElementById('playSong').addEventListener('click', () => this.playSong());
@@ -69,16 +79,40 @@ class SongsTest extends SoundTestCommon {
 
     updateInstrument() {
         const instrumentType = this.controls.instrument.value;
-        this.songGenerator = new SongGenerator(this.audioCtx, this.masterGain, { instrumentType });
         this.controls.progressions.innerHTML = '';
         this.populateDropdowns();
     }
 
-    playSong() {
+    async playSong() {
         if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
         const songName = this.controls.songs.value;
-        const octave = parseInt(this.controls.octave.value);
-        this.songGenerator.playSong(songName, octave);
+        
+        // Load song and set controls to song defaults if no user override
+        await this.songGenerator.loadSong(songName);
+        const config = this.songGenerator.getSongConfig(songName);
+        if (config) {
+            if (!this.songGenerator.userOverrides.tempo) {
+                this.controls.tempo.value = config.tempo;
+                this.controls.tempoValue.textContent = config.tempo;
+                this.songGenerator.tempo = config.tempo;
+            }
+            if (!this.songGenerator.userOverrides.instrument) {
+                this.controls.instrument.value = config.instruments[0]; // Default to first instrument
+            }
+            const firstConfig = Object.values(config.configs)[0];
+            if (!this.songGenerator.userOverrides.octave) {
+                this.controls.octave.value = firstConfig.octave;
+                this.controls.octaveValue.textContent = firstConfig.octave;
+            }
+            if (!this.songGenerator.userOverrides.scale) {
+                this.controls.scale.value = firstConfig.scale;
+            }
+            if (!this.songGenerator.userOverrides.root) {
+                this.controls.root.value = firstConfig.root;
+            }
+        }
+
+        this.songGenerator.playSong(songName);
         this.startVisualizations(this.songGenerator);
     }
 

@@ -1,16 +1,39 @@
 {
     "name": "Twinkle Twinkle Little Star",
     "tempo": 100,
-    "verse": [
-        {"type": "chord", "root": "C", "chordType": "major", "duration": 1, "dynamics": "mf"},
-        {"type": "chord", "root": "C", "chordType": "major", "duration": 1, "dynamics": "mf"},
-        {"type": "chord", "root": "G", "chordType": "major", "duration": 1, "dynamics": "f"},
-        {"type": "chord", "root": "G", "chordType": "major", "duration": 1, "dynamics": "f"}
-    ],
-    "chorus": [
-        {"type": "chord", "root": "A", "chordType": "major", "duration": 1, "dynamics": "mf", "crescendo": true},
-        {"type": "chord", "root": "A", "chordType": "major", "duration": 1, "dynamics": "f"},
-        {"type": "chord", "root": "G", "chordType": "major", "duration": 2, "dynamics": "mf"}
-    ],
+    "instruments": {
+        "piano": {
+            "verse": [
+                {"type": "chord", "root": "C", "chordType": "major", "duration": 1, "dynamics": "mf"},
+                {"type": "chord", "root": "C", "chordType": "major", "duration": 1, "dynamics": "mf"},
+                {"type": "chord", "root": "G", "chordType": "major", "duration": 1, "dynamics": "f"},
+                {"type": "chord", "root": "G", "chordType": "major", "duration": 1, "dynamics": "f"}
+            ],
+            "chorus": [
+                {"type": "chord", "root": "A", "chordType": "major", "duration": 1, "dynamics": "mf", "crescendo": true},
+                {"type": "chord", "root": "A", "chordType": "major", "duration": 1, "dynamics": "f"},
+                {"type": "chord", "root": "G", "chordType": "major", "duration": 2, "dynamics": "mf"}
+            ],
+            "octave": 4,
+            "root": "C",
+            "scale": "major"
+        },
+        "strings": {
+            "verse": [
+                {"type": "chord", "root": "C", "chordType": "major", "duration": 1, "dynamics": "mp"},
+                {"type": "chord", "root": "C", "chordType": "major", "duration": 1, "dynamics": "mp"},
+                {"type": "chord", "root": "G", "chordType": "major", "duration": 1, "dynamics": "mf"},
+                {"type": "chord", "root": "G", "chordType": "major", "duration": 1, "dynamics": "mf"}
+            ],
+            "chorus": [
+                {"type": "chord", "root": "A", "chordType": "major", "duration": 1, "dynamics": "mp"},
+                {"type": "chord", "root": "A", "chordType": "major", "duration": 1, "dynamics": "mf"},
+                {"type": "chord", "root": "G", "chordType": "major", "duration": 2, "dynamics": "mp"}
+            ],
+            "octave": 3,
+            "root": "C",
+            "scale": "major"
+        }
+    },
     "repeatPattern": "v c v"
 }
