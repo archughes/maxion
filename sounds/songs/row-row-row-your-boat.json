@@ -1,0 +1,14 @@
+{
+    "name": "Row Row Row Your Boat",
+    "tempo": 90,
+    "verse": [
+        {"type": "chord", "root": "C", "chordType": "major", "duration": 1, "dynamics": "mf"},
+        {"type": "chord", "root": "C", "chordType": "major", "duration": 1, "dynamics": "mf"},
+        {"type": "chord", "root": "C", "chordType": "major", "duration": 0.5, "dynamics": "f"}
+    ],
+    "chorus": [
+        {"type": "chord", "root": "D", "chordType": "minor", "duration": 0.5, "dynamics": "f"},
+        {"type": "chord", "root": "E", "chordType": "major", "duration": 1, "dynamics": "ff"}
+    ],
+    "repeatPattern": "v c v"
+}

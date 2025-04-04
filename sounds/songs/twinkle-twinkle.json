@@ -1,0 +1,16 @@
+{
+    "name": "Twinkle Twinkle Little Star",
+    "tempo": 100,
+    "verse": [
+        {"type": "chord", "root": "C", "chordType": "major", "duration": 1, "dynamics": "mf"},
+        {"type": "chord", "root": "C", "chordType": "major", "duration": 1, "dynamics": "mf"},
+        {"type": "chord", "root": "G", "chordType": "major", "duration": 1, "dynamics": "f"},
+        {"type": "chord", "root": "G", "chordType": "major", "duration": 1, "dynamics": "f"}
+    ],
+    "chorus": [
+        {"type": "chord", "root": "A", "chordType": "major", "duration": 1, "dynamics": "mf", "crescendo": true},
+        {"type": "chord", "root": "A", "chordType": "major", "duration": 1, "dynamics": "f"},
+        {"type": "chord", "root": "G", "chordType": "major", "duration": 2, "dynamics": "mf"}
+    ],
+    "repeatPattern": "v c v"
+}
