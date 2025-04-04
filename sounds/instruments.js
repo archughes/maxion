@@ -54,9 +54,19 @@ export class InstrumentGenerator extends TonesGenerator {
     }
 
     applyPreset(presetName) {
-        if (this.presets[presetName]) {
-            const preset = this.presets[presetName];
-            this.updateParams({ ...preset, instrumentType: presetName, note: this.params.note, octave: this.params.octave });
+        // Extract the base instrument name by checking if any preset key is contained within presetName
+        let baseInstrument = presetName;
+        for (const key in this.presets) {
+            if (presetName.toLowerCase().includes(key.toLowerCase())) {
+                baseInstrument = key;
+                break; // Stop once we find the first match
+            }
+        }
+    
+        // Apply the preset if it exists in this.presets
+        if (this.presets[baseInstrument]) {
+            const preset = this.presets[baseInstrument];
+            this.updateParams({ ...preset, instrumentType: baseInstrument, note: this.params.note, octave: this.params.octave });
         }
     }
 
@@ -101,19 +111,55 @@ export class InstrumentGenerator extends TonesGenerator {
 
     getChordIntervals(chordType) {
         const chords = {
-            major: [0, 4, 7],
-            minor: [0, 3, 7],
-            dim: [0, 3, 6],
-            aug: [0, 4, 8],
-            sus4: [0, 5, 7],
-            sus2: [0, 2, 7],
-            dom7: [0, 4, 7, 10],
-            maj7: [0, 4, 7, 11],
-            min7: [0, 3, 7, 10],
-            maj9: [0, 4, 7, 11, 14],
-            min9: [0, 3, 7, 10, 14],
-            dom9: [0, 4, 7, 10, 14],
-            halfDim7: [0, 3, 6, 10]
+            // Triads
+            major: [0, 4, 7],         // C, E, G
+            minor: [0, 3, 7],         // C, Eb, G
+            dim: [0, 3, 6],           // C, Eb, Gb (diminished)
+            aug: [0, 4, 8],           // C, E, G# (augmented)
+            sus4: [0, 5, 7],          // C, F, G
+            sus2: [0, 2, 7],          // C, D, G
+        
+            // Seventh Chords
+            dom7: [0, 4, 7, 10],      // C, E, G, Bb (dominant 7th)
+            maj7: [0, 4, 7, 11],      // C, E, G, B
+            min7: [0, 3, 7, 10],      // C, Eb, G, Bb
+            halfDim7: [0, 3, 6, 10],   // C, Eb, Gb, Bb (m7b5)
+            dim7: [0, 3, 6, 9],       // C, Eb, Gb, A (fully diminished 7th)
+            minMaj7: [0, 3, 7, 11],    // C, Eb, G, B (minor with major 7th)
+            augMaj7: [0, 4, 8, 11],    // C, E, G#, B (augmented with major 7th)
+            aug7: [0, 4, 8, 10],      // C, E, G#, Bb (augmented with dominant 7th)
+        
+            // Ninth Chords
+            maj9: [0, 4, 7, 11, 14],  // C, E, G, B, D
+            min9: [0, 3, 7, 10, 14],  // C, Eb, G, Bb, D
+            dom9: [0, 4, 7, 10, 14],  // C, E, G, Bb, D
+            min7b9: [0, 3, 7, 10, 13], // C, Eb, G, Bb, Db (minor 7th with flat 9)
+            dom7b9: [0, 4, 7, 10, 13], // C, E, G, Bb, Db (dominant 7th with flat 9)
+            dom7sharp9: [0, 4, 7, 10, 15], // C, E, G, Bb, D# (dominant 7th with sharp 9)
+        
+            // Eleventh Chords
+            maj11: [0, 4, 7, 11, 14, 17], // C, E, G, B, D, F
+            min11: [0, 3, 7, 10, 14, 17], // C, Eb, G, Bb, D, F
+            dom11: [0, 4, 7, 10, 14, 17], // C, E, G, Bb, D, F
+            min7b11: [0, 3, 7, 10, 13, 16], // C, Eb, G, Bb, Db, E (minor 7th with flat 9 and 11)
+        
+            // Thirteenth Chords
+            maj13: [0, 4, 7, 11, 14, 17, 21], // C, E, G, B, D, F, A
+            min13: [0, 3, 7, 10, 14, 17, 21], // C, Eb, G, Bb, D, F, A
+            dom13: [0, 4, 7, 10, 14, 17, 21], // C, E, G, Bb, D, F, A
+            dom7b13: [0, 4, 7, 10, 14, 20],   // C, E, G, Bb, D, Ab (dominant 7th with flat 13)
+        
+            // Altered Dominant Chords
+            dom7b5: [0, 4, 6, 10],     // C, E, Gb, Bb (dominant 7th with flat 5)
+            dom7sharp5: [0, 4, 8, 10], // C, E, G#, Bb (dominant 7th with sharp 5)
+            dom7b9b13: [0, 4, 7, 10, 13, 20], // C, E, G, Bb, Db, Ab (dominant 7th with flat 9 and flat 13)
+        
+            // Miscellaneous
+            power: [0, 7],             // C, G (power chord, root and fifth)
+            add9: [0, 4, 7, 14],       // C, E, G, D (major triad with added 9th)
+            minAdd9: [0, 3, 7, 14],    // C, Eb, G, D (minor triad with added 9th)
+            six: [0, 4, 7, 9],         // C, E, G, A (major 6th)
+            min6: [0, 3, 7, 9]         // C, Eb, G, A (minor 6th)
         };
         return chords[chordType] || chords.major;
     }
@@ -134,6 +180,14 @@ export class InstrumentGenerator extends TonesGenerator {
             const adjustedOctave = octave + Math.floor(noteIndex / 12);
             return { note: this.getNoteName(noteIndex), octave: adjustedOctave };
         });
+    }
+
+    stop(immediate = false) {
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+            this.timeout = null;
+        }
+        super.stop(immediate);
     }
 
     playNotesWithEnvelope(frequencies, duration, output) {

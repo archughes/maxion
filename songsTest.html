@@ -30,6 +30,8 @@
         <div class="buttons">
             <button id="playSong">Play Song</button>
             <button id="playProgression">Play Progression</button>
+            <button id="stop">Stop</button>
+            <button id="recordSong">Record Song</button>
         </div>
         
         <div class="visualizations">
@@ -60,7 +62,9 @@
             </div>
             <div class="control-row">
                 <label for="songs">Songs:</label>
-                <select id="songs"></select>
+                <select id="songs">
+                    <option value="" selected disabled>Select a song</option>
+                </select>
             </div>
             <div class="control-row">
                 <label for="progressions">Progressions:</label>

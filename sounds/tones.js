@@ -104,20 +104,28 @@ export class TonesGenerator extends SoundGenerator {
         this.createHarmonics(frequency, mainGain);
     }
 
-    stop() {
+    stop(immediate = false) {
         const now = this.audioCtx.currentTime;
-        
+    
         this.activeNodes.forEach(node => {
             if (node instanceof GainNode) {
                 node.gain.cancelScheduledValues(now);
-                node.gain.setValueAtTime(node.gain.value, now);
-                node.gain.linearRampToValueAtTime(0, now + this.params.release);
+                if (immediate) {
+                    node.gain.setValueAtTime(0, now); // Immediate stop
+                } else {
+                    node.gain.setValueAtTime(node.gain.value, now);
+                    node.gain.linearRampToValueAtTime(0, now + this.params.release);
+                }
             }
         });
-        
-        this.timeout = setTimeout(() => {
-            super.stop();
-        }, this.params.release * 1000 + 100);
+    
+        if (immediate) {
+            super.stop(); // Clean up immediately
+        } else {
+            this.timeout = setTimeout(() => {
+                super.stop();
+            }, this.params.release * 1000 + 100);
+        }
     }
 
     playBurst(duration = 0.5) {
