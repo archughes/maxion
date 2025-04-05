@@ -1,0 +1,51 @@
+{
+    "tempo": 120,
+    "repeatPattern": "v c b b v c",
+    "instruments": {
+      "piano": {
+        "verse": [
+          {"type": "tone", "note": "C", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "C", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "G", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "G", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "A", "duration": 1, "dynamics": "f"},
+          {"type": "tone", "note": "A", "duration": 1, "dynamics": "f"},
+          {"type": "tone", "note": "G", "duration": 2, "dynamics": "mf"}
+        ],
+        "chorus": [
+          {"type": "tone", "note": "F", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "F", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "E", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "E", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "D", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "D", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "C", "duration": 2, "dynamics": "mf"}
+        ],
+        "bridge": [
+          {"type": "tone", "note": "G", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "G", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "F", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "F", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "E", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "E", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "D", "duration": 1, "dynamics": "mf"}
+        ]
+      },
+      "theremin": {
+        "octave": 3,
+        "brightness": 0.7,
+        "verse": [
+          {"type": "chord", "root": "C", "chordType": "maj7", "duration": 4, "dynamics": "p"},
+          {"type": "chord", "root": "F", "chordType": "maj7", "duration": 4, "dynamics": "p"}
+        ],
+        "chorus": [
+          {"type": "chord", "root": "F", "chordType": "maj7", "duration": 4, "dynamics": "p"},
+          {"type": "chord", "root": "C", "chordType": "maj7", "duration": 4, "dynamics": "p"}
+        ],
+        "bridge": [
+          {"type": "chord", "root": "G", "chordType": "dom7", "duration": 4, "dynamics": "mp"},
+          {"type": "chord", "root": "A", "chordType": "min7", "duration": 3, "dynamics": "p"}
+        ]
+      }
+    }
+}

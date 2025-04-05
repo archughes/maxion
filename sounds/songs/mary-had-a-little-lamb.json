@@ -1,0 +1,17 @@
+{
+    "name": "Mary Had a Little Lamb",
+    "tempo": 120,
+    "verse": [
+        {"type": "chord", "root": "E", "chordType": "major", "duration": 0.5, "dynamics": "mp"},
+        {"type": "chord", "root": "D", "chordType": "major", "duration": 0.5, "dynamics": "mp"},
+        {"type": "chord", "root": "C", "chordType": "major", "duration": 0.5, "dynamics": "mp"},
+        {"type": "chord", "root": "D", "chordType": "major", "duration": 0.5, "dynamics": "mp"}
+    ],
+    "chorus": [
+        {"type": "chord", "root": "E", "chordType": "major", "duration": 0.5, "dynamics": "f"},
+        {"type": "chord", "root": "E", "chordType": "major", "duration": 0.5, "dynamics": "f"},
+        {"type": "chord", "root": "E", "chordType": "major", "duration": 0.5, "dynamics": "f"},
+        {"type": "chord", "root": "E", "chordType": "major", "duration": 1, "dynamics": "mf", "decrescendo": true}
+    ],
+    "repeatPattern": "v c v c"
+}

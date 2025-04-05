@@ -1,0 +1,90 @@
+{
+    "tempo": 120,
+    "repeatPattern": "v",
+    "instruments": {
+      "piano1": {
+        "octave": 5,
+        "verse": [
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "D", "duration": 6},
+          {"type": "tone", "note": "G", "duration": 2},
+          {"type": "tone", "note": "D", "duration": 6},
+          {"type": "tone", "note": "F", "duration": 2},
+          {"type": "tone", "note": "D", "duration": 6},
+          {"type": "tone", "note": "G", "duration": 2},
+          {"type": "tone", "note": "D", "duration": 6},
+          {"type": "tone", "note": "G", "duration": 2},
+          {"type": "tone", "note": "C", "duration": 6},
+          {"type": "tone", "note": "F", "duration": 2},
+          {"type": "tone", "note": "C", "duration": 6},
+          {"type": "tone", "note": "E", "duration": 2},
+          {"type": "tone", "note": "C", "duration": 6},
+          {"type": "tone", "note": "F", "duration": 2},
+          {"type": "tone", "note": "C", "duration": 6},
+          {"type": "tone", "note": "F", "duration": 8}
+        ],
+        "chorus": [
+          {"type": "tone", "note": "F", "duration": 1}
+        ],
+        "bridge": [
+          {"type": "tone", "note": "G", "duration": 1}
+        ]
+      },
+      "piano2": {
+        "octave": 5,
+        "verse": [
+          {"type": "tone", "note": "A", "duration": 4},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "G", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "G", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "G", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "G", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "F", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "F", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "F", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "F", "duration": 6}
+        ],
+        "chorus": [
+          {"type": "tone", "note": "F", "duration": 1}
+        ],
+        "bridge": [
+          {"type": "tone", "note": "G", "duration": 1}
+        ]
+      },
+      "piano3": {
+        "octave": 5,
+        "verse": [
+          {"type": "tone", "note": "A", "duration": 4},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "G", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "G", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "G", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "G", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "F", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "F", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "F", "duration": 6},
+          {"type": "tone", "note": "A", "duration": 2},
+          {"type": "tone", "note": "F", "duration": 6}
+        ],
+        "chorus": [
+          {"type": "tone", "note": "F", "duration": 1}
+        ],
+        "bridge": [
+          {"type": "tone", "note": "G", "duration": 1}
+        ]
+      }
+    }
+}

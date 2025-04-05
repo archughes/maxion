@@ -1,0 +1,35 @@
+{
+    "tempo": 120,
+    "repeatPattern": "v c b b v c",
+    "instruments": {
+      "piano": {
+        "verse": [
+          {"type": "tone", "note": "C", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "C", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "G", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "G", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "A", "duration": 1, "dynamics": "f"},
+          {"type": "tone", "note": "A", "duration": 1, "dynamics": "f"},
+          {"type": "tone", "note": "G", "duration": 2, "dynamics": "mf"}
+        ],
+        "chorus": [
+          {"type": "tone", "note": "F", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "F", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "E", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "E", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "D", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "D", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "C", "duration": 2, "dynamics": "mf"}
+        ],
+        "bridge": [
+          {"type": "tone", "note": "G", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "G", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "F", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "F", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "E", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "E", "duration": 1, "dynamics": "mf"},
+          {"type": "tone", "note": "D", "duration": 2, "dynamics": "mf"}
+        ]
+      }
+    }
+}
