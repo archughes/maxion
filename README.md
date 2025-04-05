@@ -1,5 +1,5 @@
 # Maxion
-![Maxion Banner](path/to/banner.png)
+![Maxion Banner](./textures/banner.png)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## Table of Contents
@@ -19,60 +19,106 @@ Welcome to **Maxion**, an immersive 3D Medieval RPG game crafted with JavaScript
 The project is organized into modular directories and files, each dedicated to specific game components:
 
 - **`.vscode`**: Configuration files for Visual Studio Code.
+- **`animations`**: Contains animation-related files for game entities.
 - **`data`**: JSON files storing game data:
   - `quests.json`: Defines quest structures, including types, prerequisites, and rewards.
-  - `items.json`: Contains item definitions (inferred from `items.js`).
-  - `recipes.json`: Specifies crafting recipes (inferred from `items.js`).
+  - `items.json`: Contains item definitions.
+  - `recipes.json`: Specifies crafting recipes.
 - **`entity`**: JavaScript files managing game entities:
-  - `animation.js`: Handles player animations (partially implemented).
-  - `character.js`: Base class for character entities (assumed dependency).
-  - `entity.js`: General entity logic (assumed dependency).
+  - `animation.js`: Handles player animations.
+  - `character.js`: Base class for character entities.
+  - `entity.js`: General entity logic.
+  - `movement.js`: Handles entity movement mechanics.
   - `npc.js`: Implements NPC behaviors, including enemies and quest givers.
   - `player.js`: Manages player mechanics, inventory, skills, and stats.
+  - `trade.js`: Handles trading mechanics between entities.
 - **`environment`**: Controls the game world:
   - **`doodads`**: Environmental object classes:
-    - `base-doodad.js`: Base doodad class (assumed).
+    - `base-doodad.js`: Base doodad class.
     - `land-doodads.js`: Land-based objects (e.g., trees, rocks).
     - `special-doodads.js`: Special objects (e.g., chests, portals).
     - `water-doodads.js`: Water-based objects (e.g., coral, seaweed).
+  - **`terrain`**: Advanced terrain generation system:
+    - `FeatureGenerator.js`: Generates terrain features like rivers, lakes, and paths.
+    - `HeightmapGenerator.js`: Creates height maps for terrain generation.
+    - `QuadTree.js`: Implements level-of-detail (LOD) terrain rendering.
+    - `TerrainColorManager.js`: Manages terrain coloration based on type and biome.
+    - `terrain.js`: Core terrain generation and management.
   - `CloudSystem.js`: Manages cloud rendering and movement.
-  - `environment-object.js`: Base class for environmental objects (assumed).
+  - `environment-object.js`: Base class for environmental objects.
   - `environment.js`: Core logic for map loading and world management.
   - `map.js`: Handles minimap rendering and terrain caching.
   - `scene.js`: Sets up the Three.js scene.
   - `SkySystem.js`: Oversees sky and weather systems.
   - `sound-manager.js`: Manages audio playback.
-  - `terrain.js`: Generates procedural terrain.
   - `TimeSystem.js`: Implements the day-night cycle.
   - `water.js`: Controls water system dynamics.
+- **`lib`**: External libraries and dependencies.
 - **`maps`**: JSON files defining map data (e.g., `summer.json`).
-- **`sounds`**: Audio assets:
-  - `level_up.wav`: Sound effect for leveling up.
-  - `swordhit1.wav`: Sound effect for attacks.
+- **`sounds`**: Procedural audio assets for game events and ambience.
+- **`styles`**: CSS files for UI styling.
+- **`textures`**: Procedural and static texture assets for game elements.
+- **`ui`**: User interface components and management.
+- **`cooldown.js`**: Manages ability and action cooldowns.
+- **`epicManager.js`**: Handles game progression through epic stages.
 - **`game.js`**: Contains the main game loop and initialization logic.
 - **`index.html`**: Main HTML file with embedded CSS and UI layout.
 - **`input.js`**: Manages user input and camera controls.
 - **`items.js`**: Implements item and crafting system logic.
-- **`LICENSE`**: Project license file (assumed; update with specific license details).
-- **`parchment-texture-fill.jpg`, `parchment-texture.png`, `parchment-texture-scroll.png`**: Texture assets for UI elements.
-- **`character-icon.png`**: Icon for the character button.
-- **`ui.js`**: Manages UI updates and interactions (assumed dependency).
+- **`messages.js`**: Handles in-game messaging system.
 - **`quests.js`**: Handles quest system logic.
-- **`settings.js`**: Stores game settings (assumed dependency in `npc.js`).
+- **`saveLoadManager.js`**: Manages game state saving and loading.
+- **`skinManager.js`**: Handles character and entity skin management.
+- **`spells.js`**: Implements spell and ability systems.
 
 ## Features
-- **Dynamic 3D Environment**: Procedurally generated terrains with diverse biomes and interactive doodads (e.g., trees, chests).
-- **Player System**: Includes leveling, customizable stats (strength, agility, intelligence), skills (Power Attack, Fireball, Invisibility), and inventory/bag management.
-- **NPCs**: Features enemies with AI and quest-giving NPCs with dialogue interactions.
-- **Quest System**: Supports talk, collect, defeat, and boss quests with prerequisites and rewards (e.g., recipes, XP).
-- **Crafting**: Enables tiered item crafting (e.g., Wooden to Eternium) and potion creation.
-- **UI**: Offers a medieval-themed interface with health/mana/XP bars, action bar, inventory, minimap, and popups.
-- **Audio**: Incorporates dynamic background music and event-triggered sounds (e.g., sword hits, level-up).
-- **Camera Control**: Provides adjustable distance and pitch with mouse-driven right/left-click modes.
+- **Advanced Terrain System**: 
+  - Quadtree-based level-of-detail (LOD) rendering for optimized performance
+  - Procedurally generated terrains with diverse biomes
+  - Dynamic terrain features including rivers, lakes, paths, and bridges
+  - Terrain coloration based on height, type, and biome
+- **Dynamic 3D Environment**: 
+  - Interactive doodads (e.g., trees, chests)
+  - Day-night cycle with dynamic lighting
+  - Weather system with clouds and atmospheric effects
+  - Water system with realistic rendering
+- **Player System**: 
+  - Leveling and progression
+  - Customizable stats (strength, agility, intelligence)
+  - Skills and abilities (Power Attack, Fireball, Invisibility)
+  - Inventory and equipment management
+  - Movement mechanics including swimming and jumping
+- **NPCs**: 
+  - Enemies with AI behavior
+  - Quest-giving NPCs with dialogue interactions
+  - Trading system for item exchange
+- **Quest System**: 
+  - Multiple quest types (talk, collect, defeat, boss)
+  - Prerequisites and rewards
+  - Quest tracking and completion
+- **Crafting**: 
+  - Tiered item crafting (Wooden to Eternium)
+  - Potion creation
+  - Recipe discovery through quests
+- **UI**: 
+  - Medieval-themed interface
+  - Health/mana/XP bars
+  - Action bar for skills and items
+  - Inventory management
+  - Minimap with discovered areas
+  - Settings panel with audio and display options
+- **Audio**: 
+  - Dynamic background music
+  - Event-triggered sound effects
+  - Ambient environmental sounds
+- **Camera Control**: 
+  - Adjustable distance and pitch
+  - Multiple view modes (body-facing, head-facing)
 
 ## Installation
-1. run with http-server in clone directory
-2.  Open chrome in http://localhost:8080 or whichever port you use.
+1. Clone the repository
+2. Run with http-server in the clone directory
+3. Open Chrome at http://localhost:8080 or whichever port you use
 
 ## Usage
 ### Gameplay Controls
@@ -87,22 +133,26 @@ The project is organized into modular directories and files, each dedicated to s
 - **Action Bar**: Use `1-6` to activate assigned skills or items.
 - **Targeting**: Right-click to lock camera and select enemies, left-click to interact or select, `Tab` to cycle enemies, `Esc` to deselect.
 - **Camera**: Adjust distance with the mouse wheel, switch views with right-click (body-facing) or left-click (head-facing).
+- **Settings**: Access game settings via the gear icon for audio, fullscreen, and performance options.
 
 ## Development
-- **Dependencies**: Relies on Three.js (v0.128.0) via CDN.
+- **Dependencies**: 
+  - Three.js (v0.128.0) via CDN
+  - random-seed (v0.3.0) for deterministic procedural generation
 - **Contributing**: Fork the repository, create a feature branch, and submit a pull request with detailed descriptions of changes.
 - **Testing**: Verify compatibility in Chrome and Firefox, focusing on WebGL and audio performance.
 
 ## License
-This project is licensed under the terms specified in the `LICENSE` file (assumed MIT or similar; please specify the exact license).
+This project is licensed under the MIT License. See the `LICENSE` file for details.
 
 ## Future Improvements
 ### Short-Term Goals
 - Implement multiplayer functionality to enable cooperative or competitive play.
 - Enhance graphics with shaders and particle effects for improved visual fidelity.
-- Add save/load functionality to preserve player progress.
-- Refactor `sounds`, `shaders`, and `graphics` into dedicated JavaScript classes for better organization.
+- Expand save/load functionality to preserve player progress.
+- Refactor code for better organization and maintainability.
 - Expand quests, NPC interactions, and biome diversity.
+- Optimize terrain rendering for better performance on lower-end devices.
 
 ### Long-Term Vision (Expansion Packs)
 Maxion is envisioned as an evolving universe with "Epic" expansions, each unlocking new dimensions of gameplay. Unique aspects of each epic include:
@@ -126,4 +176,3 @@ Each epic builds on the previous one, introducing shared advancements to deepen 
 - Introduces new settings and customization options (e.g., graphics presets, controls).
 - Advances NPC intelligence (e.g., basic AI to LLM interactions).
 - Resets progress at the start of a new epic while retaining earned abilities, encouraging replayability with escalating challenges.
-
