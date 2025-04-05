@@ -21,12 +21,48 @@ export class SoundTestCommon {
         this.analyser.connect(this.audioCtx.destination);
     }
 
-    addNoteToHistory(note, octave) {
-        this.noteHistory.push({
-            note,
-            octave,
-            time: Date.now()
+    // Recommendation 1: Generic control setup
+    setupControls(controlConfig, buttonConfig) {
+        this.controls = {};
+        Object.entries(controlConfig).forEach(([key, config]) => {
+            this.controls[key] = document.getElementById(config.id);
+            if (config.type === 'range') {
+                this.controls[`${key}Value`] = document.getElementById(`${config.id}Value`);
+                this.controls[key].addEventListener('input', () => {
+                    this.controls[`${key}Value`].textContent = this.controls[key].value;
+                    if (config.onChange) config.onChange(this.controls[key].value);
+                });
+            } else if (config.type === 'select') {
+                this.controls[key].addEventListener('change', () => {
+                    if (config.onChange) config.onChange(this.controls[key].value);
+                });
+            }
         });
+        Object.entries(buttonConfig).forEach(([key, config]) => {
+            document.getElementById(config.id).addEventListener('click', config.onClick);
+        });
+    }
+
+    // Recommendation 5: Standardize generator parameter updates
+    updateGeneratorParams(generator, controlIds) {
+        const params = {};
+        controlIds.forEach(id => {
+            const control = document.getElementById(id);
+            params[id] = control.type === 'range' ? parseFloat(control.value) : control.value;
+        });
+        generator.updateParams(params);
+    }
+
+    // Recommendation 6: Reduce duplication in playback logic
+    playSound(generator, updateParams, playMethod, ...args) {
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+        if (updateParams) generator.updateParams(updateParams);
+        playMethod.call(generator, ...args);
+        this.startVisualizations(generator);
+    }
+
+    addNoteToHistory(note, octave) {
+        this.noteHistory.push({ note, octave, time: Date.now() });
         if (this.noteHistory.length > 20) this.noteHistory.shift();
         this.drawNoteBar();
     }
@@ -196,5 +232,32 @@ export class SoundTestCommon {
             ctx.font = '10px Arial';
             ctx.fillText(`${entry.note}${entry.octave}`, x + 8, y + 4);
         });
+    }
+}
+
+// controlManager.js
+export class ControlManager {
+    constructor(generator) {
+        this.controls = {};
+        this.generator = generator;
+    }
+
+    addControl(id, type, onChange) {
+        const control = document.getElementById(id);
+        this.controls[id] = control;
+        if (type === 'range') {
+            this.controls[`${id}Value`] = document.getElementById(`${id}Value`);
+            control.addEventListener('input', () => {
+                this.controls[`${id}Value`].textContent = control.value;
+                onChange(control.value);
+            });
+        } else if (type === 'select') {
+            control.addEventListener('change', () => onChange(control.value));
+        }
+        return control;
+    }
+
+    addButton(id, onClick) {
+        document.getElementById(id).addEventListener('click', onClick);
     }
 }

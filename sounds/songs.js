@@ -237,11 +237,7 @@ export class SongGenerator extends InstrumentGenerator {
 
     // Generate a chord progression
     getProgression(progressionStr, root = 'C', scaleType = 'major') {
-        const scales = {
-            major: [0, 2, 4, 5, 7, 9, 11],
-            minor: [0, 2, 3, 5, 7, 8, 10]
-        };
-        const scale = scales[scaleType] || scales.major;
+        const scale = this.scales[scaleType] || this.scales.major;
         const rootIndex = this.getNoteIndex(root);
         const romanToInterval = {
             'I': 0, 'ii': 2, 'iii': 4, 'IV': 5, 'V': 7, 'vi': 9, 'vii': 11

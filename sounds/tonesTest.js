@@ -1,19 +1,11 @@
 // tonesTest.js
 import { TonesGenerator } from './tones.js';
-import { SoundTestCommon } from './soundTestCommon.js';
+import { SoundTestCommon, ControlManager } from './soundTestCommon.js';
 
 class TonesTest extends SoundTestCommon {
     constructor() {
         super(null, null, null);
         this.initAudio();
-        this.scales = {
-            major: [0, 2, 4, 5, 7, 9, 11, 12],
-            minor: [0, 2, 3, 5, 7, 8, 10, 12],
-            pentatonicMajor: [0, 2, 4, 7, 9, 12],
-            pentatonicMinor: [0, 3, 5, 7, 10, 12],
-            blues: [0, 3, 5, 6, 7, 10, 12],
-            chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-        };
         this.toneGenerator = new TonesGenerator(this.audioCtx, this.masterGain, {
             waveform: 'sine',
             attack: 0.05,
@@ -24,71 +16,35 @@ class TonesTest extends SoundTestCommon {
             vibratoRate: 5,
             harmonics: [1.0]
         });
+        this.controlManager = new ControlManager(this.toneGenerator); // Recommendation 2
         this.setupControls();
         this.setupVisualizations();
     }
 
     setupControls() {
-        this.controls = {
-            waveform: document.getElementById('waveform'),
-            octave: document.getElementById('octave'),
-            octaveValue: document.getElementById('octaveValue'),
-            note: document.getElementById('note'),
-            attack: document.getElementById('attack'),
-            attackValue: document.getElementById('attackValue'),
-            decay: document.getElementById('decay'),
-            decayValue: document.getElementById('decayValue'),
-            sustain: document.getElementById('sustain'),
-            sustainValue: document.getElementById('sustainValue'),
-            release: document.getElementById('release'),
-            releaseValue: document.getElementById('releaseValue'),
-            vibratoAmount: document.getElementById('vibratoAmount'),
-            vibratoAmountValue: document.getElementById('vibratoAmountValue'),
-            vibratoRate: document.getElementById('vibratoRate'),
-            vibratoRateValue: document.getElementById('vibratoRateValue'),
+        // Recommendation 1: Use enhanced setupControls from SoundTestCommon
+        const controlConfig = {
+            waveform: { id: 'waveform', type: 'select', onChange: () => this.updateToneParams() },
+            octave: { id: 'octave', type: 'range', onChange: () => this.updateToneParams() },
+            note: { id: 'note', type: 'select', onChange: () => this.updateToneParams() },
+            attack: { id: 'attack', type: 'range', onChange: () => this.updateToneParams() },
+            decay: { id: 'decay', type: 'range', onChange: () => this.updateToneParams() },
+            sustain: { id: 'sustain', type: 'range', onChange: () => this.updateToneParams() },
+            release: { id: 'release', type: 'range', onChange: () => this.updateToneParams() },
+            vibratoAmount: { id: 'vibratoAmount', type: 'range', onChange: () => this.updateToneParams() },
+            vibratoRate: { id: 'vibratoRate', type: 'range', onChange: () => this.updateToneParams() }
         };
-
+        const buttonConfig = {
+            playNote: { id: 'playNote', onClick: () => this.playNote() },
+            startTone: { id: 'startTone', onClick: () => this.startTone() },
+            stopTone: { id: 'stopTone', onClick: () => this.stopTone() },
+            playScale: { id: 'playScale', onClick: () => this.playScale() }
+        };
+        super.setupControls(controlConfig, buttonConfig);
         this.setupHarmonicsControls();
 
-        this.controls.waveform.addEventListener('change', () => this.updateToneParams());
-        this.controls.octave.addEventListener('input', () => {
-            this.controls.octaveValue.textContent = this.controls.octave.value;
-            this.updateToneParams();
-        });
-        this.controls.note.addEventListener('change', () => this.updateToneParams());
-        this.controls.attack.addEventListener('input', () => {
-            this.controls.attackValue.textContent = this.controls.attack.value;
-            this.updateToneParams();
-        });
-        this.controls.decay.addEventListener('input', () => {
-            this.controls.decayValue.textContent = this.controls.decay.value;
-            this.updateToneParams();
-        });
-        this.controls.sustain.addEventListener('input', () => {
-            this.controls.sustainValue.textContent = this.controls.sustain.value;
-            this.updateToneParams();
-        });
-        this.controls.release.addEventListener('input', () => {
-            this.controls.releaseValue.textContent = this.controls.release.value;
-            this.updateToneParams();
-        });
-        this.controls.vibratoAmount.addEventListener('input', () => {
-            this.controls.vibratoAmountValue.textContent = this.controls.vibratoAmount.value;
-            this.updateToneParams();
-        });
-        this.controls.vibratoRate.addEventListener('input', () => {
-            this.controls.vibratoRateValue.textContent = this.controls.vibratoRate.value;
-            this.updateToneParams();
-        });
-
-        document.getElementById('playNote').addEventListener('click', () => this.playNote());
-        document.getElementById('startTone').addEventListener('click', () => this.startTone());
-        document.getElementById('stopTone').addEventListener('click', () => this.stopTone());
-        document.getElementById('playScale').addEventListener('click', () => this.playScale());
-
         document.getElementById('playbackSpeed').addEventListener('input', () => {
-            document.getElementById('playbackSpeedValue').textContent = 
-                document.getElementById('playbackSpeed').value;
+            document.getElementById('playbackSpeedValue').textContent = document.getElementById('playbackSpeed').value;
         });
     }
 
@@ -137,39 +93,28 @@ class TonesTest extends SoundTestCommon {
         this.toneGenerator.updateParams({ harmonics });
     }
 
+    // Recommendation 5: Use updateGeneratorParams
     updateToneParams() {
-        const params = {
-            waveform: document.getElementById('waveform').value,
-            octave: parseInt(document.getElementById('octave').value),
-            note: document.getElementById('note').value,
-            attack: parseFloat(document.getElementById('attack').value),
-            decay: parseFloat(document.getElementById('decay').value),
-            sustain: parseFloat(document.getElementById('sustain').value),
-            release: parseFloat(document.getElementById('release').value),
-            vibratoAmount: parseFloat(document.getElementById('vibratoAmount').value),
-            vibratoRate: parseFloat(document.getElementById('vibratoRate').value)
-        };
-        this.toneGenerator.updateParams(params);
+        super.updateGeneratorParams(this.toneGenerator, [
+            'waveform', 'octave', 'note', 'attack', 'decay', 'sustain', 'release',
+            'vibratoAmount', 'vibratoRate'
+        ]);
     }
 
     playNote() {
-        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
-        const note = document.getElementById('note').value;
-        const octave = parseInt(document.getElementById('octave').value);
-        this.toneGenerator.updateParams({ note, octave });
+        const note = this.controls.note.value;
+        const octave = parseInt(this.controls.octave.value);
+        // Recommendation 6: Use playSound
+        super.playSound(this.toneGenerator, { note, octave }, this.toneGenerator.playBurst, 0.5);
         this.addNoteToHistory(note, octave);
-        this.toneGenerator.playBurst(0.5);
-        this.startVisualizations(this.toneGenerator);
     }
 
     startTone() {
-        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
-        const note = document.getElementById('note').value;
-        const octave = parseInt(document.getElementById('octave').value);
-        this.toneGenerator.updateParams({ note, octave });
+        const note = this.controls.note.value;
+        const octave = parseInt(this.controls.octave.value);
+        // Recommendation 6: Use playSound
+        super.playSound(this.toneGenerator, { note, octave }, this.toneGenerator.start);
         this.addNoteToHistory(note, octave);
-        this.toneGenerator.start();
-        this.startVisualizations(this.toneGenerator);
     }
 
     stopTone() {
@@ -177,12 +122,11 @@ class TonesTest extends SoundTestCommon {
     }
 
     playScale() {
-        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
-        const rootNote = document.getElementById('note').value;
-        const octave = parseInt(document.getElementById('octave').value);
+        const rootNote = this.controls.note.value;
+        const octave = parseInt(this.controls.octave.value);
         const scaleType = document.getElementById('scaleType').value;
         const playbackSpeed = parseInt(document.getElementById('playbackSpeed').value);
-        const scaleIntervals = this.scales[scaleType];
+        const scaleIntervals = this.toneGenerator.scales[scaleType]; // Recommendation 4*: Use generator's scales
 
         scaleIntervals.forEach(interval => {
             const noteIndex = this.getNoteIndex(rootNote) + interval;
@@ -191,8 +135,8 @@ class TonesTest extends SoundTestCommon {
             this.addNoteToHistory(noteName, adjustedOctave);
         });
 
-        this.toneGenerator.playScale(scaleIntervals, rootNote, octave, playbackSpeed, 0.2);
-        this.startVisualizations(this.toneGenerator);
+        // Recommendation 6: Use playSound
+        super.playSound(this.toneGenerator, null, this.toneGenerator.playScale, scaleIntervals, rootNote, octave, playbackSpeed, 0.2);
     }
 }
 

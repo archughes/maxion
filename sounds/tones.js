@@ -21,6 +21,14 @@ export class TonesGenerator extends SoundGenerator {
             'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 
             'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11
         };
+        this.scales = {
+            major: [0, 2, 4, 5, 7, 9, 11, 12],
+            minor: [0, 2, 3, 5, 7, 8, 10, 12],
+            pentatonicMajor: [0, 2, 4, 7, 9, 12],
+            pentatonicMinor: [0, 3, 5, 7, 10, 12],
+            blues: [0, 3, 5, 6, 7, 10, 12],
+            chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        };
     }
 
     getFrequency(note, octave) {
