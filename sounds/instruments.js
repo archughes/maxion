@@ -1,27 +1,11 @@
-// sounds/instruments.js
 import { TonesGenerator } from './tones.js';
 
 export class InstrumentGenerator extends TonesGenerator {
     constructor(audioCtx, masterGain, params = {}) {
-        const defaultParams = {
-            octave: params.octave || 4,
-            note: params.note || 'C',
-            waveform: params.waveform || 'sine',
-            attack: params.attack || 0.05,
-            decay: params.decay || 0.1,
-            sustain: params.sustain || 0.7,
-            release: params.release || 0.5,
-            vibratoAmount: params.vibratoAmount || 0,
-            vibratoRate: params.vibratoRate || 5,
-            harmonics: params.harmonics || [1.0],
-            instrumentType: params.instrumentType || 'generic',
-            resonance: params.resonance !== undefined ? params.resonance : 0,
-            brightness: params.brightness !== undefined ? params.brightness : 0.5,
-            detune: params.detune !== undefined ? params.detune : 0,
-            stereoWidth: params.stereoWidth !== undefined ? params.stereoWidth : 0
-        };
-        super(audioCtx, masterGain, defaultParams);
-
+        super(audioCtx, masterGain, {
+            instrumentType: 'generic', resonance: 0, brightness: 0.5, detune: 0, stereoWidth: 0,
+            ...params
+        });
         this.presets = {
             generic: { 
                 waveform: 'sine', attack: 0.05, decay: 0.1, sustain: 0.7, release: 0.2, vibratoAmount: 0, vibratoRate: 5, harmonics: [1.0, 0, 0, 0, 0], resonance: 0, brightness: 0.5, detune: 0, stereoWidth: 0
@@ -48,65 +32,12 @@ export class InstrumentGenerator extends TonesGenerator {
                 waveform: 'sine', attack: 0.1, decay: 0.1, sustain: 0.8, release: 0.4, vibratoAmount: 0.3, vibratoRate: 5, harmonics: [1.0, 0.2, 0.1, 0, 0], resonance: 0.2, brightness: 0.9, detune: 0, stereoWidth: 0.1
             }
         };
-
-        this.instrumentType = defaultParams.instrumentType;
-        this.applyPreset(this.instrumentType);
+        this.applyPreset(this.params.instrumentType);
     }
 
     applyPreset(presetName) {
-        // Extract the base instrument name by checking if any preset key is contained within presetName
-        let baseInstrument = presetName;
-        for (const key in this.presets) {
-            if (presetName.toLowerCase().includes(key.toLowerCase())) {
-                baseInstrument = key;
-                break; // Stop once we find the first match
-            }
-        }
-    
-        // Apply the preset if it exists in this.presets
-        if (this.presets[baseInstrument]) {
-            const preset = this.presets[baseInstrument];
-            this.updateParams({ ...preset, instrumentType: baseInstrument, note: this.params.note, octave: this.params.octave });
-        }
-    }
-
-    applyToneShaping(source, output) {
-        const filter = this.audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 350 + ((isFinite(this.params.brightness) ? this.params.brightness : 0.5) * 15000);
-        filter.Q.value = (isFinite(this.params.resonance) ? this.params.resonance : 0) * 10;
-
-        if (this.params.detune !== 0 && source instanceof OscillatorNode) {
-            source.detune.value = isFinite(this.params.detune) ? this.params.detune : 0;
-        }
-
-        if (this.params.stereoWidth > 0) {
-            const panner = this.audioCtx.createStereoPanner();
-            panner.pan.value = Math.random() * 2 * (isFinite(this.params.stereoWidth) ? this.params.stereoWidth : 0) - (isFinite(this.params.stereoWidth) ? this.params.stereoWidth : 0);
-            source.connect(filter);
-            filter.connect(panner);
-            panner.connect(output);
-            this.addActiveNode(panner);
-        } else {
-            source.connect(filter);
-            filter.connect(output);
-        }
-        
-        this.addActiveNode(filter);
-    }
-
-    createHarmonics(fundamentalFreq, outputGain) {
-        const nodes = super.createHarmonics(fundamentalFreq, outputGain);
-        nodes.forEach(({ oscillator, harmonicGain }) => {
-            oscillator.disconnect();
-            this.applyToneShaping(oscillator, harmonicGain);
-            harmonicGain.connect(outputGain);
-        });
-    }
-
-    playBurst(duration = 0.5) {
-        if (this.timeout) return;
-        super.playBurst(duration);
+        const baseInstrument = Object.keys(this.presets).find(key => presetName.toLowerCase().includes(key.toLowerCase())) || 'generic';
+        this.updateParams({ ...this.presets[baseInstrument], instrumentType: baseInstrument });
     }
 
     getChordIntervals(chordType) {
@@ -172,88 +103,40 @@ export class InstrumentGenerator extends TonesGenerator {
         return Object.keys(this.noteOffsets)[index % 12];
     }
 
+    createSound(frequency, output, options = {}) {
+        const osc = this.audioCtx.createOscillator();
+        osc.type = this.params.waveform;
+        osc.frequency.value = frequency;
+        if (this.params.detune) osc.detune.value = this.params.detune;
+
+        const filter = this.audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 350 + (this.params.brightness * 15000);
+        filter.Q.value = this.params.resonance * 10;
+
+        const finalOutput = this.params.stereoWidth > 0 ? this.audioCtx.createStereoPanner() : output;
+        if (finalOutput instanceof StereoPannerNode) {
+            finalOutput.pan.value = Math.random() * 2 * this.params.stereoWidth - this.params.stereoWidth;
+            finalOutput.connect(output);
+            this.addActiveNode(finalOutput);
+        }
+
+        super.createSound(frequency, filter, options); // Add harmonics/vibrato
+        osc.connect(filter).connect(finalOutput);
+    }
+
     createChordNotes(rootNote, chordType, octave) {
         const rootIndex = this.getNoteIndex(rootNote);
         const intervals = this.getChordIntervals(chordType);
         return intervals.map(interval => {
             const noteIndex = rootIndex + interval;
-            const adjustedOctave = octave + Math.floor(noteIndex / 12);
-            return { note: this.getNoteName(noteIndex), octave: adjustedOctave };
+            return { note: this.getNoteName(noteIndex % 12), octave: octave + Math.floor(noteIndex / 12) };
         });
-    }
-
-    stop(immediate = false) {
-        if (this.timeout) {
-            clearTimeout(this.timeout);
-            this.timeout = null;
-        }
-        super.stop(immediate);
-    }
-
-    playNotesWithEnvelope(frequencies, duration, output) {
-        const now = this.audioCtx.currentTime;
-        const mainGain = this.audioCtx.createGain();
-        mainGain.gain.setValueAtTime(0, now);
-        mainGain.gain.linearRampToValueAtTime(1, now + this.params.attack);
-        mainGain.gain.linearRampToValueAtTime(this.params.sustain, now + this.params.attack + this.params.decay);
-        mainGain.gain.linearRampToValueAtTime(0, now + this.params.attack + this.params.decay + duration);
-        mainGain.connect(this.masterGain);
-        this.addActiveNode(mainGain);
-        frequencies.forEach(freq => this.createHarmonics(freq, mainGain));
-        return mainGain;
     }
 
     playChord(chordNotes, duration = 0.5) {
-        console.log('Playing chord, timeout:', this.timeout);
-        if (this.timeout) {
-            clearTimeout(this.timeout); // Force clear
-            this.timeout = null;
-        }
-
-        const frequencies = chordNotes.map(noteObj => this.getFrequency(noteObj.note, noteObj.octave));
-        this.playNotesWithEnvelope(frequencies, duration, this.masterGain);
-
-        const totalDuration = this.params.attack + this.params.decay + duration + this.params.release;
-        this.timeout = setTimeout(() => {
-            this.stop();
-            this.timeout = null;
-        }, totalDuration * 1000 + 100);
-    }
-
-    playScale(intervals, rootNote, octave, speed = 250, duration = 0.2) {
-        if (this.timeout) return;
-        super.playScale(intervals, rootNote, octave, speed, duration);
-    }
-
-    playSequence(sequence = [], tempo = 120) {
-        if (this.timeout) return;
-        const msPerBeat = 60000 / tempo;
-        let currentTime = 0;
-        
-        sequence.forEach(noteObj => {
-            const note = typeof noteObj === 'string' ? noteObj : noteObj.note;
-            const duration = typeof noteObj === 'string' ? 1 : (noteObj.duration || 1);
-            const durationMs = duration * msPerBeat;
-            
-            setTimeout(() => {
-                const currentNote = this.params.note;
-                this.updateParams({ note });
-                this.playBurst(durationMs / 1000 * 0.95);
-                this.updateParams({ note: currentNote });
-            }, currentTime);
-            
-            currentTime += durationMs;
-        });
-        
-        this.timeout = setTimeout(() => {
-            this.timeout = null;
-        }, currentTime + 1000);
-    }
-
-    loadPreset(presetName) {
-        if (this.presets[presetName]) {
-            this.updateParams(this.presets[presetName]);
-            this.params.instrumentType = presetName;
-        }
+        const frequencies = chordNotes.map(note => this.getFrequency(note.note, note.octave));
+        this.playNotes(frequencies, duration);
+        this.scheduleSound(() => this.stop(), (duration + this.params.release) * 1000 + 100);
     }
 }

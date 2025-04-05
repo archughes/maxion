@@ -50,7 +50,7 @@ class SongsTest extends SoundTestCommon {
 
         const progressionSelect = this.controls.progressions;
         progressionSelect.innerHTML = '';
-        const progressions = this.songGenerator.progressions[this.songGenerator.instrumentType];
+        const progressions = this.songGenerator.progressions[this.songGenerator.params.instrumentType];
         progressions.forEach(prog => {
             const option = document.createElement('option');
             option.value = prog;
@@ -173,7 +173,6 @@ class SongsTest extends SoundTestCommon {
         await this.songGenerator.loadSong(songName);
         this.updateUIFromSongConfig(songName);
         if (!this.isRecording) {
-            // Recommendation 6: Use playSound
             super.playSound(this.songGenerator, null, this.songGenerator.playSong, songName);
         }
     }
@@ -186,7 +185,6 @@ class SongsTest extends SoundTestCommon {
         const progression = this.songGenerator.getProgression(progressionStr, rootNote, scaleType);
 
         if (!this.isRecording) {
-            // Recommendation 6: Use playSound
             super.playSound(this.songGenerator, null, this.songGenerator.playProgression, progression, octave, 250, 0.5);
         }
     }

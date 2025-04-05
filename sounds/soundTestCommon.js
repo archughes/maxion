@@ -126,7 +126,7 @@ export class SoundTestCommon {
 
         const draw = () => {
             const isActive = generator.activeNodes.size > 0;
-
+            
             this.analyser.getByteFrequencyData(fftData);
             fftCtx.fillStyle = 'white';
             fftCtx.fillRect(0, 0, this.fftCanvas.width, this.fftCanvas.height);
