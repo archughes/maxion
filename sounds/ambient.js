@@ -86,9 +86,6 @@ export class AmbientSoundManager {
 
         this.isPlayingContinuous = false;
         this.activeManualSounds = new Set();
-        this.visualizationFrame = null;
-        this.fftCanvas = null;
-        this.waveformCanvas = null;
         this.initialized = false;
     }
 
@@ -111,7 +108,6 @@ export class AmbientSoundManager {
                 sound.start();
             }
             this.isPlayingContinuous = true;
-            this.startVisualizations();
         }
     }
 
@@ -121,7 +117,6 @@ export class AmbientSoundManager {
                 sound.stop();
             }
             this.isPlayingContinuous = false;
-            this.checkVisualizationState();
         }
     }
 
@@ -150,11 +145,9 @@ export class AmbientSoundManager {
         }
         const soundId = `${playMethod}-${Date.now()}`;
         this.activeManualSounds.add(soundId);
-        this.startVisualizations();
         sound.playBurst();
         setTimeout(() => {
             this.activeManualSounds.delete(soundId);
-            this.checkVisualizationState();
         }, duration);
     }
 
@@ -164,75 +157,6 @@ export class AmbientSoundManager {
             await this.playManualSound(mapping.sound, mapping.duration, playMethod);
         } else {
             console.error(`No mapping found for playMethod: ${playMethod}`);
-        }
-    }
-
-    // Visualization methods (unchanged)
-    setupVisualizations(fftCanvas, waveformCanvas) {
-        this.fftCanvas = fftCanvas;
-        this.waveformCanvas = waveformCanvas;
-    }
-
-    startVisualizations() {
-        if (!this.fftCanvas || !this.waveformCanvas || this.visualizationFrame) return;
-
-        const fftCtx = this.fftCanvas.getContext('2d');
-        const waveformCtx = this.waveformCanvas.getContext('2d');
-        this.fftCanvas.width = this.fftCanvas.offsetWidth;
-        this.fftCanvas.height = this.fftCanvas.offsetHeight;
-        this.waveformCanvas.width = this.waveformCanvas.offsetWidth;
-        this.waveformCanvas.height = this.waveformCanvas.offsetHeight;
-
-        const fftData = new Uint8Array(this.analyser.frequencyBinCount);
-        const waveformData = new Uint8Array(this.analyser.fftSize);
-
-        const draw = () => {
-            if (!this.isPlayingContinuous && this.activeManualSounds.size === 0) {
-                this.visualizationFrame = null;
-                return;
-            }
-
-            this.analyser.getByteFrequencyData(fftData);
-            fftCtx.fillStyle = 'white';
-            fftCtx.fillRect(0, 0, this.fftCanvas.width, this.fftCanvas.height);
-            fftCtx.fillStyle = 'blue';
-            const barWidth = (this.fftCanvas.width / fftData.length) * 2.5;
-            let x = 0;
-            for (let i = 0; i < fftData.length; i++) {
-                const barHeight = (fftData[i] / 255) * this.fftCanvas.height;
-                fftCtx.fillRect(x, this.fftCanvas.height - barHeight, barWidth, barHeight);
-                x += barWidth + 1;
-            }
-
-            this.analyser.getByteTimeDomainData(waveformData);
-            waveformCtx.fillStyle = 'white';
-            waveformCtx.fillRect(0, 0, this.waveformCanvas.width, this.waveformCanvas.height);
-            waveformCtx.strokeStyle = 'red';
-            waveformCtx.beginPath();
-            const sliceWidth = this.waveformCanvas.width / waveformData.length;
-            let wx = 0;
-            for (let i = 0; i < waveformData.length; i++) {
-                const v = waveformData[i] / 128.0;
-                const y = (v * this.waveformCanvas.height) / 2;
-                if (i === 0) waveformCtx.moveTo(wx, y);
-                else waveformCtx.lineTo(wx, y);
-                wx += sliceWidth;
-            }
-            waveformCtx.lineTo(this.waveformCanvas.width, this.waveformCanvas.height / 2);
-            waveformCtx.stroke();
-
-            this.visualizationFrame = requestAnimationFrame(draw);
-        };
-
-        this.visualizationFrame = requestAnimationFrame(draw);
-    }
-
-    checkVisualizationState() {
-        if (!this.isPlayingContinuous && this.activeManualSounds.size === 0 && this.visualizationFrame) {
-            cancelAnimationFrame(this.visualizationFrame);
-            this.visualizationFrame = null;
-        } else if ((this.isPlayingContinuous || this.activeManualSounds.size > 0) && !this.visualizationFrame) {
-            this.startVisualizations();
         }
     }
 }

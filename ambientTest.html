@@ -4,283 +4,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ambient Sound Generator</title>
+    <title>Ambient Sound Manual Tester</title>
+    <!-- Link the provided base CSS -->
+    <link rel="stylesheet" href="./styles/test.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
+        /* Add specific overrides or additions if needed */
+        .controls {
+            max-height: none; /* Remove height limit if desired */
+             overflow-y: visible;
         }
-
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 400px;
-            max-height: 95vh;
-            overflow-y: auto;
+        #currentConfigDisplay {
+             margin-top: 20px;
+             padding: 15px;
+             border: 1px solid #eee;
+             border-radius: 5px;
+             background-color: #f9f9f9;
+             font-size: 0.9em;
+             max-height: 200px; /* Limit height of config display */
+             overflow-y: auto;
+             line-height: 1.6;
         }
-
-        h1, h2, h3 {
-            text-align: center;
-            margin-bottom: 10px;
+        #currentConfigDisplay strong {
+             display: block;
+             margin-bottom: 5px;
+             color: #4682B4;
         }
-
-        h3 {
-            margin: 0;
+         .control-row label {
+             width: 180px; /* Adjust label width */
         }
-
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid #ccc;
-            margin-bottom: 20px;
+        .value-display {
+             min-width: 40px; /* Ensure value display has width */
         }
-
-        .tab-button {
-            padding: 10px 20px;
-            cursor: pointer;
-            background-color: #f0f0f0;
-            border: none;
-            outline: none;
-            flex: 1;
-            text-align: center;
+         select {
+             margin-left: 0; /* Align select with sliders */
         }
-
-        .tab-button.active {
-            background-color: #ccc;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
+        /* Ensure buttons stack nicely */
+        .buttons {
+            margin-top: 20px;
             display: block;
         }
-
-        .control {
-            margin-bottom: 15px;
+        #playManualButton {
+             width: 100%;
+             padding: 12px;
+             font-size: 1.1em;
         }
 
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        input[type="range"] {
-            width: 100%;
-        }
-
-        select {
-            width: 100%;
-            padding: 5px;
-            font-size: 16px;
-        }
-
-        button {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            margin-top: 10px;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        #saveButton {
-            background-color: #008CBA;
-        }
-
-        #saveButton:hover {
-            background-color: #007bb5;
-        }
-
-        canvas {
-            width: 100%;
-            height: 150px;
-            margin-top: 10px;
-            border: 1px solid #ccc;
-        }
-
-        .matrix .row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .matrix label {
-            width: 120px;
-            font-weight: bold;
-        }
-
-        .matrix button {
-            padding: 5px 10px;
-            margin: 0 5px;
-            cursor: pointer;
-            background-color: #008CBA;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            width: auto;
-        }
-
-        .matrix button:hover {
-            background-color: #007bb5;
-        }
-
-        /* New styles for collapsible sections */
-        .sound-module-section {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            overflow: hidden;
-        }
-
-        .sound-module-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #f5f5f5;
-            padding: 10px;
-            cursor: pointer;
-        }
-
-        .toggle-section {
-            background: none;
-            border: none;
-            color: #333;
-            font-size: 16px;
-            cursor: pointer;
-            padding: 0;
-            margin: 0;
-            width: auto;
-        }
-
-        .sound-module-content {
-            padding: 10px;
-        }
-
-        /* Module selector in Tab 2 */
-        .module-selector {
-            margin-bottom: 20px;
-        }
-
-        .module-selector label {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        #soundModuleSelect {
-            width: 100%;
-            padding: 8px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-
-        /* Play module button */
-        .play-module-button {
-            background-color: #8e44ad;
-        }
-
-        .play-module-button:hover {
-            background-color: #7d3c98;
-        }
-
-        .play-module-manual {
-            background-color: #8e44ad;
-        }
-
-        .play-module-manual:hover {
-            background-color: #7d3c98;
-        }
-
-        #currentConfig {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            font-size: 14px;
-            max-height: 150px;
-            overflow-y: auto;
-        }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h2>Ambient Sound Generator</h2>
-
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab-button active" data-tab="tab1">Controls</button>
-            <button class="tab-button" data-tab="tab2">Manual Scheduling</button>
+        <h1>Ambient Sound Manual Tester</h1>
+        
+        <!-- Current Configuration Display -->
+        <div id="currentConfigDisplay">
+            <strong>Current Configuration:</strong>
+            <pre id="configJsonDisplay"></pre> <!-- Use pre for better formatting -->
         </div>
 
-        <!-- Tab 1: Controls with collapsible sections -->
-        <div id="tab1" class="tab-content active">
-            <!-- This will be populated by JavaScript -->
-            <button id="toggleButton">Start</button>
-            <button id="saveButton">Save as WAV</button>
-        </div>
-
-        <!-- Tab 2: Manual Scheduling -->
-        <div id="tab2" class="tab-content">
-            <h3>Manual Sound Scheduling</h3>
-            
-            <!-- Current Configuration Display -->
-            <div id="currentConfig">
-                <strong>Current Configuration:</strong><br>
-                Wind Level: <span id="currentWindLevel">0</span><br>
-                Wind Turbidity: <span id="currentWindTurbidity">0</span><br>
-                Surface Type: <span id="currentSurfaceType">water</span><br>
-                Rain Density: <span id="currentRainDensity">0</span><br>
-                Rain Speed: <span id="currentRainSpeed">1</span><br>
-                Raindrop Size: <span id="currentRaindropSize">1</span><br>
-                Thunder Frequency: <span id="currentThunderFreq">0</span><br>
-                Thunder Distance: <span id="currentThunderDistance">0</span><br>
-                Wave Intensity: <span id="currentWaveIntensity">0</span><br>
-                Wave Frequency: <span id="currentWaveFrequency">1</span><br>
-                Fire Intensity: <span id="currentFireIntensity">0</span><br>
-                Fire Crackle Rate: <span id="currentFireCrackleRate">1</span><br>
-                Bird Activity: <span id="currentBirdActivity">0</span><br>
-                Bird Pitch: <span id="currentBirdPitch">1</span><br>
-                Bird Type: <span id="currentBirdType">0</span><br>
-                Cricket Density: <span id="currentCricketDensity">0</span><br>
-                Cricket Speed: <span id="currentCricketSpeed">1</span><br>
-                River Flow: <span id="currentRiverFlow">0</span><br>
-                River Depth: <span id="currentRiverDepth">1</span><br>
-                Ice Intensity: <span id="currentIceIntensity">0</span><br>
-                Ice Fracture Rate: <span id="currentIceFractureRate">1</span><br>
-                Rumble Intensity: <span id="currentRumbleIntensity">0</span><br>
-                Vent Activity: <span id="currentVentActivity">1</span><br>
+        <!-- Controls Section -->
+        <div class="controls">
+            <h2>Select Sound Module</h2>
+            <div class="control-group">
+                 <div class="control-row">
+                     <label for="soundModuleSelect">Sound Type:</label>
+                     <select id="soundModuleSelect"></select>
+                 </div>
             </div>
-            
-            <!-- Module selector and controls will be added here by JavaScript -->
+
+            <h2>Module Parameters</h2>
+            <!-- Dynamic controls will be inserted here -->
+            <div id="moduleControlsContainer">
+                <!-- Example Structure (Generated by JS):
+                <div class="control-group">
+                    <div class="control-row">
+                        <label for="paramId">Param Label:</label>
+                        <input type="range" id="paramId" min="0" max="4" step="1" value="1">
+                        <span class="value-display" id="paramIdValue">1</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                     <div class="control-row">
+                        <label for="selectId">Select Label:</label>
+                        <select id="selectId">
+                            <option value="val1">Option 1</option>
+                        </select>
+                    </div>
+                </div>
+                 -->
+            </div>
+
+            <div class="buttons">
+                 <button id="playManualButton">Play Sound</button>
+            </div>
         </div>
 
-        <!-- Visualizations -->
+        <!-- Visualizations Section -->
         <div class="visualizations">
-            <canvas id="fftCanvas"></canvas>
-            <canvas id="waveformCanvas"></canvas>
+            <h2>Visualizations</h2>
+            <div class="two-column">
+                 <div class="column">
+                     <h3>Frequency Domain (FFT)</h3>
+                     <canvas id="fftCanvas"></canvas>
+                 </div>
+                 <div class="column">
+                     <h3>Time Domain (Waveform)</h3>
+                     <canvas id="waveformCanvas"></canvas>
+                 </div>
+            </div>
+             <!-- NoteBar canvas removed as requested -->
         </div>
     </div>
 
     <!-- Load ambient test JavaScript -->
     <script type="module" src="./sounds/ambientTest.js"></script>
 </body>
-
 </html>
